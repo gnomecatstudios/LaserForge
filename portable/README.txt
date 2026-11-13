@@ -1,7 +1,10 @@
 LASER FORGE PORTABLE — offline package
 
-The gear-and-laser logo is included as icon.png and LaserForge.ico.
-Windows embeds it in the executable.
+The red gear and lightning bolt logo is included as icon.png and LaserForge.ico.
+Windows embeds the same icon in LaserForge-Portable.exe.
+To create a branded desktop shortcut that launches through the updater, run
+Start-LaserForge.cmd --shortcut from Command Prompt in the extracted folder.
+Run it again to refresh an existing Laser Forge shortcut.
 
 Source: https://github.com/gnomecatstudios/LaserForge.dev
 Source snapshot: see VERSION.txt (or dist/portable-version.txt in the source ZIP).
@@ -12,18 +15,18 @@ With Python 3.9+ installed, open update.py in the extracted portable folder,
 or run python3 update.py --launch (Windows: py -3 update.py --launch).
 It starts the app, checks for updates in the background, and installs a staged
 update before the next launch. Opening update.py without arguments does the same.
-On Windows you can also open Start-LaserForge.cmd. Debian installs update through
-the system package manager. Manual update commands: --check, --download, --apply.
+On Windows you can also open Start-LaserForge.cmd. Manual update commands: --check, --download, --apply.
 
 Public downloads: https://github.com/gnomecatstudios/LaserForgeDownloads/releases/latest
 Version 0.2.1 and later check on startup. About and the project menu also offer
 Check for updates. The popup waits until the laser is disconnected. Download
 the update or choose Later. The popup does not install or restart automatically.
 Save your project, close the app and launcher, then extract the new ZIP into
+the existing portable folder to replace the application files.
 Keep the same browser profile and local address to retain autosaves.
 
 EASY SETUP (RASPBERRY PI / LINUX)
-Laser Forge to the application menu. Choose ARM64 for aarch64 Raspberry Pi OS,
+Choose ARM64 for aarch64 Raspberry Pi OS,
 ARM32 for armv7l/armv6l, or x64 for Intel/AMD Linux.
 The portable ZIP also includes setup.py: open with Python 3 for a setup dialog,
 or run python3 setup.py --cli in the extracted folder. It installs for your
