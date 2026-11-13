@@ -15,8 +15,7 @@ import zipfile
 
 ROOT = Path(__file__).resolve().parents[1]
 REPO = 'gnomecatstudios/LaserForgeDownloads'
-PLATFORMS = ['windows-x64',
-             'linux-x64', 'raspberry-pi-arm64', 'raspberry-pi-arm32']
+PLATFORMS = ['windows-x64', 'linux-x64', 'raspberry-pi-arm64', 'raspberry-pi-arm32']
 
 
 def gh(*args, payload=None):
@@ -54,6 +53,10 @@ def main():
                 parser.error(f'Unexpected source files in {path}')
             binary = next(n for n in names if n.endswith('LaserForge-Portable.exe') or
                           n == 'LaserForge-Portable/LaserForge-Portable')
+            expected = {'platform': platform, 'version': version}
+            prefix = 'LaserForge-Portable/'
+            if prefix + 'update.py' not in names or json.loads(package.read(prefix + 'release.json')) != expected:
+                parser.error(f'Missing updater or mismatched release metadata in {path}')
             metadata = json.dumps({'platform': platform, 'version': version}).encode()
             if metadata not in package.read(binary):
                 parser.error(f'Wrong platform/version in {path}')
@@ -80,7 +83,9 @@ def main():
             f'Laser Forge {version}\n\n'
             'Includes the update download popup. Portable builds check on startup; '
             'About and the project menu offer Check for updates. The popup waits until '
-            'the laser is disconnected. Downloads never install or restart automatically.\n\n'
+            'the laser is disconnected. The Python update launcher downloads releases in the '
+            'background and applies them before the next launch. Native launchers and Debian '
+            'installations continue to use manual updates.\n\n'
             f'[Platform installation instructions](https://github.com/{REPO}#installation)\n\n'
             'Existing installations need one manual download to get the update popup. '
             'Save your project and close the app and launcher before replacing them.\n\n'
@@ -95,3 +100,4 @@ def main():
 
 if __name__ == '__main__':
     main()
+

@@ -38,7 +38,7 @@ describe('portable releases', () => {
   ])('compares %s against %s', (next, current, expected) => {
     expect(isNewer(next, current)).toBe(expected);
   });
-  it('maps all four supported native architectures to their own package', () => {
+  it('maps all four supported architectures to their own package', () => {
     const parsed = parseRelease(release());
     expect(Object.keys(parsed.downloads)).toHaveLength(4);
     for (const p of Object.keys(PLATFORMS)) {
@@ -78,7 +78,9 @@ describe('portable releases', () => {
     data.assets[0].browser_download_url = 'javascript:alert(1)';
     data.assets[1].state = 'new';
     data.assets[2].size = 0;
-    expect(Object.keys(parseRelease(data).downloads)).toEqual(['raspberry-pi-arm32']);
+    expect(Object.keys(parseRelease(data).downloads)).toEqual([
+      'raspberry-pi-arm32',
+    ]);
   });
   it('reports HTTP failures and uses credential-free uncached checks with a timeout', async () => {
     const fetch = vi.fn().mockResolvedValue(new Response('', { status: 403 }));
@@ -88,3 +90,4 @@ describe('portable releases', () => {
     expect(fetch.mock.calls[0][1].signal).toBeInstanceOf(AbortSignal);
   });
 });
+

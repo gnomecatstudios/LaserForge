@@ -51,13 +51,53 @@ shortcut. Remove a Debian installation through the system package manager.
 
 ## Updates
 
-Portable builds from version 0.2.1 check the public [downloads repository](https://github.com/gnomecatstudios/LaserForgeDownloads) on startup. **About → Check for updates** and the project menu offer a manual check. The popup waits until the laser is disconnected. Choose **Download update** or **Later**; nothing installs or restarts automatically.
+Python 3.9 or newer enables background update downloads on Windows x64, Linux
+x64 and Raspberry Pi OS ARM64/ARM32. macOS is no longer a release target.
 
-Older versions need one manual download. Save your project, close the app and launcher, then extract the new ZIP into a new folder. Run its launcher, or rerun the new Linux setup for shortcuts. Debian installations can upgrade using the newer `.deb`. Keep the same browser profile and local address to retain autosaves. Export projects and profiles as backups.
+- **Pi/Linux Python setup:** run the new package's `setup.py` once. Its menu and
+  desktop shortcuts then use `python3 update.py --launch`.
+- **Windows:** install Python 3.9+ with its `py` launcher, then open
+  `Start-LaserForge.cmd` instead of the native executable.
+- **Other portable folders:** run `python3 update.py --launch` from the extracted
+  folder (`py -3 update.py --launch` on Windows).
+
+The helper starts Laser Forge immediately and checks the public downloads
+repository in a background thread. New stable releases for the installed platform
+are downloaded and checked against that release's SHA-256 checksums. They are
+staged without changing the running app. Close the app and launcher after saving
+your projects and disconnecting the laser; the staged release installs before the
+next launch. Keep the same browser profile and local address for autosaves.
+The helper does not stop a laser, close the browser or restart a running launcher.
+
+The next launch revalidates the staged release online before applying it. If
+GitHub is unavailable, it starts the installed version and leaves the update for
+later. If a newer release has replaced the staged one, a fresh background download
+is needed. Installation write failures restore replaced files; sudden power loss
+or a failed rollback can still require manually reinstalling the portable package.
+Projects and browser settings are outside the files the updater replaces.
+Checksums verify download integrity, not a publisher signature: this trusts the
+public downloads repository and HTTPS. Release signing is not implemented.
+
+Commands for manual use:
+
+```sh
+python3 update.py --check
+python3 update.py --download
+# Save projects, disconnect the laser and close the launcher first:
+python3 update.py --apply
+```
+
+Running the native executable directly keeps the existing manual-update behavior.
+**About → Check for updates** remains a manual download option. `.deb` installs
+continue to upgrade through the system package manager; the Python helper refuses
+system installation paths. It does not request administrator access.
+
+Existing users need one manual download/install of a release containing the new
+helper and `release.json`. Existing packages cannot gain this feature remotely.
 
 ## Branding and icons
 
-The app, browser tab, installable web app, Windows executable, Linux and Raspberry Pi shortcuts, and setup window use the same gear-and-lightning logo. Each portable package includes `icon.png` and `LaserForge.ico`. These assets come from `public/logo-source.png`; `pnpm icons` generates the shared browser icons and Windows icon container.
+The app, browser tab, installable web app, Windows executable, Linux and Raspberry Pi shortcuts, and setup window use the same gear-and-lightning logo. Each portable package includes `icon.png` and `LaserForge.ico`. These assets come from `public/logo-source.png`.
 
 ## Offline fonts and project storage
 
@@ -87,7 +127,7 @@ pnpm build
 python3 scripts/build-portable.py
 ```
 
-The script cross-compiles all four platform ZIPs, builds three Debian installers using
+The script cross-compiles all four supported ZIPs, builds three Debian installers using
 `dpkg-deb`, and refreshes SHA-256 checksums. Use `--target raspberry-pi-arm64`
 to build only that target. Set `--go /path/to/go` to choose the compiler.
 
@@ -113,7 +153,7 @@ The Linux launcher was run in Chromium with all non-loopback requests blocked
 and a fresh browser profile. The app loaded, created a project, and connected
 to the virtual machine in Idle state without page errors. Update checks contact GitHub when online; an offline check does not block the app.
 Windows executables were cross-compiled and their executable formats
-checked; they have not been run on Windows. Physical laser
+checked; they have not been run on those operating systems. Physical laser
 hardware has not been tested.
 
 The Raspberry Pi ARM64 and ARM32 launchers were cross-compiled and their ELF
@@ -131,3 +171,4 @@ python3 scripts/publish-downloads.py --packages portable/downloads --publish
 ```
 
 The first command validates the packages without publishing. The second requires authenticated GitHub CLI access and creates a public release with four native ZIPs, three Debian installers, and their checksums. It excludes the source ZIP and uploads only the public downloads README, logo and license to the downloads repository. It leaves the source repository private.
+

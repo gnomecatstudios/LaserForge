@@ -85,3 +85,4 @@ export async function fetchRelease(): Promise<Release> {
   if (!response.ok) throw new Error(`Update check failed (${response.status})`);
   return parseRelease(await response.json());
 }
+

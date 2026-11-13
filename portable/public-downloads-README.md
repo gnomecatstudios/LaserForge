@@ -7,7 +7,7 @@ This repository hosts packaged apps and update releases. The development reposit
 
 ## Downloads
 
-[View all public releases and downloads](https://github.com/gnomecatstudios/laserforge-downloads/releases).
+[View all public releases and downloads](https://github.com/gnomecatstudios/LaserForgeDownloads/releases).
 
 | Platform | Portable ZIP | Installer |
 | --- | --- | --- |
@@ -44,8 +44,24 @@ Older versions need one manual download from this page to get the popup.
 Save your `.olaser` project and export machine profiles before upgrading. Close the app and launcher,
 extract the new ZIP into a new folder, and start its launcher. Linux shortcut installations can run
 the new `setup.py --cli` again; Debian users can install the newer `.deb` through the package manager.
-Nothing installs or restarts automatically. If the browser offers a separate Reload update, use it
+The native launcher uses manual updates. The Python launch option described below can download and apply updates on the next launch. If the browser offers a separate Reload update, use it
 after disconnecting the laser to load the newly installed app.
+
+### Automatic portable updates (Python 3.9+)
+
+Install a new package containing `update.py` and `release.json` once to enable this.
+On Pi/Linux, run its `setup.py` again; menu and desktop shortcuts will then use the
+update helper. On Windows, install Python with its `py` launcher and open
+`Start-LaserForge.cmd`. Alternatively, run `python3 update.py --launch` on Linux.
+
+The helper downloads matching stable releases in the background, verifies their
+SHA-256 checksum, and stages them. Save your projects, disconnect the laser and
+close the app and launcher. The update applies before your next launch; the helper
+never restarts the app during a laser session. Offline checks leave the installed
+version usable. Applying a staged update needs an online recheck. Checksums protect
+transfer integrity and trust this repository; packages are not digitally signed.
+Use the native executable for manual updates. Debian installations keep using the
+package manager. macOS is no longer a release target.
 
 Autosaves remain in the same browser profile at the same local address. Keep backups before clearing
 browser data. Bundled fonts are in `Fonts/`; import `Geist-500.ttf` for offline text outlines.
@@ -56,3 +72,4 @@ Other Google Fonts need an initial download.
 Laser Forge is a fork of [openlaser by Anam Ahmed](https://github.com/theanam/openlaser.app), under the MIT license.
 Packages include the app license and the bundled font's OFL license. Windows and Raspberry Pi
 builds are cross-compiled; they still need native testing. Physical laser hardware has not been tested.
+

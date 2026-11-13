@@ -32,16 +32,19 @@ def install(source, data_home, desktop=None, machine=None):
     shutil.copy2(binary, staged)
     staged.chmod(0o755)
     staged.replace(target / binary.name)
-    for name in ['Fonts', 'README.txt', 'LICENSE-LaserForge.txt', 'icon.png']:
+    for name in ['Fonts', 'README.txt', 'LICENSE-LaserForge.txt', 'icon.png', 'update.py', 'release.json']:
         entry = source / name
         if entry.is_dir():
             shutil.copytree(entry, target / name, dirs_exist_ok=True)
         elif entry.is_file():
             shutil.copy2(entry, target / name)
+    command = desktop_quote(target / binary.name)
+    if (target / 'update.py').is_file() and (target / 'release.json').is_file():
+        command = 'python3 ' + desktop_quote(target / 'update.py') + ' --launch'
     shortcut = '\n'.join([
         '[Desktop Entry]', 'Type=Application', 'Name=Laser Forge',
         'Comment=Design and run laser jobs offline',
-        'Exec=' + desktop_quote(target / binary.name),
+        'Exec=' + command,
         'Icon=' + str(target / 'icon.png'), 'Terminal=true',
         'Categories=Graphics;Engineering;', 'StartupNotify=false', '',
     ])
@@ -113,3 +116,4 @@ def main():
 
 if __name__ == '__main__':
     sys.exit(main())
+
