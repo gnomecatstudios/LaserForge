@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build portable ZIPs and Debian installers from the current production dist/."""
+"""Build portable ZIPs from the current production dist/."""
 import argparse
 import hashlib
 import json
@@ -27,44 +27,6 @@ def embed_windows_icon(launcher, go):
         '-ico', str(ROOT / 'public/favicon.ico'),
         '-o', 'resource_windows_amd64.syso', '-arch', 'amd64',
     ], cwd=launcher, env={**os.environ, 'GOTOOLCHAIN': 'local'}, check=True)
-
-
-def package_deb(app, name, architecture, version, output):
-    with tempfile.TemporaryDirectory(prefix='laserforge-deb-') as folder:
-        stage = Path(folder)
-        destination = stage / 'usr/lib/laserforge'
-        shutil.copytree(app, destination)
-        for path in destination.rglob('*'):
-            path.chmod(0o755 if path.is_dir() or path.name == 'LaserForge-Portable' else 0o644)
-        destination.chmod(0o755)
-        # Install a dedicated, content-versioned icon in the standard hicolor theme.
-        icon_bytes = (destination / 'icon.png').read_bytes()
-        icon_name = 'laserforge-' + hashlib.sha256(icon_bytes).hexdigest()[:12] + '.png'
-        icons = stage / 'usr/share/icons/hicolor/192x192/apps'
-        icons.mkdir(parents=True)
-        (icons / icon_name).write_bytes(icon_bytes)
-        applications = stage / 'usr/share/applications'
-        applications.mkdir(parents=True)
-        (applications / 'laserforge.desktop').write_text(
-            '[Desktop Entry]\nType=Application\nName=Laser Forge\n'
-            'Comment=Design and run laser jobs offline\n'
-            'Exec=/usr/lib/laserforge/LaserForge-Portable\n'
-            f'Icon=/usr/share/icons/hicolor/192x192/apps/{icon_name}\nTerminal=true\n'
-            'Categories=Graphics;Engineering;\nStartupNotify=false\n')
-        control = stage / 'DEBIAN'
-        control.mkdir()
-        (control / 'control').write_text(
-            f'Package: laserforge\nVersion: {version}\nArchitecture: {architecture}\n'
-            'Maintainer: Laser Forge contributors\nSection: graphics\nPriority: optional\n'
-            'Depends: xdg-utils\nRecommends: chromium\n'
-            'Homepage: https://github.com/gnomecatstudios/LaserForge.dev\n'
-            'Description: Offline browser-based laser design and control\n'
-            ' Includes the local launcher, web app and bundled font.\n')
-        stage.chmod(0o755)
-        for path in stage.rglob('*'):
-            path.chmod(0o755 if path.is_dir() or path.name == 'LaserForge-Portable' else 0o644)
-        subprocess.run(['dpkg-deb', '--root-owner-group', '--build', str(stage),
-                        str(output / f'LaserForge-Setup-{name}.deb')], check=True)
 
 
 def archive(folder, output):
@@ -131,8 +93,6 @@ def main():
             if system == 'linux':
                 shutil.copy2(ROOT / 'portable/setup.py', app / 'setup.py')
                 (app / 'setup.py').chmod(0o755)
-                package_deb(app, name, deb_arch, version, output)
-                artifacts.append(output / f'LaserForge-Setup-{name}.deb')
             zipped = output / f'LaserForge-Portable-{name}.zip'
             archive(package, zipped)
             artifacts.append(zipped)
@@ -152,7 +112,8 @@ def main():
     # Include every delivered package, including unchanged targets in a partial build.
     supported = {'LaserForge-Portable-source.zip'}
     supported.update(f'LaserForge-Portable-{name}.zip' for name, *_ in TARGETS)
-    supported.update(f'LaserForge-Setup-{name}.deb' for name, _, _, deb_arch in TARGETS if deb_arch)
+    for obsolete in output.glob('LaserForge-Setup-*.deb'):
+        obsolete.unlink()
     artifacts = sorted(path for path in output.iterdir() if path.name in supported)
     (output / 'SHA256SUMS.txt').write_text(''.join(
         f'{hashlib.sha256(path.read_bytes()).hexdigest()}  {path.name}\n' for path in artifacts))

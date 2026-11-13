@@ -41,7 +41,6 @@ def main():
     args = parser.parse_args()
     version = json.loads((ROOT / 'package.json').read_text())['version']
     files = [args.packages / f'LaserForge-Portable-{p}.zip' for p in PLATFORMS]
-    files += [args.packages / f'LaserForge-Setup-{p}.deb' for p in PLATFORMS[1:]]
     for path in files:
         if not path.is_file():
             parser.error(f'Missing package: {path}')
@@ -84,8 +83,7 @@ def main():
             'Includes the update download popup. Portable builds check on startup; '
             'About and the project menu offer Check for updates. The popup waits until '
             'the laser is disconnected. The Python update launcher downloads releases in the '
-            'background and applies them before the next launch. Native launchers and Debian '
-            'installations continue to use manual updates.\n\n'
+            'background and applies them before the next launch. Native launchers continue to use manual updates.\n\n'
             f'[Platform installation instructions](https://github.com/{REPO}#installation)\n\n'
             'Existing installations need one manual download to get the update popup. '
             'Save your project and close the app and launcher before replacing them.\n\n'

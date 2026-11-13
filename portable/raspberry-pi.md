@@ -21,22 +21,12 @@ and performance on older Pi models may limit the app's usability.
 
 ## Install from the desktop
 
-For `aarch64`, download [ARM64 setup](https://github.com/gnomecatstudios/LaserForgeDownloads/releases/latest/download/LaserForge-Setup-raspberry-pi-arm64.deb).
-For `armv7l` or `armv6l`, download [ARM32 setup](https://github.com/gnomecatstudios/LaserForgeDownloads/releases/latest/download/LaserForge-Setup-raspberry-pi-arm32.deb).
-Open the `.deb` with your system package installer, install it, and open
-**Laser Forge** from the application menu. Keep its launcher window open.
-A graphical package installer must be available; otherwise use
-`sudo apt install ./LaserForge-Setup-raspberry-pi-arm64.deb` from the download
-folder, substituting the correct package name.
-
-Alternatively, the ZIP includes `setup.py`, which installs for your user and
+The ZIP includes `setup.py`, which installs for your user and
 creates menu and desktop shortcuts. Open with Python 3 for the setup dialog,
 or run `python3 setup.py --cli` in its folder. The dialog needs Tkinter.
-Both installers register the bundled red Laser Forge icon in the standard
+The installer registers the bundled red Laser Forge icon in the standard
 Linux icon directory. If an older desktop shortcut shows a generic gear,
-reinstall using a new ZIP and `setup.py --cli` to recreate the shortcut. For a
-Debian installation, replace any old copied desktop shortcut with a fresh
-shortcut from the application menu. If the desktop still shows a cached icon,
+reinstall using a new ZIP and `setup.py --cli` to recreate the shortcut. If the desktop still shows a cached icon,
 log out and back in. These steps affect launchers, not browser-saved projects.
 
 ## Start without installing

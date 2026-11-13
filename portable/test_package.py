@@ -15,36 +15,6 @@ build = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(build)
 
 
-@unittest.skipUnless(shutil.which('dpkg-deb'), 'Debian packaging tools required')
-class DebianPackageTests(unittest.TestCase):
-    def test_package_architecture_shortcut_and_permissions(self):
-        with tempfile.TemporaryDirectory() as folder:
-            root = Path(folder)
-            app = root / 'app'
-            app.mkdir()
-            (app / 'LaserForge-Portable').write_bytes(b'launcher fixture')
-            (app / 'icon.png').write_bytes(b'icon')
-            output = root / 'output'
-            output.mkdir()
-            build.package_deb(app, 'raspberry-pi-arm64', 'arm64', '0.1.0+test', output)
-            package = output / 'LaserForge-Setup-raspberry-pi-arm64.deb'
-            architecture = subprocess.check_output(['dpkg-deb', '-f', str(package), 'Architecture'], text=True).strip()
-            self.assertEqual(architecture, 'arm64')
-            extracted = root / 'extracted'
-            subprocess.run(['dpkg-deb', '-x', str(package), str(extracted)], check=True)
-            binary = extracted / 'usr/lib/laserforge/LaserForge-Portable'
-            self.assertEqual(binary.stat().st_mode & 0o777, 0o755)
-            for name in ['usr', 'usr/lib', 'usr/lib/laserforge', 'usr/share/applications']:
-                self.assertEqual((extracted / name).stat().st_mode & 0o777, 0o755)
-            desktop = extracted / 'usr/share/applications/laserforge.desktop'
-            self.assertIn('Exec=/usr/lib/laserforge/LaserForge-Portable', desktop.read_text())
-            icon_name = 'laserforge-' + hashlib.sha256(b'icon').hexdigest()[:12] + '.png'
-            icon_path = '/usr/share/icons/hicolor/192x192/apps/' + icon_name
-            self.assertIn('Icon=' + icon_path, desktop.read_text())
-            self.assertEqual((extracted / icon_path.lstrip('/')).read_bytes(), b'icon')
-            self.assertEqual((extracted / 'usr/lib/laserforge/icon.png').read_bytes(), b'icon')
-
-
 class UpdaterPackagingTests(unittest.TestCase):
     def test_supported_archives_include_updater_and_release_metadata(self):
         with tempfile.TemporaryDirectory() as folder:
@@ -72,7 +42,7 @@ class UpdaterPackagingTests(unittest.TestCase):
                 Path(command[command.index('-o') + 1]).write_bytes(b'compiled fixture')
             output = root / 'output'
             with patch.object(build, 'ROOT', root), patch.object(build, 'embed_windows_icon'), \
-                    patch.object(build, 'package_deb'), patch.object(build.subprocess, 'run', side_effect=compiler), \
+                    patch.object(build.subprocess, 'run', side_effect=compiler), \
                     patch('sys.argv', ['build-portable.py', '--revision', 'test', '--output', str(output)]):
                 build.main()
             self.assertEqual(len(build.TARGETS), 4)

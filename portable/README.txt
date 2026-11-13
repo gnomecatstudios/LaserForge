@@ -20,11 +20,9 @@ Version 0.2.1 and later check on startup. About and the project menu also offer
 Check for updates. The popup waits until the laser is disconnected. Download
 the update or choose Later. The popup does not install or restart automatically.
 Save your project, close the app and launcher, then extract the new ZIP into
-a new folder. Linux users can rerun setup.py or install the newer .deb.
 Keep the same browser profile and local address to retain autosaves.
 
 EASY SETUP (RASPBERRY PI / LINUX)
-The .deb download installs through your system package installer and adds
 Laser Forge to the application menu. Choose ARM64 for aarch64 Raspberry Pi OS,
 ARM32 for armv7l/armv6l, or x64 for Intel/AMD Linux.
 The portable ZIP also includes setup.py: open with Python 3 for a setup dialog,

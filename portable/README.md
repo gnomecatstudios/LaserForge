@@ -25,20 +25,7 @@ Press Ctrl+C in the launcher window to stop.
 
 ## Easy setup on Raspberry Pi and Linux
 
-For Raspberry Pi OS 64-bit (`uname -m` reports `aarch64`), download
-[LaserForge Setup for Raspberry Pi ARM64](https://github.com/gnomecatstudios/LaserForgeDownloads/releases/latest/download/LaserForge-Setup-raspberry-pi-arm64.deb).
-For 32-bit Pi OS, use [ARM32 setup](https://github.com/gnomecatstudios/LaserForgeDownloads/releases/latest/download/LaserForge-Setup-raspberry-pi-arm32.deb).
-For an Intel/AMD Linux desktop, use [Linux x64 setup](https://github.com/gnomecatstudios/LaserForgeDownloads/releases/latest/download/LaserForge-Setup-linux-x64.deb).
-
-Open the `.deb` in your system's package installer and choose Install. It installs
-the app and adds **Laser Forge** to the application menu. Your desktop must have a
-package-installer application configured; if double-clicking opens an archive
-viewer, use Open With → your package installer. On systems without a graphical
-package installer, run `sudo apt install ./LaserForge-Setup-raspberry-pi-arm64.deb`
-from the download folder (substitute your package name). A desktop and a compatible
-browser must already be installed. The launcher window stays open while the app runs.
-
-The Linux portable ZIPs also include `setup.py`. Open it with Python 3 to use the
+The Linux portable ZIPs include `setup.py`. Open it with Python 3 to use the
 setup dialog, or run `python3 setup.py --cli` from the extracted folder. It checks
 the processor architecture, installs under `~/.local/share/laserforge`, makes the
 launcher executable, and creates menu and desktop shortcuts. It needs no administrator
@@ -47,7 +34,7 @@ library only. A desktop shortcut may require **Allow Launching** on first use.
 
 To remove a Python setup installation, delete `~/.local/share/laserforge`,
 `~/.local/share/applications/laserforge.desktop`, and the **Laser Forge.desktop**
-shortcut. Remove a Debian installation through the system package manager.
+shortcut.
 
 ## Updates
 
@@ -83,7 +70,7 @@ Commands for manual use:
 Opening `update.py` without arguments launches the app with background updates,
 just like `python3 update.py --launch` (or `py -3 update.py --launch` on Windows).
 Run it from an extracted portable package containing `release.json` and the native
-launcher. Debian installations use the system package manager instead.
+launcher.
 
 ```sh
 python3 update.py --check
@@ -93,9 +80,7 @@ python3 update.py --apply
 ```
 
 Running the native executable directly keeps the existing manual-update behavior.
-**About → Check for updates** remains a manual download option. `.deb` installs
-continue to upgrade through the system package manager; the Python helper refuses
-system installation paths. It does not request administrator access.
+**About → Check for updates** remains a manual download option. The Python helper refuses system installation paths. It does not request administrator access.
 
 Existing users need one manual download/install of a release containing the new
 helper and `release.json`. Existing packages cannot gain this feature remotely.
@@ -132,8 +117,7 @@ pnpm build
 python3 scripts/build-portable.py
 ```
 
-The script cross-compiles all four supported ZIPs, builds three Debian installers using
-`dpkg-deb`, and refreshes SHA-256 checksums. Use `--target raspberry-pi-arm64`
+The script cross-compiles all four supported ZIPs and refreshes SHA-256 checksums. Use `--target raspberry-pi-arm64`
 to build only that target. Set `--go /path/to/go` to choose the compiler.
 
 For manual cross compilation, add `GOOS` and `GOARCH` before `go build`:
@@ -156,11 +140,8 @@ The refreshed Linux ZIP was extracted, installed with Python setup into an isola
 user-data directory, and launched. Its browser-open request was verified. In fresh
 Chromium with external requests blocked, the bundled app created a rectangle and
 opened its four nodes on double-click without page errors. Installer tests cover
-architecture mismatch, permissions, shortcuts, fonts, reinstall and Debian layout.
+architecture mismatch, permissions, shortcuts, fonts, and reinstall.
 Run them with `python3 -m unittest discover -s portable -p 'test_*.py'`.
-
-The new Raspberry Pi Debian packages are cross-compiled; package architecture and
-permissions are checked here. They still need an installation test on actual Pi OS.
 
 The Linux launcher was run in Chromium with all non-loopback requests blocked
 and a fresh browser profile. The app loaded, created a project, and connected
@@ -183,5 +164,4 @@ python3 scripts/publish-downloads.py --packages portable/downloads
 python3 scripts/publish-downloads.py --packages portable/downloads --publish
 ```
 
-The first command validates the packages without publishing. The second requires authenticated GitHub CLI access and creates a public release with four native ZIPs, three Debian installers, and their checksums. It excludes the source ZIP and uploads only the public downloads README, logo and license to the downloads repository. It leaves the source repository private.
 

@@ -76,8 +76,8 @@ def main():
     mark = (ROOT / 'public/mark.png').read_bytes()
     ico = (ROOT / 'public/favicon.ico').read_bytes()
     expected_windows = set(ico_images(ico))
-    packages = sorted([*downloads.glob('*.zip'), *downloads.glob('*.deb')])
-    assert len(packages) == 8, 'Expected four portable ZIPs, one source ZIP, and three Debian packages'
+    packages = sorted(downloads.glob('*.zip'))
+    assert len(packages) == 5, 'Expected four portable ZIPs and one source ZIP'
     sums = dict(line.split('  ', 1)[::-1] for line in (downloads / 'SHA256SUMS.txt').read_text().splitlines())
     assert set(sums) == {path.name for path in packages}, 'Checksum manifest differs from downloads'
     for path in packages:
@@ -96,17 +96,6 @@ def main():
                     assert mark in binary, 'Windows embedded web logo differs'
                 else:
                     assert mark in bundle.read(prefix + 'LaserForge-Portable'), path.name
-        else:
-            with tempfile.TemporaryDirectory(prefix='laserforge-brand-check-') as folder:
-                subprocess.run(['dpkg-deb', '-x', str(path), folder], check=True)
-                root = Path(folder)
-                assert (root / 'usr/lib/laserforge/icon.png').read_bytes() == icon
-                assert mark in (root / 'usr/lib/laserforge/LaserForge-Portable').read_bytes()
-                desktop = (root / 'usr/share/applications/laserforge.desktop').read_text()
-                icon_name = 'laserforge-' + hashlib.sha256(icon).hexdigest()[:12] + '.png'
-                icon_path = '/usr/share/icons/hicolor/192x192/apps/' + icon_name
-                assert 'Icon=' + icon_path + '\n' in desktop
-                assert (root / icon_path.lstrip('/')).read_bytes() == icon
         print('Verified', path.name)
 
 

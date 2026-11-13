@@ -23,15 +23,15 @@ This is the development repository. [Development releases and downloads](https:/
 The [public Laser Forge downloads repository](https://github.com/gnomecatstudios/LaserForgeDownloads) has the latest releases and installation instructions for every platform. No GitHub login is required to download the app.
 
 1. Choose a download below, or follow [development setup](#development) to run from source.
-2. Install the Debian package, or extract the portable ZIP and run its launcher. Open Laser Forge in desktop Chrome or Edge for machine control.
+2. Extract the portable ZIP and run its launcher. Open Laser Forge in desktop Chrome or Edge for machine control.
 3. Create a project, import your artwork, and choose **Connect laser**. Use the virtual machine to practise before connecting hardware.
 
 | Platform | Download |
 | --- | --- |
 | Windows x64 | [Portable ZIP](https://github.com/gnomecatstudios/LaserForgeDownloads/releases/latest/download/LaserForge-Portable-windows-x64.zip) |
-| Linux x64 | [Debian installer](https://github.com/gnomecatstudios/LaserForgeDownloads/releases/latest/download/LaserForge-Setup-linux-x64.deb) · [Portable ZIP](https://github.com/gnomecatstudios/LaserForgeDownloads/releases/latest/download/LaserForge-Portable-linux-x64.zip) |
-| Raspberry Pi OS 64-bit (ARM64) | [Debian installer](https://github.com/gnomecatstudios/LaserForgeDownloads/releases/latest/download/LaserForge-Setup-raspberry-pi-arm64.deb) · [Portable ZIP](https://github.com/gnomecatstudios/LaserForgeDownloads/releases/latest/download/LaserForge-Portable-raspberry-pi-arm64.zip) |
-| Raspberry Pi OS 32-bit (ARMv6+) | [Debian installer](https://github.com/gnomecatstudios/LaserForgeDownloads/releases/latest/download/LaserForge-Setup-raspberry-pi-arm32.deb) · [Portable ZIP](https://github.com/gnomecatstudios/LaserForgeDownloads/releases/latest/download/LaserForge-Portable-raspberry-pi-arm32.zip) |
+| Linux x64 | [Portable ZIP](https://github.com/gnomecatstudios/LaserForgeDownloads/releases/latest/download/LaserForge-Portable-linux-x64.zip) |
+| Raspberry Pi OS 64-bit (ARM64) | [Portable ZIP](https://github.com/gnomecatstudios/LaserForgeDownloads/releases/latest/download/LaserForge-Portable-raspberry-pi-arm64.zip) |
+| Raspberry Pi OS 32-bit (ARMv6+) | [Portable ZIP](https://github.com/gnomecatstudios/LaserForgeDownloads/releases/latest/download/LaserForge-Portable-raspberry-pi-arm32.zip) |
 
 See the [portable setup guide](./portable/README.md) for launch instructions, shortcuts, architecture selection, and troubleshooting. Verify downloads with the [SHA-256 checksums](https://github.com/gnomecatstudios/LaserForgeDownloads/releases/latest/download/SHA256SUMS.txt).
 
@@ -44,30 +44,14 @@ The launcher serves the app locally at `http://127.0.0.1:5190/`; keep it running
 
 ### Linux x64
 
-On Debian or Ubuntu, [download the Linux x64 installer](https://github.com/gnomecatstudios/LaserForgeDownloads/releases/latest/download/LaserForge-Setup-linux-x64.deb), open it with your system package installer, and launch **Laser Forge** from the application menu. From the download folder, you can also install with:
-
-```sh
-sudo apt install ./LaserForge-Setup-linux-x64.deb
-```
-
-For other distributions, [download the Linux portable ZIP](https://github.com/gnomecatstudios/LaserForgeDownloads/releases/latest/download/LaserForge-Portable-linux-x64.zip), extract it, and run `chmod +x LaserForge-Portable` followed by `./LaserForge-Portable` in the extracted folder. For menu and desktop shortcuts, run `python3 setup.py` or `python3 setup.py --cli`; Python setup is optional.
+[download the Linux portable ZIP](https://github.com/gnomecatstudios/LaserForgeDownloads/releases/latest/download/LaserForge-Portable-linux-x64.zip), extract it, and run `chmod +x LaserForge-Portable` followed by `./LaserForge-Portable` in the extracted folder. For menu and desktop shortcuts, run `python3 setup.py` or `python3 setup.py --cli`; Python setup is optional.
 
 ### Raspberry Pi OS
 
 Run `uname -m` in Terminal to choose the matching package:
 
-- `aarch64`: [64-bit ARM64 installer](https://github.com/gnomecatstudios/LaserForgeDownloads/releases/latest/download/LaserForge-Setup-raspberry-pi-arm64.deb) or [portable ZIP](https://github.com/gnomecatstudios/LaserForgeDownloads/releases/latest/download/LaserForge-Portable-raspberry-pi-arm64.zip).
-- `armv6l`, `armv7l`, or `armv8l`: [32-bit ARM installer](https://github.com/gnomecatstudios/LaserForgeDownloads/releases/latest/download/LaserForge-Setup-raspberry-pi-arm32.deb) or [portable ZIP](https://github.com/gnomecatstudios/LaserForgeDownloads/releases/latest/download/LaserForge-Portable-raspberry-pi-arm32.zip).
-
-Open the `.deb` with the system package installer, then launch **Laser Forge** from the application menu. Alternatively, from the download folder, run the command for your architecture:
-
-```sh
-# 64-bit Raspberry Pi OS
-sudo apt install ./LaserForge-Setup-raspberry-pi-arm64.deb
-
-# 32-bit Raspberry Pi OS
-sudo apt install ./LaserForge-Setup-raspberry-pi-arm32.deb
-```
+- `aarch64`: [portable ZIP](https://github.com/gnomecatstudios/LaserForgeDownloads/releases/latest/download/LaserForge-Portable-raspberry-pi-arm64.zip).
+- `armv6l`, `armv7l`, or `armv8l`: [portable ZIP](https://github.com/gnomecatstudios/LaserForgeDownloads/releases/latest/download/LaserForge-Portable-raspberry-pi-arm32.zip).
 
 For a portable ZIP, extract it and use the same launcher commands as Linux. A desktop environment and a compatible browser must already be installed. See the [Raspberry Pi guide](./portable/raspberry-pi.md) for architecture and USB access troubleshooting.
 
