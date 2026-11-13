@@ -1,6 +1,11 @@
 name: Build portable packages
 on:
   workflow_dispatch:
+    inputs:
+      publish:
+        description: Publish verified ZIPs to LaserForgeDownloads
+        type: boolean
+        default: false
   push:
     branches: [main]
 permissions:
@@ -33,3 +38,13 @@ jobs:
             portable/downloads/*.zip
             portable/downloads/SHA256SUMS.txt
           if-no-files-found: error
+      - name: Publish verified portable release
+        if: github.event_name == 'workflow_dispatch' && inputs.publish && github.ref == 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ secrets.LASERFORGE_DOWNLOADS_TOKEN }}
+        run: |
+          if [ -z "$GH_TOKEN" ]; then
+            echo 'Configure LASERFORGE_DOWNLOADS_TOKEN with write access to LaserForgeDownloads.' >&2
+            exit 1
+          fi
+          python3 scripts/publish-downloads.py --packages portable/downloads --publish
