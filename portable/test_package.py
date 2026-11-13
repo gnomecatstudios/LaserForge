@@ -3,6 +3,7 @@ import plistlib
 from pathlib import Path
 import shutil
 import subprocess
+import sys
 import tempfile
 import unittest
 from unittest.mock import patch
@@ -78,6 +79,7 @@ class UpdaterPackagingTests(unittest.TestCase):
                     self.assertIn(prefix + entry, package.namelist())
 
 
+@unittest.skipUnless(sys.platform == 'darwin', 'macOS app bundle packaging is no longer maintained in CI')
 class MacApplicationTests(unittest.TestCase):
     def test_finder_bundle_keeps_cli_and_uses_brand_icon(self):
         with tempfile.TemporaryDirectory(prefix='laser forge ') as folder:
@@ -100,4 +102,3 @@ class MacApplicationTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
-
