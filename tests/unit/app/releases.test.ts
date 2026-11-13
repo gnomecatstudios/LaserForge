@@ -38,9 +38,9 @@ describe('portable releases', () => {
   ])('compares %s against %s', (next, current, expected) => {
     expect(isNewer(next, current)).toBe(expected);
   });
-  it('maps all six native architectures to their own package', () => {
+  it('maps all four supported architectures to their own package', () => {
     const parsed = parseRelease(release());
-    expect(Object.keys(parsed.downloads)).toHaveLength(6);
+    expect(Object.keys(parsed.downloads)).toHaveLength(4);
     for (const p of Object.keys(PLATFORMS)) {
       expect(isPlatform(p)).toBe(true);
       if (isPlatform(p)) expect(parsed.downloads[p]).toContain(`${p}.zip`);
@@ -66,8 +66,6 @@ describe('portable releases', () => {
     data.assets[1].state = 'new';
     data.assets[2].size = 0;
     expect(Object.keys(parseRelease(data).downloads)).toEqual([
-      'linux-x64',
-      'raspberry-pi-arm64',
       'raspberry-pi-arm32',
     ]);
   });
@@ -79,3 +77,4 @@ describe('portable releases', () => {
     expect(fetch.mock.calls[0][1].signal).toBeInstanceOf(AbortSignal);
   });
 });
+

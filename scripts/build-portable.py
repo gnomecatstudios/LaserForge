@@ -18,8 +18,6 @@ TARGETS = [
     ('raspberry-pi-arm64', 'linux', 'arm64', 'arm64'),
     ('raspberry-pi-arm32', 'linux', 'arm', 'armhf'),
     ('windows-x64', 'windows', 'amd64', None),
-    ('macos-apple-silicon', 'darwin', 'arm64', None),
-    ('macos-intel', 'darwin', 'amd64', None),
 ]
 
 
@@ -157,6 +155,10 @@ def main():
             shutil.copy2(ROOT / 'public/icon-192.png', app / 'icon.png')
             shutil.copy2(ROOT / 'public/favicon.ico', app / 'LaserForge.ico')
             (app / 'VERSION.txt').write_text(build + '\n')
+            shutil.copy2(ROOT / 'portable/update.py', app / 'update.py')
+            (app / 'release.json').write_text(json.dumps({'platform': name, 'version': APP_VERSION}) + '\n')
+            if system == 'windows':
+                shutil.copy2(ROOT / 'portable/Start-LaserForge.cmd', app / 'Start-LaserForge.cmd')
             if system == 'linux':
                 shutil.copy2(ROOT / 'portable/setup.py', app / 'setup.py')
                 (app / 'setup.py').chmod(0o755)
@@ -188,3 +190,4 @@ def main():
 
 if __name__ == '__main__':
     main()
+

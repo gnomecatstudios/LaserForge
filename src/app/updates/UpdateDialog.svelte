@@ -46,7 +46,8 @@
     {#if updates.platform && !download}<p>This release has no package for the selected platform.</p>{/if}
     <p>
       Save your project, then close Laser Forge and its launcher before replacing the app. Extract the ZIP
-      into a new folder and open the launcher. Nothing installs or restarts automatically.
+      into a new folder and open the launcher. If you use the Python update launcher, updates download
+      in the background and install the next time you launch. The native launcher uses manual updates.
     </p>
     <a class="notes" href={updates.release.url} target="_blank" rel="noopener noreferrer"
       >Release notes and installation instructions</a
@@ -99,3 +100,4 @@
     text-decoration: none;
   }
 </style>
+

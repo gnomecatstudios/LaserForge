@@ -4,8 +4,6 @@ export const RELEASE_API = `https://api.github.com/repos/${DOWNLOAD_REPO}/releas
 
 export const PLATFORMS = {
   'windows-x64': 'Windows · 64-bit',
-  'macos-apple-silicon': 'macOS · Apple silicon',
-  'macos-intel': 'macOS · Intel',
   'linux-x64': 'Linux · x64',
   'raspberry-pi-arm64': 'Linux / Raspberry Pi · ARM64',
   'raspberry-pi-arm32': 'Linux / Raspberry Pi · ARM32',
@@ -87,3 +85,4 @@ export async function fetchRelease(): Promise<Release> {
   if (!response.ok) throw new Error(`Update check failed (${response.status})`);
   return parseRelease(await response.json());
 }
+
