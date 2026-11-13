@@ -13,7 +13,8 @@ import (
 	"time"
 )
 
-//go:embed dist
+// Include underscore-prefixed Vite chunks as well as ordinary app assets.
+//go:embed all:dist
 var assets embed.FS
 
 func main() {

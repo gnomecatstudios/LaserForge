@@ -139,6 +139,14 @@ Include this README, the app license, and the Fonts folder when distributing.
 
 ## Validation
 
+Every native build verifies that its executable embeds every production web asset,
+including the complete editor, text/layout tools, machine controls, workers, fonts
+and WebAssembly. Windows uses the same app payload as Linux and Raspberry Pi.
+The build also checks offline font and updater companions. Run the check separately
+with `python3 scripts/verify-portable-parity.py` after `pnpm build`.
+Branding is checked with `python3 scripts/verify-portable-branding.py`, including
+the Windows executable icon and embedded web logo.
+
 The refreshed Linux ZIP was extracted, installed with Python setup into an isolated
 user-data directory, and launched. Its browser-open request was verified. In fresh
 Chromium with external requests blocked, the bundled app created a rectangle and

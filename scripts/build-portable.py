@@ -150,6 +150,13 @@ def main():
     artifacts = sorted(path for path in output.iterdir() if path.name in supported)
     (output / 'SHA256SUMS.txt').write_text(''.join(
         f'{hashlib.sha256(path.read_bytes()).hexdigest()}  {path.name}\n' for path in artifacts))
+    # Reject stale or incomplete native app payloads before reporting success.
+    subprocess.run([
+        'python3', str(ROOT / 'scripts/verify-portable-parity.py'),
+        '--downloads', str(output),
+        *[arg for target, *_ in TARGETS if not args.target or target in args.target
+          for arg in ('--target', target)],
+    ], check=True)
     print(f'Built {build}. Packages: {output}')
 
 

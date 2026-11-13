@@ -61,6 +61,10 @@ class UpdaterPackagingTests(unittest.TestCase):
             (root / 'portable/Fonts').mkdir(exist_ok=True)
             (root / 'portable/Fonts/font.ttf').write_bytes(b'font')
             def compiler(command, **kwargs):
+                if command[0] == 'python3':
+                    self.assertEqual(Path(command[1]).name, 'verify-portable-parity.py')
+                    self.assertEqual(command.count('--target'), 4)
+                    return
                 Path(command[command.index('-o') + 1]).write_bytes(b'compiled fixture')
             output = root / 'output'
             with patch.object(build, 'ROOT', root), patch.object(build, 'embed_windows_icon'), \
