@@ -97,8 +97,12 @@ def latest(current, platform_id):
         if len(matches) != 1:
             raise ValueError(f'Missing or invalid release asset: {name}')
         return matches[0]
+    short = {'raspberry-pi-arm64': 'RPi-ARM64', 'raspberry-pi-arm32': 'RPi-ARM32'}.get(platform_id, platform_id)
+    name = f'LaserForge-Portable-{short}.zip'
+    if not any(a.get('name') == name for a in assets):
+        name = f'LaserForge-Portable-{platform_id}.zip'
     return {'version': candidate, 'platform': platform_id,
-            'package': asset(f'LaserForge-Portable-{platform_id}.zip'),
+            'package': asset(name),
             'checksums': asset('SHA256SUMS.txt')}
 
 

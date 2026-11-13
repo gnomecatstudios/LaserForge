@@ -54,7 +54,9 @@ export function parseRelease(value: unknown): Release {
   if (data.html_url !== `${base}/tag/${tag}`) throw new Error('Invalid release URL');
   const downloads: Release['downloads'] = {};
   for (const platform of Object.keys(PLATFORMS) as Platform[]) {
-    const name = `LaserForge-Portable-${platform}.zip`;
+    const short = platform === 'raspberry-pi-arm64' ? 'RPi-ARM64' : platform === 'raspberry-pi-arm32' ? 'RPi-ARM32' : platform;
+    for (const suffix of new Set([short, platform])) {
+    const name = `LaserForge-Portable-${suffix}.zip`;
     const url = `${base}/download/${tag}/${name}`;
     if (
       data.assets.some((asset: unknown) => {
@@ -69,7 +71,11 @@ export function parseRelease(value: unknown): Release {
         );
       })
     )
-      downloads[platform] = url;
+      {
+        downloads[platform] = url;
+        break;
+      }
+    }
   }
   if (!Object.keys(downloads).length) throw new Error('No portable downloads');
   return { version: tag.slice(1), url: `${base}/tag/${tag}`, downloads };

@@ -10,8 +10,8 @@ be installed for USB machine control. The browser is not bundled.
 | --- | --- |
 | Windows x64 | [Portable ZIP](https://github.com/gnomecatstudios/LaserForgeDownloads/releases/latest/download/LaserForge-Portable-windows-x64.zip) |
 | Linux x64 | [Portable ZIP](https://github.com/gnomecatstudios/LaserForgeDownloads/releases/latest/download/LaserForge-Portable-linux-x64.zip) |
-| Raspberry Pi OS 64-bit (ARM64) | [Portable ZIP](https://github.com/gnomecatstudios/LaserForgeDownloads/releases/latest/download/LaserForge-Portable-raspberry-pi-arm64.zip) |
-| Raspberry Pi OS 32-bit (ARMv6+) | [Portable ZIP](https://github.com/gnomecatstudios/LaserForgeDownloads/releases/latest/download/LaserForge-Portable-raspberry-pi-arm32.zip) |
+| Raspberry Pi OS 64-bit (ARM64) | [Portable ZIP](https://github.com/gnomecatstudios/LaserForgeDownloads/releases/latest/download/LaserForge-Portable-RPi-ARM64.zip) |
+| Raspberry Pi OS 32-bit (ARMv6+) | [Portable ZIP](https://github.com/gnomecatstudios/LaserForgeDownloads/releases/latest/download/LaserForge-Portable-RPi-ARM32.zip) |
 
 [SHA-256 checksums](https://github.com/gnomecatstudios/LaserForgeDownloads/releases/latest/download/SHA256SUMS.txt)
 

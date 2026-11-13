@@ -29,6 +29,10 @@ def embed_windows_icon(launcher, go):
     ], cwd=launcher, env={**os.environ, 'GOTOOLCHAIN': 'local'}, check=True)
 
 
+def package_name(platform):
+    return 'LaserForge-Portable-' + {'raspberry-pi-arm64': 'RPi-ARM64', 'raspberry-pi-arm32': 'RPi-ARM32'}.get(platform, platform) + '.zip'
+
+
 def archive(folder, output):
     with zipfile.ZipFile(output, 'w', zipfile.ZIP_DEFLATED) as bundle:
         for entry in sorted(folder.rglob('*')):
@@ -93,7 +97,7 @@ def main():
             if system == 'linux':
                 shutil.copy2(ROOT / 'portable/setup.py', app / 'setup.py')
                 (app / 'setup.py').chmod(0o755)
-            zipped = output / f'LaserForge-Portable-{name}.zip'
+            zipped = output / package_name(name)
             archive(package, zipped)
             artifacts.append(zipped)
         (launcher / 'dist/portable-platform.json').unlink(missing_ok=True)
@@ -111,7 +115,10 @@ def main():
         artifacts.append(zipped)
     # Include every delivered package, including unchanged targets in a partial build.
     supported = {'LaserForge-Portable-source.zip'}
-    supported.update(f'LaserForge-Portable-{name}.zip' for name, *_ in TARGETS)
+    supported.update(package_name(name) for name, *_ in TARGETS)
+    for legacy in ('LaserForge-Portable-raspberry-pi-arm64.zip', 'LaserForge-Portable-raspberry-pi-arm32.zip'):
+        if (output / package_name(legacy.removeprefix('LaserForge-Portable-').removesuffix('.zip'))).exists():
+            (output / legacy).unlink(missing_ok=True)
     for obsolete in output.glob('LaserForge-Setup-*.deb'):
         obsolete.unlink()
     artifacts = sorted(path for path in output.iterdir() if path.name in supported)

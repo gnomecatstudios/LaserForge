@@ -30,8 +30,8 @@ The [public Laser Forge downloads repository](https://github.com/gnomecatstudios
 | --- | --- |
 | Windows x64 | [Portable ZIP](https://github.com/gnomecatstudios/LaserForgeDownloads/releases/latest/download/LaserForge-Portable-windows-x64.zip) |
 | Linux x64 | [Portable ZIP](https://github.com/gnomecatstudios/LaserForgeDownloads/releases/latest/download/LaserForge-Portable-linux-x64.zip) |
-| Raspberry Pi OS 64-bit (ARM64) | [Portable ZIP](https://github.com/gnomecatstudios/LaserForgeDownloads/releases/latest/download/LaserForge-Portable-raspberry-pi-arm64.zip) |
-| Raspberry Pi OS 32-bit (ARMv6+) | [Portable ZIP](https://github.com/gnomecatstudios/LaserForgeDownloads/releases/latest/download/LaserForge-Portable-raspberry-pi-arm32.zip) |
+| Raspberry Pi OS 64-bit (ARM64) | [Portable ZIP](https://github.com/gnomecatstudios/LaserForgeDownloads/releases/latest/download/LaserForge-Portable-RPi-ARM64.zip) |
+| Raspberry Pi OS 32-bit (ARMv6+) | [Portable ZIP](https://github.com/gnomecatstudios/LaserForgeDownloads/releases/latest/download/LaserForge-Portable-RPi-ARM32.zip) |
 
 See the [portable setup guide](./portable/README.md) for launch instructions, shortcuts, architecture selection, and troubleshooting. Verify downloads with the [SHA-256 checksums](https://github.com/gnomecatstudios/LaserForgeDownloads/releases/latest/download/SHA256SUMS.txt).
 
@@ -50,8 +50,8 @@ The launcher serves the app locally at `http://127.0.0.1:5190/`; keep it running
 
 Run `uname -m` in Terminal to choose the matching package:
 
-- `aarch64`: [portable ZIP](https://github.com/gnomecatstudios/LaserForgeDownloads/releases/latest/download/LaserForge-Portable-raspberry-pi-arm64.zip).
-- `armv6l`, `armv7l`, or `armv8l`: [portable ZIP](https://github.com/gnomecatstudios/LaserForgeDownloads/releases/latest/download/LaserForge-Portable-raspberry-pi-arm32.zip).
+- `aarch64`: [portable ZIP](https://github.com/gnomecatstudios/LaserForgeDownloads/releases/latest/download/LaserForge-Portable-RPi-ARM64.zip).
+- `armv6l`, `armv7l`, or `armv8l`: [portable ZIP](https://github.com/gnomecatstudios/LaserForgeDownloads/releases/latest/download/LaserForge-Portable-RPi-ARM32.zip).
 
 For a portable ZIP, extract it and use the same launcher commands as Linux. A desktop environment and a compatible browser must already be installed. See the [Raspberry Pi guide](./portable/raspberry-pi.md) for architecture and USB access troubleshooting.
 

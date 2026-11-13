@@ -47,7 +47,7 @@ class UpdaterPackagingTests(unittest.TestCase):
                 build.main()
             self.assertEqual(len(build.TARGETS), 4)
             for platform, system, _, _ in build.TARGETS:
-                with zipfile.ZipFile(output / f'LaserForge-Portable-{platform}.zip') as package:
+                with zipfile.ZipFile(output / build.package_name(platform)) as package:
                     prefix = 'LaserForge-Portable/'
                     self.assertIn(prefix + 'update.py', package.namelist())
                     self.assertEqual(json.loads(package.read(prefix + 'release.json')),

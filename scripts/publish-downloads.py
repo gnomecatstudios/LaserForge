@@ -40,7 +40,7 @@ def main():
     parser.add_argument('--publish', action='store_true', help='create public repository/release')
     args = parser.parse_args()
     version = json.loads((ROOT / 'package.json').read_text())['version']
-    files = [args.packages / f'LaserForge-Portable-{p}.zip' for p in PLATFORMS]
+    files = [args.packages / ('LaserForge-Portable-' + {'raspberry-pi-arm64': 'RPi-ARM64', 'raspberry-pi-arm32': 'RPi-ARM32'}.get(p, p) + '.zip') for p in PLATFORMS]
     for path in files:
         if not path.is_file():
             parser.error(f'Missing package: {path}')
