@@ -10,15 +10,15 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/gnomecatstudios/LaserForge.dev">Source code</a> ·
+  <a href="https://github.com/gnomecatstudios/LaserForgeDev">Source code</a> ·
   <a href="https://github.com/gnomecatstudios/LaserForgeDownloads">Public downloads</a> ·
-  <a href="https://github.com/gnomecatstudios/LaserForge.dev/issues">Report an issue</a> ·
+  <a href="https://github.com/gnomecatstudios/LaserForgeDev/issues">Report an issue</a> ·
   <a href="./portable/README.md">Run locally</a>
 </p>
 
 ## Development downloads and getting started
 
-This is the development repository. [Development releases and downloads](https://github.com/gnomecatstudios/LaserForge.dev/releases) are hosted here. For public downloads, visit [Laser Forge downloads](https://github.com/gnomecatstudios/laserforge-downloads).
+This is the development repository. [Development releases and downloads](https://github.com/gnomecatstudios/LaserForgeDev/releases) are hosted here. For public downloads, visit [Laser Forge downloads](https://github.com/gnomecatstudios/LaserForgeDownloads).
 
 The [public Laser Forge downloads repository](https://github.com/gnomecatstudios/LaserForgeDownloads) has the latest releases and installation instructions for every platform. No GitHub login is required to download the app.
 
@@ -156,8 +156,8 @@ Laser Forge is a static Svelte 5 + TypeScript app built with Vite. There is no b
 
 ```sh
 corepack enable          # provides the pinned pnpm version
-git clone https://github.com/gnomecatstudios/LaserForge.dev.git
-cd laserforge.app
+git clone https://github.com/gnomecatstudios/LaserForgeDev.git
+cd LaserForgeDev
 pnpm install --frozen-lockfile
 pnpm dev                 # http://localhost:5190
 ```
@@ -193,11 +193,11 @@ Design decisions are logged in [design decisions](./docs/decisions.md).
 
 ### Deploying
 
-The [Pages workflow](./.github/workflows/pages.yml) builds and deploys pushes to `main` when GitHub Pages is configured to use GitHub Actions. Find a successful deployment’s URL in the repository’s [deployment workflow runs](https://github.com/gnomecatstudios/LaserForge.dev/actions/workflows/pages.yml). A live Laser Forge URL has not been confirmed yet. The build uses relative paths, so it also works from any other static host.
+The [Pages workflow](./.github/workflows/pages.yml) builds and deploys pushes to `main` when GitHub Pages is configured to use GitHub Actions. Find a successful deployment’s URL in the repository’s [deployment workflow runs](https://github.com/gnomecatstudios/LaserForgeDev/actions/workflows/pages.yml). A live Laser Forge URL has not been confirmed yet. The build uses relative paths, so it also works from any other static host.
 
 ## Contributing
 
-Bug reports and pull requests are welcome. For hardware problems, open the console, press **Download log** and attach the file to your [issue](https://github.com/gnomecatstudios/LaserForge.dev/issues). For questions and suggestions, open an issue in this fork.
+Bug reports and pull requests are welcome. For hardware problems, open the console, press **Download log** and attach the file to your [issue](https://github.com/gnomecatstudios/LaserForgeDev/issues). For questions and suggestions, open an issue in this fork.
 
 ## Credits
 
