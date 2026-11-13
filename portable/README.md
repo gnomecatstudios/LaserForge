@@ -8,12 +8,12 @@ be installed for USB machine control. The browser is not bundled.
 
 | System | Download |
 | --- | --- |
-| Windows x64 | [Portable ZIP](https://github.com/gnomecatstudios/LaserForgeDownloads/releases/latest/download/LaserForge-Portable-windows-x64.zip) |
-| Linux x64 | [Portable ZIP](https://github.com/gnomecatstudios/LaserForgeDownloads/releases/latest/download/LaserForge-Portable-linux-x64.zip) |
-| Raspberry Pi OS 64-bit (ARM64) | [Portable ZIP](https://github.com/gnomecatstudios/LaserForgeDownloads/releases/latest/download/LaserForge-Portable-RPi-ARM64.zip) |
-| Raspberry Pi OS 32-bit (ARMv6+) | [Portable ZIP](https://github.com/gnomecatstudios/LaserForgeDownloads/releases/latest/download/LaserForge-Portable-RPi-ARM32.zip) |
+| Windows x64 | [Portable ZIP](https://github.com/gnomecatstudios/LaserForge/releases/latest) |
+| Linux x64 | [Portable ZIP](https://github.com/gnomecatstudios/LaserForge/releases/latest) |
+| Raspberry Pi OS 64-bit (ARM64) | [Portable ZIP](https://github.com/gnomecatstudios/LaserForge/releases/latest) |
+| Raspberry Pi OS 32-bit (ARMv6+) | [Portable ZIP](https://github.com/gnomecatstudios/LaserForge/releases/latest) |
 
-[SHA-256 checksums](https://github.com/gnomecatstudios/LaserForgeDownloads/releases/latest/download/SHA256SUMS.txt)
+[SHA-256 checksums](https://github.com/gnomecatstudios/LaserForge/releases/latest/download/SHA256SUMS.txt)
 
 For Raspberry Pi setup and architecture selection, see [Raspberry Pi](raspberry-pi.md).
 

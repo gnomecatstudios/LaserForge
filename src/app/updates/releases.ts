@@ -1,4 +1,4 @@
-export const DOWNLOAD_REPO = 'gnomecatstudios/LaserForgeDownloads';
+export const DOWNLOAD_REPO = 'gnomecatstudios/LaserForge';
 export const DOWNLOADS_URL = `https://github.com/${DOWNLOAD_REPO}/releases/latest`;
 export const RELEASE_API = `https://api.github.com/repos/${DOWNLOAD_REPO}/releases/latest`;
 
@@ -55,7 +55,7 @@ export function parseRelease(value: unknown): Release {
   const downloads: Release['downloads'] = {};
   for (const platform of Object.keys(PLATFORMS) as Platform[]) {
     const short = platform === 'raspberry-pi-arm64' ? 'RPi-ARM64' : platform === 'raspberry-pi-arm32' ? 'RPi-ARM32' : platform;
-    for (const suffix of new Set([short, platform])) {
+    for (const suffix of new Set([`${short}-${tag}`, `${platform}-${tag}`, short, platform])) {
     const name = `LaserForge-Portable-${suffix}.zip`;
     const url = `${base}/download/${tag}/${name}`;
     if (

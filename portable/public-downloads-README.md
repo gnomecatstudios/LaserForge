@@ -7,16 +7,16 @@ This repository hosts packaged apps and update releases. The development reposit
 
 ## Downloads
 
-[View all public releases and downloads](https://github.com/gnomecatstudios/LaserForgeDownloads/releases).
+[View all public releases and downloads](https://github.com/gnomecatstudios/LaserForge/releases).
 
 | Platform | Portable ZIP | Installation |
 | --- | --- | --- |
-| Windows x64 | [Download](https://github.com/gnomecatstudios/LaserForgeDownloads/releases/latest/download/LaserForge-Portable-windows-x64.zip) | Extract and run |
-| Linux x64 | [Download](https://github.com/gnomecatstudios/LaserForgeDownloads/releases/latest/download/LaserForge-Portable-linux-x64.zip) | Extract and run |
-| RPi ARM64 | [Download](https://github.com/gnomecatstudios/LaserForgeDownloads/releases/latest/download/LaserForge-Portable-RPi-ARM64.zip) | Extract and run |
-| RPi ARM32 | [Download](https://github.com/gnomecatstudios/LaserForgeDownloads/releases/latest/download/LaserForge-Portable-RPi-ARM32.zip) | Extract and run |
+| Windows x64 | [Download](https://github.com/gnomecatstudios/LaserForge/releases/latest) | Extract and run |
+| Linux x64 | [Download](https://github.com/gnomecatstudios/LaserForge/releases/latest) | Extract and run |
+| RPi ARM64 | [Download](https://github.com/gnomecatstudios/LaserForge/releases/latest) | Extract and run |
+| RPi ARM32 | [Download](https://github.com/gnomecatstudios/LaserForge/releases/latest) | Extract and run |
 
-[SHA-256 checksums](https://github.com/gnomecatstudios/LaserForgeDownloads/releases/latest/download/SHA256SUMS.txt)
+[SHA-256 checksums](https://github.com/gnomecatstudios/LaserForge/releases/latest/download/SHA256SUMS.txt)
 
 ## Installation
 

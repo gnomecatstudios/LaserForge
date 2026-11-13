@@ -15,7 +15,7 @@ def verify(downloads, dist, targets):
         raise ValueError('Production dist/index.html is required')
     version = json.loads((ROOT / 'package.json').read_text())['version']
     for target in targets:
-        path = downloads / ('LaserForge-Portable-' + {'raspberry-pi-arm64': 'RPi-ARM64', 'raspberry-pi-arm32': 'RPi-ARM32'}.get(target, target) + '.zip')
+        path = downloads / ('LaserForge-Portable-' + {'raspberry-pi-arm64': 'RPi-ARM64', 'raspberry-pi-arm32': 'RPi-ARM32'}.get(target, target) + f'-v{version}.zip')
         with zipfile.ZipFile(path) as bundle:
             prefix = 'LaserForge-Portable/'
             executable = 'LaserForge-Portable' + ('.exe' if target == 'windows-x64' else '')

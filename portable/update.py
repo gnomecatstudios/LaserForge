@@ -24,7 +24,7 @@ import threading
 import urllib.request
 import zipfile
 
-REPO = 'gnomecatstudios/LaserForgeDownloads'
+REPO = 'gnomecatstudios/LaserForge'
 API = f'https://api.github.com/repos/{REPO}/releases/latest'
 BASE = f'https://github.com/{REPO}/releases'
 MAX_DOWNLOAD = 128 * 1024 * 1024
@@ -98,9 +98,9 @@ def latest(current, platform_id):
             raise ValueError(f'Missing or invalid release asset: {name}')
         return matches[0]
     short = {'raspberry-pi-arm64': 'RPi-ARM64', 'raspberry-pi-arm32': 'RPi-ARM32'}.get(platform_id, platform_id)
-    name = f'LaserForge-Portable-{short}.zip'
-    if not any(a.get('name') == name for a in assets):
-        name = f'LaserForge-Portable-{platform_id}.zip'
+    names = [f'LaserForge-Portable-{suffix}-v{candidate}.zip' for suffix in (short, platform_id)]
+    names += [f'LaserForge-Portable-{suffix}.zip' for suffix in (short, platform_id)]
+    name = next((n for n in names if any(a.get('name') == n for a in assets)), names[0])
     return {'version': candidate, 'platform': platform_id,
             'package': asset(name),
             'checksums': asset('SHA256SUMS.txt')}

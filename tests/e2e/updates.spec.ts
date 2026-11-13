@@ -1,8 +1,8 @@
 import { expect, test, type Page } from '@playwright/test';
 import { connectVirtual, newProject, prepare } from './helpers';
 
-const repo = 'https://github.com/gnomecatstudios/LaserForgeDownloads/releases';
-const api = 'https://api.github.com/repos/gnomecatstudios/LaserForgeDownloads/releases/latest';
+const repo = 'https://github.com/gnomecatstudios/LaserForge/releases';
+const api = 'https://api.github.com/repos/gnomecatstudios/LaserForge/releases/latest';
 function release(version = '0.3.0') {
   return {
     tag_name: `v${version}`,

@@ -10,17 +10,17 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/gnomecatstudios/LaserForgeDev">Source code</a> ·
-  <a href="https://github.com/gnomecatstudios/LaserForgeDownloads">Public downloads</a> ·
-  <a href="https://github.com/gnomecatstudios/LaserForgeDev/issues">Report an issue</a> ·
+  <a href="https://github.com/gnomecatstudios/LaserForge">Source code</a> ·
+  <a href="https://github.com/gnomecatstudios/LaserForge">Public downloads</a> ·
+  <a href="https://github.com/gnomecatstudios/LaserForge/issues">Report an issue</a> ·
   <a href="./portable/README.md">Run locally</a>
 </p>
 
 ## Development downloads and getting started
 
-This is the development repository. [Development releases and downloads](https://github.com/gnomecatstudios/LaserForgeDev/releases) are hosted here. For public downloads, visit [Laser Forge downloads](https://github.com/gnomecatstudios/LaserForgeDownloads).
+This is the development repository. [Development releases and downloads](https://github.com/gnomecatstudios/LaserForge/releases) are hosted here. For public downloads, visit [Laser Forge downloads](https://github.com/gnomecatstudios/LaserForge).
 
-The [public Laser Forge downloads repository](https://github.com/gnomecatstudios/LaserForgeDownloads) has the latest releases and installation instructions for every platform. No GitHub login is required to download the app.
+The [public Laser Forge downloads repository](https://github.com/gnomecatstudios/LaserForge) has the latest releases and installation instructions for every platform. No GitHub login is required to download the app.
 
 1. Choose a download below, or follow [development setup](#development) to run from source.
 2. Extract the portable ZIP and run its launcher. Open Laser Forge in desktop Chrome or Edge for machine control.
@@ -28,30 +28,30 @@ The [public Laser Forge downloads repository](https://github.com/gnomecatstudios
 
 | Platform | Download |
 | --- | --- |
-| Windows x64 | [Portable ZIP](https://github.com/gnomecatstudios/LaserForgeDownloads/releases/latest/download/LaserForge-Portable-windows-x64.zip) |
-| Linux x64 | [Portable ZIP](https://github.com/gnomecatstudios/LaserForgeDownloads/releases/latest/download/LaserForge-Portable-linux-x64.zip) |
-| Raspberry Pi OS 64-bit (ARM64) | [Portable ZIP](https://github.com/gnomecatstudios/LaserForgeDownloads/releases/latest/download/LaserForge-Portable-RPi-ARM64.zip) |
-| Raspberry Pi OS 32-bit (ARMv6+) | [Portable ZIP](https://github.com/gnomecatstudios/LaserForgeDownloads/releases/latest/download/LaserForge-Portable-RPi-ARM32.zip) |
+| Windows x64 | [Portable ZIP](https://github.com/gnomecatstudios/LaserForge/releases/latest) |
+| Linux x64 | [Portable ZIP](https://github.com/gnomecatstudios/LaserForge/releases/latest) |
+| Raspberry Pi OS 64-bit (ARM64) | [Portable ZIP](https://github.com/gnomecatstudios/LaserForge/releases/latest) |
+| Raspberry Pi OS 32-bit (ARMv6+) | [Portable ZIP](https://github.com/gnomecatstudios/LaserForge/releases/latest) |
 
-See the [portable setup guide](./portable/README.md) for launch instructions, shortcuts, architecture selection, and troubleshooting. Verify downloads with the [SHA-256 checksums](https://github.com/gnomecatstudios/LaserForgeDownloads/releases/latest/download/SHA256SUMS.txt).
+See the [portable setup guide](./portable/README.md) for launch instructions, shortcuts, architecture selection, and troubleshooting. Verify downloads with the [SHA-256 checksums](https://github.com/gnomecatstudios/LaserForge/releases/latest/download/SHA256SUMS.txt).
 
 The launcher serves the app locally at `http://127.0.0.1:5190/`; keep it running while using Laser Forge. A compatible browser must already be installed. For offline text engraving, import the bundled `Fonts/Geist-500.ttf` or your own font through the font picker. Other Google Fonts need an initial download.
 
 
 ### Windows x64
 
-[Download the Windows portable ZIP](https://github.com/gnomecatstudios/LaserForgeDownloads/releases/latest/download/LaserForge-Portable-windows-x64.zip). Extract the entire ZIP, then double-click `LaserForge-Portable.exe` in the extracted folder. Keep the launcher window open and use Chrome or Edge for machine control.
+[Download the Windows portable ZIP](https://github.com/gnomecatstudios/LaserForge/releases/latest). Extract the entire ZIP, then double-click `LaserForge-Portable.exe` in the extracted folder. Keep the launcher window open and use Chrome or Edge for machine control.
 
 ### Linux x64
 
-[download the Linux portable ZIP](https://github.com/gnomecatstudios/LaserForgeDownloads/releases/latest/download/LaserForge-Portable-linux-x64.zip), extract it, and run `chmod +x LaserForge-Portable` followed by `./LaserForge-Portable` in the extracted folder. For menu and desktop shortcuts, run `python3 setup.py` or `python3 setup.py --cli`; Python setup is optional.
+[download the Linux portable ZIP](https://github.com/gnomecatstudios/LaserForge/releases/latest), extract it, and run `chmod +x LaserForge-Portable` followed by `./LaserForge-Portable` in the extracted folder. For menu and desktop shortcuts, run `python3 setup.py` or `python3 setup.py --cli`; Python setup is optional.
 
 ### Raspberry Pi OS
 
 Run `uname -m` in Terminal to choose the matching package:
 
-- `aarch64`: [portable ZIP](https://github.com/gnomecatstudios/LaserForgeDownloads/releases/latest/download/LaserForge-Portable-RPi-ARM64.zip).
-- `armv6l`, `armv7l`, or `armv8l`: [portable ZIP](https://github.com/gnomecatstudios/LaserForgeDownloads/releases/latest/download/LaserForge-Portable-RPi-ARM32.zip).
+- `aarch64`: [portable ZIP](https://github.com/gnomecatstudios/LaserForge/releases/latest).
+- `armv6l`, `armv7l`, or `armv8l`: [portable ZIP](https://github.com/gnomecatstudios/LaserForge/releases/latest).
 
 For a portable ZIP, extract it and use the same launcher commands as Linux. A desktop environment and a compatible browser must already be installed. See the [Raspberry Pi guide](./portable/raspberry-pi.md) for architecture and USB access troubleshooting.
 
@@ -140,8 +140,8 @@ Laser Forge is a static Svelte 5 + TypeScript app built with Vite. There is no b
 
 ```sh
 corepack enable          # provides the pinned pnpm version
-git clone https://github.com/gnomecatstudios/LaserForgeDev.git
-cd LaserForgeDev
+git clone https://github.com/gnomecatstudios/LaserForge.git
+cd LaserForge
 pnpm install --frozen-lockfile
 pnpm dev                 # http://localhost:5190
 ```
@@ -177,11 +177,11 @@ Design decisions are logged in [design decisions](./docs/decisions.md).
 
 ### Deploying
 
-The [Pages workflow](./.github/workflows/pages.yml) builds and deploys pushes to `main` when GitHub Pages is configured to use GitHub Actions. Find a successful deployment’s URL in the repository’s [deployment workflow runs](https://github.com/gnomecatstudios/LaserForgeDev/actions/workflows/pages.yml). A live Laser Forge URL has not been confirmed yet. The build uses relative paths, so it also works from any other static host.
+The [Pages workflow](./.github/workflows/pages.yml) builds and deploys pushes to `main` when GitHub Pages is configured to use GitHub Actions. Find a successful deployment’s URL in the repository’s [deployment workflow runs](https://github.com/gnomecatstudios/LaserForge/actions/workflows/pages.yml). A live Laser Forge URL has not been confirmed yet. The build uses relative paths, so it also works from any other static host.
 
 ## Contributing
 
-Bug reports and pull requests are welcome. For hardware problems, open the console, press **Download log** and attach the file to your [issue](https://github.com/gnomecatstudios/LaserForgeDev/issues). For questions and suggestions, open an issue in this fork.
+Bug reports and pull requests are welcome. For hardware problems, open the console, press **Download log** and attach the file to your [issue](https://github.com/gnomecatstudios/LaserForge/issues). For questions and suggestions, open an issue in this fork.
 
 ## Credits
 

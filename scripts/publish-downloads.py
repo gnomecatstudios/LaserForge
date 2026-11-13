@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Publish tested binary packages only, leaving the source repository private.
+"""Publish tested binary packages to the consolidated repository.
 
 Run after all checks and build-portable.py. Requires authenticated gh with access
-to create/manage gnomecatstudios/LaserForgeDownloads. Never uploads source ZIPs.
+to create/manage gnomecatstudios/LaserForge. Never uploads source ZIPs.
 """
 import argparse
 import base64
@@ -15,7 +15,7 @@ import time
 import zipfile
 
 ROOT = Path(__file__).resolve().parents[1]
-REPO = 'gnomecatstudios/LaserForgeDownloads'
+REPO = 'gnomecatstudios/LaserForge'
 PLATFORMS = ['windows-x64', 'linux-x64', 'raspberry-pi-arm64', 'raspberry-pi-arm32']
 
 
@@ -54,7 +54,7 @@ def main():
     parser.add_argument('--publish', action='store_true', help='create public repository/release')
     args = parser.parse_args()
     version = json.loads((ROOT / 'package.json').read_text())['version']
-    files = [args.packages / ('LaserForge-Portable-' + {'raspberry-pi-arm64': 'RPi-ARM64', 'raspberry-pi-arm32': 'RPi-ARM32'}.get(p, p) + '.zip') for p in PLATFORMS]
+    files = [args.packages / ('LaserForge-Portable-' + {'raspberry-pi-arm64': 'RPi-ARM64', 'raspberry-pi-arm32': 'RPi-ARM32'}.get(p, p) + f'-v{version}.zip') for p in PLATFORMS]
     for path in files:
         if not path.is_file():
             parser.error(f'Missing package: {path}')
@@ -79,9 +79,6 @@ def main():
     repo = json.loads(gh('api', f'repos/{REPO}'))
     if repo.get('private') is not False:
         parser.error('The downloads repository must be public. Visibility was not changed.')
-    put_file('README.md', (ROOT / 'portable/public-downloads-README.md').read_bytes())
-    put_file('logo.png', (ROOT / 'public/mark.png').read_bytes())
-    put_file('LICENSE', (ROOT / 'portable/LICENSE-LaserForge.txt').read_bytes())
     with tempfile.TemporaryDirectory(prefix='laserforge-publish-') as folder:
         checksums = Path(folder) / 'SHA256SUMS.txt'
         checksums.write_text(''.join(f'{hashlib.sha256(p.read_bytes()).hexdigest()}  {p.name}\n'

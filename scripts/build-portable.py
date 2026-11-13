@@ -30,7 +30,7 @@ def embed_windows_icon(launcher, go):
 
 
 def package_name(platform):
-    return 'LaserForge-Portable-' + {'raspberry-pi-arm64': 'RPi-ARM64', 'raspberry-pi-arm32': 'RPi-ARM32'}.get(platform, platform) + '.zip'
+    return 'LaserForge-Portable-' + {'raspberry-pi-arm64': 'RPi-ARM64', 'raspberry-pi-arm32': 'RPi-ARM32'}.get(platform, platform) + f'-v{APP_VERSION}.zip'
 
 
 def archive(folder, output):
@@ -110,15 +110,16 @@ def main():
         shutil.copy2(ROOT / 'public/icon-192.png', source / 'icon.png')
         shutil.copy2(ROOT / 'public/favicon.ico', source / 'LaserForge.ico')
         (source / 'VERSION.txt').write_text(build + '\n')
-        zipped = output / 'LaserForge-Portable-source.zip'
+        zipped = output / f'LaserForge-Portable-source-v{APP_VERSION}.zip'
         archive(source, zipped)
         artifacts.append(zipped)
     # Include every delivered package, including unchanged targets in a partial build.
-    supported = {'LaserForge-Portable-source.zip'}
+    supported = {f'LaserForge-Portable-source-v{APP_VERSION}.zip'}
     supported.update(package_name(name) for name, *_ in TARGETS)
-    for legacy in ('LaserForge-Portable-raspberry-pi-arm64.zip', 'LaserForge-Portable-raspberry-pi-arm32.zip'):
-        if (output / package_name(legacy.removeprefix('LaserForge-Portable-').removesuffix('.zip'))).exists():
-            (output / legacy).unlink(missing_ok=True)
+    if not args.target:
+        for old in output.glob('LaserForge-Portable-*.zip'):
+            if old.name not in supported:
+                old.unlink()
     for obsolete in output.glob('LaserForge-Setup-*.deb'):
         obsolete.unlink()
     artifacts = sorted(path for path in output.iterdir() if path.name in supported)

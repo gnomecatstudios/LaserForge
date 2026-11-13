@@ -2,6 +2,7 @@
 """Verify that shipped archives, native icons, and embedded app assets use the current logo."""
 import argparse
 import hashlib
+import json
 from pathlib import Path
 import struct
 import subprocess
@@ -76,7 +77,8 @@ def main():
     mark = (ROOT / 'public/mark.png').read_bytes()
     ico = (ROOT / 'public/favicon.ico').read_bytes()
     expected_windows = set(ico_images(ico))
-    packages = sorted(downloads.glob('*.zip'))
+    version = json.loads((ROOT / 'package.json').read_text())['version']
+    packages = sorted(downloads.glob(f'LaserForge-Portable-*-v{version}.zip'))
     assert len(packages) == 5, 'Expected four portable ZIPs and one source ZIP'
     sums = dict(line.split('  ', 1)[::-1] for line in (downloads / 'SHA256SUMS.txt').read_text().splitlines())
     assert set(sums) == {path.name for path in packages}, 'Checksum manifest differs from downloads'
@@ -84,7 +86,7 @@ def main():
         assert hashlib.sha256(path.read_bytes()).hexdigest() == sums[path.name], path.name
         if path.suffix == '.zip':
             with zipfile.ZipFile(path) as bundle:
-                source = path.name.endswith('-source.zip')
+                source = path.name.endswith(f'-source-v{version}.zip')
                 prefix = '' if source else 'LaserForge-Portable/'
                 assert bundle.read(prefix + 'icon.png') == icon, path.name
                 assert bundle.read(prefix + 'LaserForge.ico') == ico, path.name

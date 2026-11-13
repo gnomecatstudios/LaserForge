@@ -60,7 +60,7 @@ class UpdateTests(unittest.TestCase):
         (root / 'project.olaser').write_bytes(b'my project')
 
     def network(self, payload, checksum=None):
-        name = 'LaserForge-Portable-linux-x64.zip'
+        name = 'LaserForge-Portable-linux-x64-v0.3.0.zip'
         def asset(name, size):
             return {'name': name, 'size': size, 'state': 'uploaded',
                     'browser_download_url': f'{updater.BASE}/download/v0.3.0/{name}'}
