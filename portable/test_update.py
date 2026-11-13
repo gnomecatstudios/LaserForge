@@ -1,4 +1,5 @@
 import hashlib
+from contextlib import nullcontext
 import importlib.util
 import io
 import json
@@ -17,6 +18,28 @@ spec.loader.exec_module(updater)
 
 
 class UpdateTests(unittest.TestCase):
+    def test_opening_without_arguments_launches_on_every_supported_platform(self):
+        for platform_id in sorted(updater.PLATFORMS):
+            with self.subTest(platform=platform_id), \
+                    patch.object(updater, 'metadata', return_value={'platform': platform_id, 'version': '0.2.1'}), \
+                    patch.object(updater, 'lock', return_value=nullcontext()), \
+                    patch.object(updater, 'launch', return_value=0) as launch:
+                self.assertEqual(updater.main([]), 0)
+                launch.assert_called_once()
+
+    def test_explicit_check_does_not_launch(self):
+        with patch.object(updater, 'metadata', return_value={'platform': 'raspberry-pi-arm64', 'version': '0.2.1'}), \
+                patch.object(updater, 'latest', return_value=None) as latest, \
+                patch.object(updater, 'launch') as launch:
+            self.assertEqual(updater.main(['--check']), 0)
+            latest.assert_called_once_with('0.2.1', 'raspberry-pi-arm64')
+            launch.assert_not_called()
+
+    def test_conflicting_actions_still_exit_with_usage_error(self):
+        with self.assertRaises(SystemExit) as error:
+            updater.main(['--check', '--launch'])
+        self.assertEqual(error.exception.code, 2)
+
     def package(self, extra=None):
         header = bytearray(64)
         header[:4] = b'\x7fELF'

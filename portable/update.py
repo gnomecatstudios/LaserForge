@@ -3,6 +3,7 @@
 
 --launch applies a previously downloaded release before starting the native app,
 then checks/downloads in the background. Package-manager installations are excluded.
+Opening this script without arguments uses --launch.
 Release hashes protect download integrity; they are not publisher signatures.
 """
 import argparse
@@ -295,12 +296,14 @@ def launch(root):
         return child.wait()
 
 
-def main():
+def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
-    actions = parser.add_mutually_exclusive_group(required=True)
+    actions = parser.add_mutually_exclusive_group()
     for action in ('check', 'download', 'apply', 'launch'):
         actions.add_argument('--' + action, action='store_true')
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
+    if not any((args.check, args.download, args.apply, args.launch)):
+        args.launch = True
     root = Path(__file__).resolve().parent
     try:
         if str(root).startswith(('/usr/', '/opt/')):

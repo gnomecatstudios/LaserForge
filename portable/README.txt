@@ -8,10 +8,17 @@ Source snapshot: see VERSION.txt (or dist/portable-version.txt in the source ZIP
 App license: MIT; see LICENSE-LaserForge.txt.
 
 UPDATES
+With Python 3.9+ installed, open update.py in the extracted portable folder,
+or run python3 update.py --launch (Windows: py -3 update.py --launch).
+It starts the app, checks for updates in the background, and installs a staged
+update before the next launch. Opening update.py without arguments does the same.
+On Windows you can also open Start-LaserForge.cmd. Debian installs update through
+the system package manager. Manual update commands: --check, --download, --apply.
+
 Public downloads: https://github.com/gnomecatstudios/LaserForgeDownloads/releases/latest
 Version 0.2.1 and later check on startup. About and the project menu also offer
 Check for updates. The popup waits until the laser is disconnected. Download
-the update or choose Later. Nothing installs or restarts automatically.
+the update or choose Later. The popup does not install or restart automatically.
 Save your project, close the app and launcher, then extract the new ZIP into
 a new folder. Linux users can rerun setup.py or install the newer .deb.
 Keep the same browser profile and local address to retain autosaves.

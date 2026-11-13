@@ -80,6 +80,11 @@ public downloads repository and HTTPS. Release signing is not implemented.
 
 Commands for manual use:
 
+Opening `update.py` without arguments launches the app with background updates,
+just like `python3 update.py --launch` (or `py -3 update.py --launch` on Windows).
+Run it from an extracted portable package containing `release.json` and the native
+launcher. Debian installations use the system package manager instead.
+
 ```sh
 python3 update.py --check
 python3 update.py --download
