@@ -40,6 +40,18 @@ class SetupTests(unittest.TestCase):
             self.assertEqual((desktop / 'Laser Forge.desktop').read_text(), shortcut)
             setup.install(source, data, desktop, 'aarch64')  # Reinstall safely.
 
+    def test_new_setup_uses_update_launcher_and_copies_metadata(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            source = self.fixture(root)
+            (source / 'update.py').write_text('# helper')
+            (source / 'release.json').write_text('{"platform":"raspberry-pi-arm64","version":"0.3.0"}')
+            target = setup.install(source, root / 'data', machine='aarch64')
+            self.assertEqual((target / 'update.py').read_text(), '# helper')
+            self.assertTrue((target / 'release.json').is_file())
+            shortcut = (root / 'data/applications/laserforge.desktop').read_text()
+            self.assertIn('Exec=python3 "' + str(target / 'update.py') + '" --launch', shortcut)
+
     def test_rejects_x64_download_on_pi_before_writing(self):
         with tempfile.TemporaryDirectory() as folder:
             root = Path(folder)
@@ -62,3 +74,4 @@ class SetupTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+

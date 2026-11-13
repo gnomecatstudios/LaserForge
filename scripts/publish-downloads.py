@@ -15,8 +15,7 @@ import zipfile
 
 ROOT = Path(__file__).resolve().parents[1]
 REPO = 'gnomecatstudios/LaserForgeDownloads'
-PLATFORMS = ['windows-x64', 'macos-apple-silicon', 'macos-intel',
-             'linux-x64', 'raspberry-pi-arm64', 'raspberry-pi-arm32']
+PLATFORMS = ['windows-x64', 'linux-x64', 'raspberry-pi-arm64', 'raspberry-pi-arm32']
 
 
 def gh(*args, payload=None):
@@ -42,7 +41,7 @@ def main():
     args = parser.parse_args()
     version = json.loads((ROOT / 'package.json').read_text())['version']
     files = [args.packages / f'LaserForge-Portable-{p}.zip' for p in PLATFORMS]
-    files += [args.packages / f'LaserForge-Setup-{p}.deb' for p in PLATFORMS[3:]]
+    files += [args.packages / f'LaserForge-Setup-{p}.deb' for p in PLATFORMS[1:]]
     for path in files:
         if not path.is_file():
             parser.error(f'Missing package: {path}')
@@ -55,8 +54,10 @@ def main():
             binary = next(n for n in names if n.endswith('LaserForge-Portable.exe') or
                           n.endswith('Resources/LaserForge-Portable') or
                           n == 'LaserForge-Portable/LaserForge-Portable')
-            if platform.startswith('macos-'):
-                binary = next(n for n in names if n.endswith('Resources/LaserForge-Portable'))
+            expected = {'platform': platform, 'version': version}
+            prefix = 'LaserForge-Portable/'
+            if prefix + 'update.py' not in names or json.loads(package.read(prefix + 'release.json')) != expected:
+                parser.error(f'Missing updater or mismatched release metadata in {path}')
             metadata = json.dumps({'platform': platform, 'version': version}).encode()
             if metadata not in package.read(binary):
                 parser.error(f'Wrong platform/version in {path}')
@@ -83,11 +84,13 @@ def main():
             f'Laser Forge {version}\n\n'
             'Includes the update download popup. Portable builds check on startup; '
             'About and the project menu offer Check for updates. The popup waits until '
-            'the laser is disconnected. Downloads never install or restart automatically.\n\n'
+            'the laser is disconnected. The Python update launcher downloads releases in the '
+            'background and applies them before the next launch. Native launchers and Debian '
+            'installations continue to use manual updates.\n\n'
             f'[Platform installation instructions](https://github.com/{REPO}#installation)\n\n'
             'Existing installations need one manual download to get the update popup. '
             'Save your project and close the app and launcher before replacing them.\n\n'
-            'Unsigned builds. Windows, macOS and Raspberry Pi packages are cross-compiled; '
+            'Unsigned builds. Windows and Raspberry Pi packages are cross-compiled; '
             'native execution and physical laser hardware have not been tested.\n')
         gh('release', 'create', f'v{version}', '--repo', REPO, '--draft',
            '--title', f'Laser Forge {version}', '--notes-file', str(notes),
@@ -98,3 +101,4 @@ def main():
 
 if __name__ == '__main__':
     main()
+
