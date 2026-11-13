@@ -37,13 +37,19 @@ def package_deb(app, name, architecture, version, output):
         for path in destination.rglob('*'):
             path.chmod(0o755 if path.is_dir() or path.name == 'LaserForge-Portable' else 0o644)
         destination.chmod(0o755)
+        # Install a dedicated, content-versioned icon in the standard hicolor theme.
+        icon_bytes = (destination / 'icon.png').read_bytes()
+        icon_name = 'laserforge-' + hashlib.sha256(icon_bytes).hexdigest()[:12] + '.png'
+        icons = stage / 'usr/share/icons/hicolor/192x192/apps'
+        icons.mkdir(parents=True)
+        (icons / icon_name).write_bytes(icon_bytes)
         applications = stage / 'usr/share/applications'
         applications.mkdir(parents=True)
         (applications / 'laserforge.desktop').write_text(
             '[Desktop Entry]\nType=Application\nName=Laser Forge\n'
             'Comment=Design and run laser jobs offline\n'
             'Exec=/usr/lib/laserforge/LaserForge-Portable\n'
-            'Icon=/usr/lib/laserforge/icon.png\nTerminal=true\n'
+            f'Icon=/usr/share/icons/hicolor/192x192/apps/{icon_name}\nTerminal=true\n'
             'Categories=Graphics;Engineering;\nStartupNotify=false\n')
         control = stage / 'DEBIAN'
         control.mkdir()

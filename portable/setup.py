@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Install the Linux portable app for the current user; no administrator access needed."""
 import argparse
+import hashlib
 import os
 from pathlib import Path
 import platform
@@ -14,9 +15,15 @@ def desktop_quote(value):
     return '"' + str(value).replace('\\', '\\\\').replace('"', '\\"').replace('`', '\\`').replace('$', '\\$').replace('%', '%%') + '"'
 
 
+def desktop_escape(value):
+    # Desktop Entry string escaping is separate from Exec argument quoting.
+    return str(value).replace('\\', '\\\\').replace('\n', '\\n').replace('\r', '\\r').replace('\t', '\\t')
+
+
 def install(source, data_home, desktop=None, machine=None):
-    source, data_home = Path(source), Path(data_home)
+    source, data_home = Path(source).resolve(), Path(data_home).resolve()
     binary = source / 'LaserForge-Portable'
+    icon = source / 'icon.png'
     machine = machine or platform.machine()
     expected = {'x86_64': 62, 'amd64': 62, 'aarch64': 183, 'arm64': 183, 'armv7l': 40, 'armv6l': 40}.get(machine.lower())
     with binary.open('rb') as stream:
@@ -25,6 +32,10 @@ def install(source, data_home, desktop=None, machine=None):
         raise ValueError('This setup needs a Linux portable package.')
     if expected is None or struct.unpack_from('<H', header, 18)[0] != expected:
         raise ValueError(f'This download does not match your {machine} computer. Download the matching Raspberry Pi or Linux package.')
+    # Fail before touching an existing installation if the ZIP lost its logo.
+    icon_bytes = icon.read_bytes()
+    if not icon_bytes.startswith(b'\x89PNG\r\n\x1a\n'):
+        raise ValueError('Missing or invalid Laser Forge icon; extract a fresh official ZIP.')
     target = data_home / 'laserforge'
     target.mkdir(parents=True, exist_ok=True)
     # Rename a fresh file over the old binary so updating a running app is supported.
@@ -38,6 +49,14 @@ def install(source, data_home, desktop=None, machine=None):
             shutil.copytree(entry, target / name, dirs_exist_ok=True)
         elif entry.is_file():
             shutil.copy2(entry, target / name)
+    # Register in the standard per-user icon theme and use an absolute, versioned
+    # path so desktop icon caches cannot keep an obsolete image after reinstalling.
+    icons = data_home / 'icons/hicolor/192x192/apps'
+    icons.mkdir(parents=True, exist_ok=True)
+    icon_name = 'laserforge-' + hashlib.sha256(icon_bytes).hexdigest()[:12] + '.png'
+    installed_icon = icons / icon_name
+    installed_icon.write_bytes(icon_bytes)
+    installed_icon.chmod(0o644)
     command = desktop_quote(target / binary.name)
     if (target / 'update.py').is_file() and (target / 'release.json').is_file():
         command = 'python3 ' + desktop_quote(target / 'update.py') + ' --launch'
@@ -45,15 +64,15 @@ def install(source, data_home, desktop=None, machine=None):
         '[Desktop Entry]', 'Type=Application', 'Name=Laser Forge',
         'Comment=Design and run laser jobs offline',
         'Exec=' + command,
-        'Icon=' + str(target / 'icon.png'), 'Terminal=true',
+        'Icon=' + desktop_escape(installed_icon), 'Terminal=true',
         'Categories=Graphics;Engineering;', 'StartupNotify=false', '',
     ])
     applications = data_home / 'applications'
     applications.mkdir(parents=True, exist_ok=True)
-    (applications / 'laserforge.desktop').write_text(shortcut)
+    (applications / 'laserforge.desktop').write_text(shortcut, encoding='utf-8')
     if desktop and Path(desktop).is_dir():
         shortcut_file = Path(desktop) / 'Laser Forge.desktop'
-        shortcut_file.write_text(shortcut)
+        shortcut_file.write_text(shortcut, encoding='utf-8')
         shortcut_file.chmod(0o755)
     return target
 

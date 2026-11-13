@@ -32,6 +32,12 @@ folder, substituting the correct package name.
 Alternatively, the ZIP includes `setup.py`, which installs for your user and
 creates menu and desktop shortcuts. Open with Python 3 for the setup dialog,
 or run `python3 setup.py --cli` in its folder. The dialog needs Tkinter.
+Both installers register the bundled red Laser Forge icon in the standard
+Linux icon directory. If an older desktop shortcut shows a generic gear,
+reinstall using a new ZIP and `setup.py --cli` to recreate the shortcut. For a
+Debian installation, replace any old copied desktop shortcut with a fresh
+shortcut from the application menu. If the desktop still shows a cached icon,
+log out and back in. These steps affect launchers, not browser-saved projects.
 
 ## Start without installing
 

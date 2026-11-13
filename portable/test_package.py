@@ -1,3 +1,4 @@
+import hashlib
 import importlib.util
 from pathlib import Path
 import shutil
@@ -37,7 +38,10 @@ class DebianPackageTests(unittest.TestCase):
                 self.assertEqual((extracted / name).stat().st_mode & 0o777, 0o755)
             desktop = extracted / 'usr/share/applications/laserforge.desktop'
             self.assertIn('Exec=/usr/lib/laserforge/LaserForge-Portable', desktop.read_text())
-            self.assertIn('Icon=/usr/lib/laserforge/icon.png', desktop.read_text())
+            icon_name = 'laserforge-' + hashlib.sha256(b'icon').hexdigest()[:12] + '.png'
+            icon_path = '/usr/share/icons/hicolor/192x192/apps/' + icon_name
+            self.assertIn('Icon=' + icon_path, desktop.read_text())
+            self.assertEqual((extracted / icon_path.lstrip('/')).read_bytes(), b'icon')
             self.assertEqual((extracted / 'usr/lib/laserforge/icon.png').read_bytes(), b'icon')
 
 
