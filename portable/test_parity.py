@@ -22,7 +22,7 @@ class ParityTests(unittest.TestCase):
             version = json.loads((ROOT / 'package.json').read_text())['version']
             metadata = json.dumps({'platform': 'windows-x64', 'version': version}) + '\n'
             for complete in [True, False]:
-                with zipfile.ZipFile(root / 'LaserForge-Portable-windows-x64.zip', 'w') as bundle:
+                with zipfile.ZipFile(root / f'LaserForge-Portable-windows-x64-v{version}.zip', 'w') as bundle:
                     prefix = 'LaserForge-Portable/'
                     bundle.writestr(prefix + 'release.json', metadata)
                     bundle.writestr(prefix + 'LaserForge-Portable.exe',
