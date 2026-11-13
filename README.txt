@@ -1,0 +1,67 @@
+LASER FORGE PORTABLE — offline package
+
+The gear-and-laser logo is included as icon.png and LaserForge.ico.
+Windows embeds it in the executable; macOS includes Laser Forge.app with the same icon.
+On macOS, double-click Laser Forge.app to open its launcher in Terminal.
+
+Source: https://github.com/gnomecatstudios/LaserForge.dev
+Source snapshot: see VERSION.txt (or dist/portable-version.txt in the source ZIP).
+App license: MIT; see LICENSE-LaserForge.txt.
+
+UPDATES
+Public downloads: https://github.com/gnomecatstudios/LaserForgeDownloads/releases/latest
+Version 0.2.1 and later check on startup. About and the project menu also offer
+Check for updates. The popup waits until the laser is disconnected. Download
+the update or choose Later. Nothing installs or restarts automatically.
+Save your project, close the app and launcher, then extract the new ZIP into
+a new folder. Linux users can rerun setup.py or install the newer .deb.
+Keep the same browser profile and local address to retain autosaves.
+
+EASY SETUP (RASPBERRY PI / LINUX)
+The .deb download installs through your system package installer and adds
+Laser Forge to the application menu. Choose ARM64 for aarch64 Raspberry Pi OS,
+ARM32 for armv7l/armv6l, or x64 for Intel/AMD Linux.
+The portable ZIP also includes setup.py: open with Python 3 for a setup dialog,
+or run python3 setup.py --cli in the extracted folder. It installs for your
+user and creates menu/desktop shortcuts without administrator access.
+The dialog needs Tkinter; CLI setup uses only Python's standard library.
+Your desktop may ask you to allow launching its new shortcut once.
+
+START WITHOUT INSTALLING
+Extract the ZIP first. Run the launcher for your system.
+Windows: double-click LaserForge-Portable.exe.
+macOS/Linux: run ./LaserForge-Portable from Terminal.
+On macOS an unsigned local build may need approval in system security settings.
+If needed, run chmod +x LaserForge-Portable on macOS/Linux.
+Keep the launcher running while using the app. Ctrl+C stops the server.
+If the browser does not open, visit http://127.0.0.1:5190/.
+Use desktop Chrome or Edge for USB/Bluetooth machine connections.
+No Node.js, Python, package manager, installation, or internet is needed to launch.
+A compatible browser must already be installed. The browser is not bundled.
+The launcher listens only on this computer, at 127.0.0.1:5190.
+The app assets are embedded in the executable; keep this license and README too.
+
+OFFLINE FONTS
+Interface fonts, app code, presets, image tools and WASM are included.
+Google Fonts used for text outlines/previews require internet the first time.
+A Geist font is included in Fonts/Geist-500.ttf (OFL license beside it).
+For fully offline text creation, import that font or your own TTF/OTF/WOFF using
+the font picker. Default text fonts may not outline until a font is available.
+Linked documentation and USB driver downloads also require internet.
+
+PROJECT STORAGE
+Autosave and machine profiles live in the browser profile, not beside the EXE.
+Use the same browser and address to return to that data.
+Save .olaser projects and export machine profiles to disk before moving to
+another computer or clearing browser data. This package does not bundle a
+portable browser profile. Existing saves from the public website do not
+automatically transfer to this local address.
+
+BUILD / VALIDATION
+Production app built with pnpm install --frozen-lockfile and pnpm build.
+Launcher source is main.go and go.mod in the source ZIP. Put the built app's
+dist folder beside main.go, then use Go 1.24+ and go build .
+Cross builds: GOOS=windows GOARCH=amd64 go build -o LaserForge-Portable.exe .
+Other supported GOOS/GOARCH combinations: linux/amd64, darwin/amd64,
+darwin/arm64. No CGO is needed.
+These executables are unsigned. Physical laser hardware has not been tested.
