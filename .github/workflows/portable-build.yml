@@ -5,9 +5,12 @@ on:
       publish:
         description: Publish verified ZIPs to LaserForgeDownloads
         type: boolean
-        default: false
+        default: true
   push:
     branches: [main]
+concurrency:
+  group: portable-release-${{ github.ref }}
+  cancel-in-progress: false
 permissions:
   contents: read
 jobs:
@@ -24,6 +27,30 @@ jobs:
         with:
           go-version: '1.24.x'
           cache: false
+      - name: Select next public release version
+        if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || inputs.publish)
+        env:
+          GH_TOKEN: ${{ secrets.LASERFORGE_DOWNLOADS_TOKEN }}
+        run: |
+          test -n "$GH_TOKEN" || { echo 'Missing LASERFORGE_DOWNLOADS_TOKEN' >&2; exit 1; }
+          gh api repos/gnomecatstudios/LaserForgeDownloads/releases/latest > "$RUNNER_TEMP/latest-release.json"
+          python3 - <<'PY'
+          import json, os, re
+          from pathlib import Path
+          path = Path('package.json')
+          package = json.loads(path.read_text())
+          latest = json.loads((Path(os.environ['RUNNER_TEMP']) / 'latest-release.json').read_text())['tag_name']
+          def parts(value):
+              if not re.fullmatch(r'\d+\.\d+\.\d+', value):
+                  raise ValueError(f'Invalid stable version: {value}')
+              return tuple(map(int, value.split('.')))
+          previous = parts(latest.removeprefix('v'))
+          base = parts(package['version'])
+          chosen = max(base, (previous[0], previous[1], previous[2] + 1))
+          package['version'] = '.'.join(map(str, chosen))
+          path.write_text(json.dumps(package, indent=2) + '\n')
+          print('Building release', package['version'])
+          PY
       - run: pnpm install --frozen-lockfile
       - run: python3 -m unittest discover -s portable -p 'test_*.py'
       - run: pnpm exec playwright install --with-deps chromium
@@ -39,7 +66,7 @@ jobs:
             portable/downloads/SHA256SUMS.txt
           if-no-files-found: error
       - name: Publish verified portable release
-        if: github.event_name == 'workflow_dispatch' && inputs.publish && github.ref == 'refs/heads/main'
+        if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || inputs.publish)
         env:
           GH_TOKEN: ${{ secrets.LASERFORGE_DOWNLOADS_TOKEN }}
         run: |
