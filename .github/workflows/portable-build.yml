@@ -3,7 +3,7 @@ on:
   workflow_dispatch:
     inputs:
       publish:
-        description: Publish verified ZIPs to LaserForgeDownloads
+        description: Publish verified ZIPs to LaserForge
         type: boolean
         default: true
   push:
@@ -12,7 +12,7 @@ concurrency:
   group: portable-release-${{ github.ref }}
   cancel-in-progress: false
 permissions:
-  contents: read
+  contents: write
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -30,21 +30,20 @@ jobs:
       - name: Select next public release version
         if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || inputs.publish)
         env:
-          GH_TOKEN: ${{ secrets.LASERFORGE_DOWNLOADS_TOKEN }}
+          GH_TOKEN: ${{ github.token }}
         run: |
-          test -n "$GH_TOKEN" || { echo 'Missing LASERFORGE_DOWNLOADS_TOKEN' >&2; exit 1; }
-          gh api repos/gnomecatstudios/LaserForgeDownloads/releases/latest > "$RUNNER_TEMP/latest-release.json"
+          gh api "repos/$GITHUB_REPOSITORY/releases/latest" > "$RUNNER_TEMP/latest-release.json" || echo '{}' > "$RUNNER_TEMP/latest-release.json"
           python3 - <<'PY'
           import json, os, re
           from pathlib import Path
           path = Path('package.json')
           package = json.loads(path.read_text())
-          latest = json.loads((Path(os.environ['RUNNER_TEMP']) / 'latest-release.json').read_text())['tag_name']
+          latest = json.loads((Path(os.environ['RUNNER_TEMP']) / 'latest-release.json').read_text()).get('tag_name')
           def parts(value):
               if not re.fullmatch(r'\d+\.\d+\.\d+', value):
                   raise ValueError(f'Invalid stable version: {value}')
               return tuple(map(int, value.split('.')))
-          previous = parts(latest.removeprefix('v'))
+          previous = parts(latest.removeprefix('v')) if latest else (0, 0, 0)
           base = parts(package['version'])
           chosen = max(base, (previous[0], previous[1], previous[2] + 1))
           package['version'] = '.'.join(map(str, chosen))
@@ -68,10 +67,14 @@ jobs:
       - name: Publish verified portable release
         if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || inputs.publish)
         env:
-          GH_TOKEN: ${{ secrets.LASERFORGE_DOWNLOADS_TOKEN }}
+          GH_TOKEN: ${{ github.token }}
         run: |
-          if [ -z "$GH_TOKEN" ]; then
-            echo 'Configure LASERFORGE_DOWNLOADS_TOKEN with write access to LaserForgeDownloads.' >&2
-            exit 1
+          version=$(node -p "require('./package.json').version")
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A portable/downloads
+          if ! git diff --cached --quiet; then
+            git commit -m "Refresh verified portable distributions v$version"
+            git push origin HEAD:main
           fi
-          python3 scripts/publish-downloads.py --packages portable/downloads --publish
+          gh release create "v$version" portable/downloads/*.zip portable/downloads/SHA256SUMS.txt --target "$(git rev-parse HEAD)" --title "Laser Forge v$version" --generate-notes
