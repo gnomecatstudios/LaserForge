@@ -11,6 +11,7 @@ import json
 from pathlib import Path
 import subprocess
 import tempfile
+import time
 import zipfile
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -19,19 +20,32 @@ PLATFORMS = ['windows-x64', 'linux-x64', 'raspberry-pi-arm64', 'raspberry-pi-arm
 
 
 def gh(*args, payload=None):
-    return subprocess.check_output(['gh', *args], text=True,
-                                   input=json.dumps(payload) if payload else None)
+    for attempt in range(3):
+        result = subprocess.run(['gh', *args], text=True, capture_output=True,
+                                input=json.dumps(payload) if payload else None)
+        if result.returncode == 0:
+            return result.stdout
+        if attempt < 2 and any(f'HTTP {code}' in result.stderr for code in (502, 503, 504)):
+            time.sleep(2 ** attempt)
+            continue
+        raise subprocess.CalledProcessError(result.returncode, result.args,
+                                            output=result.stdout, stderr=result.stderr)
 
 
 def put_file(path, content):
     try:
         sha = json.loads(gh('api', f'repos/{REPO}/contents/{path}'))['sha']
-    except subprocess.CalledProcessError:
+    except subprocess.CalledProcessError as error:
+        if 'HTTP 404' not in (error.stderr or ''):
+            raise RuntimeError(f'Cannot read {path}: {error.stderr}') from error
         sha = None
     body = {'message': f'Update {path}', 'content': base64.b64encode(content).decode()}
     if sha:
         body['sha'] = sha
-    gh('api', '--method', 'PUT', f'repos/{REPO}/contents/{path}', '--input', '-', payload=body)
+    try:
+        gh('api', '--method', 'PUT', f'repos/{REPO}/contents/{path}', '--input', '-', payload=body)
+    except subprocess.CalledProcessError as error:
+        raise RuntimeError(f'Cannot update {path}: {error.stderr}') from error
 
 
 def main():
@@ -62,12 +76,7 @@ def main():
     print(f'Ready to publish v{version}: {len(files)} binary packages. Source ZIP excluded.')
     if not args.publish:
         return
-    try:
-        repo = json.loads(gh('api', f'repos/{REPO}'))
-    except subprocess.CalledProcessError:
-        gh('repo', 'create', REPO, '--public', '--add-readme',
-           '--description', 'Laser Forge portable downloads and update releases')
-        repo = json.loads(gh('api', f'repos/{REPO}'))
+    repo = json.loads(gh('api', f'repos/{REPO}'))
     if repo.get('private') is not False:
         parser.error('The downloads repository must be public. Visibility was not changed.')
     put_file('README.md', (ROOT / 'portable/public-downloads-README.md').read_bytes())
