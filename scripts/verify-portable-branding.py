@@ -103,7 +103,10 @@ def main():
                 assert (root / 'usr/lib/laserforge/icon.png').read_bytes() == icon
                 assert mark in (root / 'usr/lib/laserforge/LaserForge-Portable').read_bytes()
                 desktop = (root / 'usr/share/applications/laserforge.desktop').read_text()
-                assert 'Icon=/usr/lib/laserforge/icon.png' in desktop
+                icon_name = 'laserforge-' + hashlib.sha256(icon).hexdigest()[:12] + '.png'
+                icon_path = '/usr/share/icons/hicolor/192x192/apps/' + icon_name
+                assert 'Icon=' + icon_path + '\n' in desktop
+                assert (root / icon_path.lstrip('/')).read_bytes() == icon
         print('Verified', path.name)
 
 
