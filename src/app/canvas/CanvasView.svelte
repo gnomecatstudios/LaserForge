@@ -6,14 +6,14 @@
   import Maximize from '@lucide/svelte/icons/maximize';
   import { IDENTITY, multiply, rotationAbout, translation } from 'libopenlaser/geometry';
   import type { Mat2D, Rect, Vec2 } from 'libopenlaser/geometry';
-  import { setObjectTransforms } from 'libopenlaser/project';
+  import { setObjectTransforms, transformObjects } from 'libopenlaser/project';
   import { makeId } from 'libopenlaser/project';
   import type { Id, SceneObject } from 'libopenlaser/project';
   import { editor } from '../state/editor.svelte';
   import { canvas } from '../state/canvas.svelte';
   import { preview } from '../state/preview.svelte';
   import { machine } from '../state/machine.svelte';
-  import { boundsOf, selectedObjects } from '../lib/selection';
+  import { boundsOf, resizeAbout, selectedObjects } from '../lib/selection';
   import { bedRectToScreen, bedToScreen, screenToBed, zoomAt, type BedFrame } from './viewport';
   import {
     drawBed,
@@ -26,7 +26,7 @@
     readPalette,
     screenPath,
   } from './scene-render';
-  import { drawGuides, drawMeasure, drawSelection, drawShapeGhost, drawSizeLabel } from './overlays';
+  import { drawGuides, drawMeasure, drawSelection, drawShapeGhost } from './overlays';
   import { SNAP_PX, snapMove, translateRect, type Guide } from './guides';
   import { hitObject } from './hit-test';
   import { drawPreview, headAt, previewGeometry } from './preview-render';
@@ -96,6 +96,32 @@
     editor.project && designing ? selectedObjects(editor.project, editor.selection) : [],
   );
   const selectionBounds = $derived(boundsOf(selection));
+  const sizeBox = $derived(selectionBounds ? selectionBox(bedRectToScreen(canvas.view, bed, selectionBounds)) : null);
+  const canResize = $derived(selection.length > 0 && selection.every((o) => !o.locked));
+
+  function editSize(event: Event, axis: 'width' | 'height') {
+    const input = event.currentTarget as HTMLInputElement;
+    const value = Number(input.value);
+    const bounds = selectionBounds;
+    if (!bounds || !canResize) return;
+    const old = axis === 'width' ? bounds.maxX - bounds.minX : bounds.maxY - bounds.minY;
+    if (!Number.isFinite(value) || value < 0.01 || old <= 0) {
+      input.value = old.toFixed(3);
+      return;
+    }
+    if (Math.abs(value - old) < 1e-9) return;
+    const matrix = resizeAbout(bounds, editor.anchor, { [axis]: value }, editor.keepAspect);
+    editor.commit((p) => transformObjects(p, editor.selection, matrix));
+    editor.sealHistory();
+  }
+
+  function sizeKey(event: KeyboardEvent, current: number) {
+    event.stopPropagation();
+    const input = event.currentTarget as HTMLInputElement;
+    if (event.key === 'Escape') { input.value = current.toFixed(3); input.blur(); }
+    else if (event.key === 'Enter') { event.preventDefault(); input.blur(); }
+  }
+
   const rotatable = $derived(selection.length > 0 && selection.every((o) => o.kind !== 'image'));
   /** Objects that glow because their row in the Layers panel is hovered. */
   const highlighted = $derived.by((): ReadonlySet<string> => {
@@ -195,13 +221,6 @@
       if (selectionBounds && editor.tool !== 'node') {
         const box = selectionBox(bedRectToScreen(canvas.view, bed, selectionBounds));
         drawSelection(ctx, box, selectionHandles(), palette);
-        drawSizeLabel(
-          ctx,
-          box,
-          selectionBounds.maxX - selectionBounds.minX,
-          selectionBounds.maxY - selectionBounds.minY,
-          palette,
-        );
       }
     }
 
@@ -577,6 +596,23 @@
     {ondblclick}
   ></canvas>
 
+  {#if designing && selectionBounds && sizeBox && editor.tool === 'select' && !canvas.editingTextId}
+    <div class="size-pill" role="group" aria-label="Selection dimensions in millimeters"
+      style:left={`${Math.max(90, Math.min(canvas.size.width - 90, (sizeBox.minX + sizeBox.maxX) / 2))}px`}
+      style:top={`${Math.max(0, Math.min(canvas.size.height - 26, sizeBox.maxY + 8))}px`}>
+      <input aria-label="Selection width in millimeters" data-testid="canvas-size-width" type="text" inputmode="decimal"
+        value={(selectionBounds.maxX - selectionBounds.minX).toFixed(3)} disabled={!canResize || selectionBounds.maxX === selectionBounds.minX}
+        onfocus={(e) => e.currentTarget.select()} onchange={(e) => editSize(e, 'width')}
+        onkeydown={(e) => sizeKey(e, selectionBounds!.maxX - selectionBounds!.minX)} />
+      <span>×</span>
+      <input aria-label="Selection height in millimeters" data-testid="canvas-size-height" type="text" inputmode="decimal"
+        value={(selectionBounds.maxY - selectionBounds.minY).toFixed(3)} disabled={!canResize || selectionBounds.maxY === selectionBounds.minY}
+        onfocus={(e) => e.currentTarget.select()} onchange={(e) => editSize(e, 'height')}
+        onkeydown={(e) => sizeKey(e, selectionBounds!.maxY - selectionBounds!.minY)} />
+      <span>mm</span>
+    </div>
+  {/if}
+
   <ErrorBoundary name="Node editor" compact><NodeEditor {bed} /><PenOverlay {bed} /></ErrorBoundary>
   <TextEditOverlay {bed} {bedColor} />
   <ErrorBoundary name="Bed warning" compact><BedWarning /></ErrorBoundary>
@@ -612,6 +648,34 @@
     touch-action: none;
     outline: none;
   }
+
+  .size-pill {
+    position: absolute;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    padding: 2px 5px;
+    border-radius: 5px;
+    background: var(--ol-beam);
+    color: var(--ol-bg);
+    font: 500 11px var(--ol-font-mono);
+    white-space: nowrap;
+  }
+  .size-pill input {
+    width: 7ch;
+    min-width: 0;
+    padding: 1px 2px;
+    border: 0;
+    border-radius: 3px;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    text-align: center;
+    cursor: text;
+  }
+  .size-pill input:focus { background: var(--ol-bg); color: var(--ol-text); outline: 1px solid var(--ol-text); }
+  .size-pill input:disabled { cursor: default; }
 
   .empty {
     position: absolute;
