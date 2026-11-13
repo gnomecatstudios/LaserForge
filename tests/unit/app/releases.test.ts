@@ -49,6 +49,19 @@ describe('portable releases', () => {
     expect(isPlatform('toString')).toBe(false);
     expect(isPlatform('linux-arm')).toBe(false);
   });
+  it('ignores unsupported packages in historical releases', () => {
+    const data = release();
+    for (const platform of ['macos-intel', 'macos-apple-silicon']) {
+      expect(isPlatform(platform)).toBe(false);
+      data.assets.push({
+        name: `LaserForge-Portable-${platform}.zip`,
+        state: 'uploaded',
+        size: 100,
+        browser_download_url: `https://github.com/${DOWNLOAD_REPO}/releases/download/v0.3.0/LaserForge-Portable-${platform}.zip`,
+      });
+    }
+    expect(Object.keys(parseRelease(data).downloads)).toEqual(Object.keys(PLATFORMS));
+  });
   it('rejects drafts, prereleases, bad versions and redirected release URLs', () => {
     for (const change of [
       { draft: true },

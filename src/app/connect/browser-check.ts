@@ -101,9 +101,10 @@ export function flagAddress(browser: BrowserId, flag: string): string {
 
 /** What stands between this browser and `method`, or null when nothing does. */
 export function diagnose(method: ConnectMedium, env: BrowserEnv): Blocker | null {
-  if (method === 'bluetooth' ? env.bluetooth : env.serial) return null;
   const browser = detectBrowser(env);
   const os = detectOs(env.userAgent);
+  if (os === 'mac') return { kind: 'browser', method, browser, os, reason: 'unsupported' };
+  if (method === 'bluetooth' ? env.bluetooth : env.serial) return null;
   // Every browser on iPhone and iPad is Safari underneath, without Bluetooth or USB access.
   if (os === 'ios') return { kind: 'browser', method, browser, os, reason: 'device' };
   if (!CHROMIUM.includes(browser)) return { kind: 'browser', method, browser, os, reason: 'unsupported' };

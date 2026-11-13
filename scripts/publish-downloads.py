@@ -52,7 +52,6 @@ def main():
             if any(n.endswith(('.map', '.go', '.ts', '.svelte')) or '/.git/' in n for n in names):
                 parser.error(f'Unexpected source files in {path}')
             binary = next(n for n in names if n.endswith('LaserForge-Portable.exe') or
-                          n.endswith('Resources/LaserForge-Portable') or
                           n == 'LaserForge-Portable/LaserForge-Portable')
             expected = {'platform': platform, 'version': version}
             prefix = 'LaserForge-Portable/'

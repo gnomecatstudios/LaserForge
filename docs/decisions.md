@@ -336,3 +336,8 @@ Rectangular and circular arrays treat a multi-object selection as one repeat uni
 Converting text to paths replaces its object kind in place and preserves the ID, layer, transform, contours, and Bézier segments. It requires complete, current outlines and is one undo step. No font data remains on the vector.
 
 Text on a path stores an optional `pathLayout` baseline snapshot in text-local coordinates, plus arc-length offset, normal offset, and direction. Fonts, wording, alignment, and spacing remain editable. The original guide remains separate; changes to it do not change the snapshot. The guide's layer output must be disabled if it should not burn. Glyphs are shaped normally, then individually positioned and rotated by arc length, preserving their outlines and holes. Closed baselines wrap; open ones extend along the end tangent. This is an additive optional field with no migration required for existing schema-1 documents; cached outlines preserve the appearance on load. Double-click/Enter editing of path text uses the inspector rather than the straight-text overlay.
+
+
+## Supported platforms
+
+Per owner preference, native packages target Windows x64, Linux x64, and Raspberry Pi OS ARM64/ARM32. macOS package targets, application bundles, icon generation, download entries, and platform-specific setup instructions are removed. OS detection remains only to identify macOS as unsupported and avoid presenting Linux driver advice. Historical Mac assets are ignored by the update parser. Existing published releases are not changed by this source update.

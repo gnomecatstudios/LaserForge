@@ -9,7 +9,6 @@ export interface HelpLine {
 }
 
 export const CH340_WINDOWS = 'https://www.wch-ic.com/downloads/CH341SER_EXE.html';
-export const CH340_MAC = 'https://www.wch-ic.com/downloads/CH34XSER_MAC_ZIP.html';
 export const CP210X = 'https://www.silabs.com/developer-tools/usb-to-uart-bridge-vcp-drivers';
 
 export const POWER: HelpLine[] = [
@@ -34,7 +33,7 @@ export const BLUETOOTH: HelpLine[] = [
 
 export const PLATFORM_LABELS: Record<DesktopPlatform, string> = {
   windows: 'Windows',
-  mac: 'macOS',
+  mac: 'macOS (unsupported)',
   linux: 'Linux',
   chromeos: 'ChromeOS',
 };
@@ -54,26 +53,7 @@ export const DRIVERS: Record<DesktopPlatform, HelpLine[]> = {
     },
     { text: 'Run the installer, unplug the laser, plug it back in and reload this page.' },
   ],
-  mac: [
-    { text: 'CH340 and CH9102 chips work out of the box on macOS 11 and later.' },
-    {
-      text: 'Check the chip: Apple menu → About This Mac → More Info → System Report → USB.',
-    },
-    {
-      text: 'CP210x boards and older macOS need a driver:',
-      links: [
-        { label: 'CP210x driver (Silicon Labs)', href: CP210X },
-        { label: 'CH34x driver (WCH)', href: CH340_MAC },
-      ],
-    },
-    {
-      text: 'After installing, open System Settings → Privacy & Security, click Allow next to the driver and restart.',
-    },
-    {
-      text: 'Check in Terminal: a usbserial, wchusbserial or SLAB_USBtoUART entry is your laser.',
-      code: 'ls /dev/cu.*',
-    },
-  ],
+  mac: [{ text: 'macOS is not supported. Use a Windows or Linux computer, including Raspberry Pi.' }],
   linux: [
     {
       text: 'Drivers ship with the kernel. With the laser plugged in, its port shows here:',

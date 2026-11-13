@@ -29,8 +29,6 @@ The [public Laser Forge downloads repository](https://github.com/gnomecatstudios
 | Platform | Download |
 | --- | --- |
 | Windows x64 | [Portable ZIP](https://github.com/gnomecatstudios/LaserForgeDownloads/releases/latest/download/LaserForge-Portable-windows-x64.zip) |
-| macOS Apple Silicon | [Portable ZIP](https://github.com/gnomecatstudios/LaserForgeDownloads/releases/latest/download/LaserForge-Portable-macos-apple-silicon.zip) |
-| macOS Intel | [Portable ZIP](https://github.com/gnomecatstudios/LaserForgeDownloads/releases/latest/download/LaserForge-Portable-macos-intel.zip) |
 | Linux x64 | [Debian installer](https://github.com/gnomecatstudios/LaserForgeDownloads/releases/latest/download/LaserForge-Setup-linux-x64.deb) · [Portable ZIP](https://github.com/gnomecatstudios/LaserForgeDownloads/releases/latest/download/LaserForge-Portable-linux-x64.zip) |
 | Raspberry Pi OS 64-bit (ARM64) | [Debian installer](https://github.com/gnomecatstudios/LaserForgeDownloads/releases/latest/download/LaserForge-Setup-raspberry-pi-arm64.deb) · [Portable ZIP](https://github.com/gnomecatstudios/LaserForgeDownloads/releases/latest/download/LaserForge-Portable-raspberry-pi-arm64.zip) |
 | Raspberry Pi OS 32-bit (ARMv6+) | [Debian installer](https://github.com/gnomecatstudios/LaserForgeDownloads/releases/latest/download/LaserForge-Setup-raspberry-pi-arm32.deb) · [Portable ZIP](https://github.com/gnomecatstudios/LaserForgeDownloads/releases/latest/download/LaserForge-Portable-raspberry-pi-arm32.zip) |
@@ -43,17 +41,6 @@ The launcher serves the app locally at `http://127.0.0.1:5190/`; keep it running
 ### Windows x64
 
 [Download the Windows portable ZIP](https://github.com/gnomecatstudios/LaserForgeDownloads/releases/latest/download/LaserForge-Portable-windows-x64.zip). Extract the entire ZIP, then double-click `LaserForge-Portable.exe` in the extracted folder. Keep the launcher window open and use Chrome or Edge for machine control.
-
-### macOS
-
-Choose the [Apple Silicon ZIP](https://github.com/gnomecatstudios/LaserForgeDownloads/releases/latest/download/LaserForge-Portable-macos-apple-silicon.zip) for an M-series Mac or the [Intel ZIP](https://github.com/gnomecatstudios/LaserForgeDownloads/releases/latest/download/LaserForge-Portable-macos-intel.zip) for an Intel Mac. Extract the ZIP and double-click **Laser Forge.app** to open its launcher in Terminal. Keep the extracted folder together. You can also open Terminal in that folder and run:
-
-```sh
-chmod +x LaserForge-Portable
-./LaserForge-Portable
-```
-
-The builds are unsigned; macOS may require approval in system security settings. Keep Terminal open while using the app.
 
 ### Linux x64
 

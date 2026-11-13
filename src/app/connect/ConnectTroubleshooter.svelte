@@ -21,7 +21,7 @@
 
   let platform = $state<DesktopPlatform>(detectPlatform());
   let link = $state<'usb' | 'bluetooth'>('usb');
-  const PLATFORMS = Object.keys(PLATFORM_LABELS) as DesktopPlatform[];
+  const PLATFORMS = Object.keys(PLATFORM_LABELS).filter((p) => p !== 'mac') as DesktopPlatform[];
 
   async function copy(code: string) {
     try {

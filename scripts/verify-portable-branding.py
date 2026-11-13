@@ -3,7 +3,6 @@
 import argparse
 import hashlib
 from pathlib import Path
-import plistlib
 import struct
 import subprocess
 import tempfile
@@ -76,11 +75,9 @@ def main():
     icon = (ROOT / 'public/icon-192.png').read_bytes()
     mark = (ROOT / 'public/mark.png').read_bytes()
     ico = (ROOT / 'public/favicon.ico').read_bytes()
-    icns = (ROOT / 'public/laserforge.icns').read_bytes()
-    assert icns[:4] == b'icns' and struct.unpack_from('>I', icns, 4)[0] == len(icns)
     expected_windows = set(ico_images(ico))
     packages = sorted([*downloads.glob('*.zip'), *downloads.glob('*.deb')])
-    assert len(packages) == 10, 'Expected six portable ZIPs, one source ZIP, and three Debian packages'
+    assert len(packages) == 8, 'Expected four portable ZIPs, one source ZIP, and three Debian packages'
     sums = dict(line.split('  ', 1)[::-1] for line in (downloads / 'SHA256SUMS.txt').read_text().splitlines())
     assert set(sums) == {path.name for path in packages}, 'Checksum manifest differs from downloads'
     for path in packages:
@@ -93,18 +90,10 @@ def main():
                 assert bundle.read(prefix + 'LaserForge.ico') == ico, path.name
                 if source:
                     assert bundle.read('dist/mark.png') == mark
-                    assert bundle.read('LaserForge.icns') == icns
                 elif 'windows' in path.name:
                     binary = bundle.read(prefix + 'LaserForge-Portable.exe')
                     assert set(windows_images(binary)) == expected_windows, 'Embedded Windows icon differs'
                     assert mark in binary, 'Windows embedded web logo differs'
-                elif 'macos' in path.name:
-                    contents = prefix + 'Laser Forge.app/Contents/'
-                    metadata = plistlib.loads(bundle.read(contents + 'Info.plist'))
-                    assert metadata['CFBundleIconFile'] == 'LaserForge.icns'
-                    assert bundle.read(contents + 'Resources/LaserForge.icns') == icns
-                    assert mark in bundle.read(contents + 'Resources/LaserForge-Portable')
-                    assert bundle.getinfo(contents + 'MacOS/launch').external_attr >> 16 & 0o111
                 else:
                     assert mark in bundle.read(prefix + 'LaserForge-Portable'), path.name
         else:

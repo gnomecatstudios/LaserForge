@@ -49,15 +49,7 @@ const RETRY: SetupStep = {
 function adapterSteps(os: DeviceOs, name: string): SetupStep[] {
   switch (os) {
     case 'mac':
-      return [
-        { art: 'toggle', title: 'Turn on Bluetooth', detail: 'Control Centre in the menu bar → Bluetooth.' },
-        {
-          art: 'permission',
-          title: `Let ${name} use Bluetooth`,
-          detail: `System Settings → Privacy & Security → Bluetooth, then switch on ${name}.`,
-        },
-        { ...RETRY, title: `Restart ${name} and press Connect again` },
-      ];
+      return [];
     case 'windows':
       return [
         {
@@ -111,6 +103,20 @@ function adapterSteps(os: DeviceOs, name: string): SetupStep[] {
 }
 
 export function setupGuide(blocker: Blocker): SetupGuide {
+  if (blocker.os === 'mac')
+    return {
+      title: 'Use a supported computer',
+      lead: 'macOS is not supported by Laser Forge.',
+      steps: [
+        {
+          art: 'computer',
+          title: 'Use Windows or Linux',
+          detail: 'Raspberry Pi is supported with desktop Linux and a compatible browser.',
+          code: APP_URL,
+        },
+      ],
+      retry: false,
+    };
   const name = BROWSER_NAMES[blocker.browser];
   const Name = name.charAt(0).toUpperCase() + name.slice(1);
   if (blocker.kind === 'flag') {
@@ -166,8 +172,8 @@ export function setupGuide(blocker: Blocker): SetupGuide {
           title: 'Open Laser Forge on a computer',
           detail:
             blocker.os === 'android'
-              ? 'Chrome or Edge on Windows, macOS, Linux or ChromeOS. LaserPeckers also connect over Bluetooth here.'
-              : 'Chrome or Edge on Windows, macOS, Linux or ChromeOS.',
+              ? 'Chrome or Edge on Windows, Linux or ChromeOS. LaserPeckers also connect over Bluetooth here.'
+              : 'Chrome or Edge on Windows, Linux or ChromeOS.',
           code: APP_URL,
         },
       ],

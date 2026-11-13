@@ -17,8 +17,7 @@ be installed for USB machine control. The browser is not bundled.
 
 For Raspberry Pi setup and architecture selection, see [Raspberry Pi](raspberry-pi.md).
 
-On Windows, double-click `LaserForge-Portable.exe`; the executable carries the Laser Forge icon. Keep the extracted folder together. On Linux, run `./LaserForge-Portable` in Terminal; `chmod +x LaserForge-Portable` may be needed.
-The builds are unsigned.
+On Windows, double-click `LaserForge-Portable.exe`; the executable carries the Laser Forge icon. On Linux, run `./LaserForge-Portable` in Terminal; `chmod +x LaserForge-Portable` may be needed.
 Keep the launcher window open. It serves embedded app files only on
 <http://127.0.0.1:5190/> and opens your default browser. Use Chrome or Edge
 manually if your default browser does not support machine connections.

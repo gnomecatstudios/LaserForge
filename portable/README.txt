@@ -1,8 +1,7 @@
 LASER FORGE PORTABLE — offline package
 
 The gear-and-laser logo is included as icon.png and LaserForge.ico.
-Windows embeds it in the executable; macOS includes Laser Forge.app with the same icon.
-On macOS, double-click Laser Forge.app to open its launcher in Terminal.
+Windows embeds it in the executable.
 
 Source: https://github.com/gnomecatstudios/LaserForge.dev
 Source snapshot: see VERSION.txt (or dist/portable-version.txt in the source ZIP).
@@ -30,9 +29,8 @@ Your desktop may ask you to allow launching its new shortcut once.
 START WITHOUT INSTALLING
 Extract the ZIP first. Run the launcher for your system.
 Windows: double-click LaserForge-Portable.exe.
-macOS/Linux: run ./LaserForge-Portable from Terminal.
-On macOS an unsigned local build may need approval in system security settings.
-If needed, run chmod +x LaserForge-Portable on macOS/Linux.
+Linux: run ./LaserForge-Portable from Terminal.
+If needed, run chmod +x LaserForge-Portable on Linux.
 Keep the launcher running while using the app. Ctrl+C stops the server.
 If the browser does not open, visit http://127.0.0.1:5190/.
 Use desktop Chrome or Edge for USB/Bluetooth machine connections.
@@ -62,6 +60,6 @@ Production app built with pnpm install --frozen-lockfile and pnpm build.
 Launcher source is main.go and go.mod in the source ZIP. Put the built app's
 dist folder beside main.go, then use Go 1.24+ and go build .
 Cross builds: GOOS=windows GOARCH=amd64 go build -o LaserForge-Portable.exe .
-Other supported GOOS/GOARCH combinations: linux/amd64, darwin/amd64,
-darwin/arm64. No CGO is needed.
+Other supported GOOS/GOARCH combinations: linux/amd64, linux/arm64,
+linux/arm (GOARM=6). No CGO is needed.
 These executables are unsigned. Physical laser hardware has not been tested.
