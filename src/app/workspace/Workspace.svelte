@@ -12,6 +12,7 @@
   import SelectionBar from './SelectionBar.svelte';
   import PreviewBar from './PreviewBar.svelte';
   import LayersPanel from './LayersPanel.svelte';
+  import LayoutPanel from './LayoutPanel.svelte';
   import SelectionInspector from '../inspector/SelectionInspector.svelte';
   import { textOutlines } from '../state/text.svelte';
   import MachinePanel from '../machine/MachinePanel.svelte';
@@ -93,6 +94,7 @@
         {#if editor.project}
           <ErrorBoundary name="Layers"><LayersPanel /></ErrorBoundary>
           <ErrorBoundary name="Inspector"><SelectionInspector /></ErrorBoundary>
+          <ErrorBoundary name="Layout"><LayoutPanel /></ErrorBoundary>
         {:else if editor.gcode}
           <section class="gcode-card" aria-label="G-code file">
             <FileCode size={18} />

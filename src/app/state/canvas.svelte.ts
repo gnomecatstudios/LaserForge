@@ -1,4 +1,5 @@
 /** Canvas viewport state shared with the zoom control, status bar and shortcuts. */
+import type { SceneObject } from 'libopenlaser/project';
 import type { PathData, Rect, Vec2 } from 'libopenlaser/geometry';
 import { clampZoom, fitBed, fitRect, zoomAt, type BedFrame, type View } from '../canvas/viewport';
 
@@ -17,6 +18,8 @@ class CanvasState {
   selectTextOnEdit = false;
   /** Outline tool preview in bed mm, while its options are open. */
   outlinePreview = $state.raw<PathData[] | null>(null);
+
+  layoutPreview = $state.raw<SceneObject[]>([]);
 
   editText(id: string, selectAll = false): void {
     this.selectTextOnEdit = selectAll;

@@ -33,7 +33,10 @@ const nudgeStep = 1;
 function selectedText(): string | null {
   if (editor.selection.size !== 1) return null;
   const [id] = editor.selection;
-  return editor.project?.objects.find((o) => o.id === id && o.kind === 'text' && !o.locked)?.id ?? null;
+  return (
+    editor.project?.objects.find((o) => o.id === id && o.kind === 'text' && !o.locked && !o.pathLayout)?.id ??
+    null
+  );
 }
 
 function bed() {

@@ -326,3 +326,13 @@ Every step has a small illustration of what to look for, because many users of t
 - A new app version in `package.json` must be built and released under the same `vX.Y.Z` tag. The publishing script validates embedded platform/version metadata, excludes source archives and source maps, stages assets in a draft release, and publishes only after every upload succeeds. Older packages need one manual upgrade to gain the popup.
 
 - The public downloads repository is `gnomecatstudios/LaserForgeDownloads`. Version 0.2.1 corrects the feed and package URLs; earlier packages require a manual upgrade because their update checks used the uncreated repository name.
+
+## Layout tools and editable text baselines
+
+Object alignment uses bed-space bounds and supports selection bounds, the last selected object, or the bed. Screen-facing left/top commands account for the machine's origin corner. Distribution keeps the two outer objects fixed and supports equal centre spacing or equal edge gaps. Locked objects remain fixed.
+
+Rectangular and circular arrays treat a multi-object selection as one repeat unit. Counts include the original. Rectangular spacing is the gap between selection bounds; a full circular sweep excludes a duplicate endpoint, while a partial sweep includes both ends. Copies preserve layers and assets and receive fresh IDs only when applied. Previews are canvas-only and never enter the project, CAM, autosave, or undo history. An array is limited to 1,000 resulting objects. Circular rotation is disabled for selections containing images because the existing image workflow does not support arbitrary rotation.
+
+Converting text to paths replaces its object kind in place and preserves the ID, layer, transform, contours, and Bézier segments. It requires complete, current outlines and is one undo step. No font data remains on the vector.
+
+Text on a path stores an optional `pathLayout` baseline snapshot in text-local coordinates, plus arc-length offset, normal offset, and direction. Fonts, wording, alignment, and spacing remain editable. The original guide remains separate; changes to it do not change the snapshot. The guide's layer output must be disabled if it should not burn. Glyphs are shaped normally, then individually positioned and rotated by arc length, preserving their outlines and holes. Closed baselines wrap; open ones extend along the end tangent. This is an additive optional field with no migration required for existing schema-1 documents; cached outlines preserve the appearance on load. Double-click/Enter editing of path text uses the inspector rather than the straight-text overlay.

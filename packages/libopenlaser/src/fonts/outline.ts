@@ -1,5 +1,6 @@
 /* Text to outlines: the paths CAM burns for a TextObject.
    textToPaths is pure (font in, PathData out); outlineText fetches and parses the face. */
+import { baselineSampler, placeGlyphOnPath } from './path-layout';
 import { union } from '../geometry';
 import { flattenPath } from '../geometry';
 import { signedArea } from '../geometry';
@@ -46,7 +47,10 @@ export type OtFont = {
   ): Array<{ commands: OtCommand[] }>;
 };
 
-export type TextLayoutSpec = Pick<TextObject, 'text' | 'fontSize' | 'align' | 'lineHeight' | 'letterSpacing'>;
+export type TextLayoutSpec = Pick<
+  TextObject,
+  'text' | 'fontSize' | 'align' | 'lineHeight' | 'letterSpacing' | 'pathLayout'
+>;
 export type TextOutline = {
   paths: PathData[];
   width: number;
@@ -56,7 +60,15 @@ export type TextOutline = {
 };
 export type OutlineTextInput = Pick<
   TextObject,
-  'text' | 'fontFamily' | 'fontSize' | 'fontWeight' | 'italic' | 'align' | 'lineHeight' | 'letterSpacing'
+  | 'text'
+  | 'fontFamily'
+  | 'fontSize'
+  | 'fontWeight'
+  | 'italic'
+  | 'align'
+  | 'lineHeight'
+  | 'letterSpacing'
+  | 'pathLayout'
 >;
 
 const same = (a: Vec2, b: Vec2) => Math.abs(a.x - b.x) < 1e-9 && Math.abs(a.y - b.y) < 1e-9;
@@ -236,6 +248,7 @@ export function textToPaths(
   const flip = (x: number, y: number): Vec2 => ({ x, y: height - y });
 
   const paths: PathData[] = [];
+  const sample = spec.pathLayout ? baselineSampler(spec.pathLayout) : null;
   lines.forEach((line, i) => {
     if (!line.trim()) return;
     const slack = width - widths[i];
@@ -249,7 +262,15 @@ export function textToPaths(
       for (const glyph of glyphs) linePaths.push(solidGlyph(commandsToPaths(glyph.commands, flip)));
       x += advance(run);
     }
-    paths.push(...mergeTouching(linePaths));
+    if (spec.pathLayout && sample) {
+      const slack = sample.length - width;
+      const shift =
+        spec.pathLayout.offset + (spec.align === 'center' ? slack / 2 : spec.align === 'right' ? slack : 0);
+      const placed = linePaths.map((g) =>
+        placeGlyphOnPath(g, height - baseline, shift, spec.pathLayout!.normalOffset - i * pitch, sample),
+      );
+      paths.push(...mergeTouching(placed));
+    } else paths.push(...mergeTouching(linePaths));
   });
   const missing = missingChars(spec.text, shapers, has);
   return missing.length ? { paths, width, height, missing } : { paths, width, height };

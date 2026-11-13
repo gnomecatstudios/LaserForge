@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { convertSelectedText, detachTextFromPath } from '../text-actions';
   import SectionToggle from '../workspace/SectionToggle.svelte';
   import { sections } from '../state/sections.svelte';
   import AlignStart from '@lucide/svelte/icons/text-align-start';
@@ -100,6 +101,64 @@
         {/each}
       </div>
     </div>
+    <button
+      type="button"
+      class="btn"
+      data-testid="text-to-paths"
+      disabled={object.locked ||
+        textOutlines.pending.has(object.id) ||
+        !object.paths.length ||
+        !!object.missingGlyphs?.length}
+      onclick={convertSelectedText}>Convert text to paths</button
+    >
+    <p class="hint">Conversion enables node editing. Undo restores editable text.</p>
+    {#if object.pathLayout}
+      <div class="grid" aria-label="Text on path">
+        <NumberField
+          label="Path offset"
+          unit="mm"
+          decimals={2}
+          value={object.pathLayout.offset}
+          onchange={(v, live) =>
+            textOutlines.update(
+              object.id,
+              { pathLayout: { ...object.pathLayout!, offset: v } },
+              { live, field: 'path-offset' },
+            )}
+        />
+        <NumberField
+          label="Baseline offset"
+          unit="mm"
+          decimals={2}
+          value={object.pathLayout.normalOffset}
+          onchange={(v, live) =>
+            textOutlines.update(
+              object.id,
+              { pathLayout: { ...object.pathLayout!, normalOffset: v } },
+              { live, field: 'baseline-offset' },
+            )}
+        />
+      </div>
+      <label
+        ><input
+          type="checkbox"
+          checked={object.pathLayout.reverse}
+          onchange={(e) =>
+            textOutlines.update(object.id, {
+              pathLayout: { ...object.pathLayout!, reverse: e.currentTarget.checked },
+            })}
+        /> Reverse path direction</label
+      >
+      <button type="button" class="btn" onclick={() => detachTextFromPath(object)}
+        >Detach text from path</button
+      >
+      <p class="hint">
+        Text stays editable. Long text wraps around closed paths or extends beyond open endpoints. Hide or
+        disable output for the guide layer if it should not burn.
+      </p>
+    {:else}
+      <p class="hint">For text on a path, select this text and one vector with a single path.</p>
+    {/if}
     <div class="grid">
       <NumberField
         label="Size"
@@ -137,6 +196,12 @@
 </section>
 
 <style>
+  .hint {
+    margin: 0;
+    font-size: var(--ol-fs-sm);
+    color: var(--ol-text-muted);
+  }
+
   .text {
     padding: 16px;
     display: flex;

@@ -124,6 +124,7 @@
       canvas.size,
       canvas.measure,
       canvas.outlinePreview,
+      canvas.layoutPreview,
       canvas.editingTextId,
       bed,
       drag,
@@ -173,6 +174,20 @@
         palette,
         canvas.editingTextId,
       );
+      if (canvas.layoutPreview.length) {
+        ctx.save();
+        ctx.globalAlpha = 0.45;
+        drawObjects(
+          ctx,
+          { ...project, objects: canvas.layoutPreview },
+          canvas.view,
+          bed,
+          (object, layer) => images.look(object, layer, project.assets[object.assetId]),
+          palette,
+          null,
+        );
+        ctx.restore();
+      }
       const offset = machine.jobOffset;
       if (offset && (offset.x !== 0 || offset.y !== 0))
         drawJobGhost(ctx, project, offset, canvas.view, bed, palette);
@@ -444,7 +459,7 @@
     }
     if (hit?.kind === 'text' && !hit.locked) {
       editor.select([hit.id]);
-      canvas.editText(hit.id);
+      if (!hit.pathLayout) canvas.editText(hit.id);
     }
   }
 
