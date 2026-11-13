@@ -202,3 +202,46 @@ describe('overlapping glyph contours', () => {
     expect(paths.some((p) => p.segments.some((s) => s.type === 'C'))).toBe(true);
   });
 });
+
+describe('text on a path', () => {
+  it('preserves real glyph contours on a straight baseline and aligns along its length', () => {
+    const straight = textToPaths(spec('O'), font);
+    const pathLayout = {
+      path: {
+        start: { x: 0, y: 0 },
+        closed: false,
+        segments: [{ type: 'L' as const, to: { x: 100, y: 0 } }],
+      },
+      offset: 0,
+      normalOffset: 0,
+      reverse: false,
+    };
+    const curved = textToPaths(spec('O', { pathLayout }), font);
+    expect(curved.paths).toHaveLength(straight.paths.length);
+    const a = bounds(straight.paths),
+      b = bounds(curved.paths);
+    expect(b.x0).toBeCloseTo(a.x0);
+    expect(b.x1 - b.x0).toBeCloseTo(a.x1 - a.x0);
+    expect(b.y1 - b.y0).toBeCloseTo(a.y1 - a.y0);
+    const centered = bounds(textToPaths(spec('O', { align: 'center', pathLayout }), font).paths);
+    expect(centered.x0 - b.x0).toBeCloseTo((100 - straight.width) / 2);
+  });
+  it('rotates letters on a vertical baseline without changing their dimensions or holes', () => {
+    const horizontal = bounds(textToPaths(spec('O'), font).paths);
+    const out = textToPaths(
+      spec('O', {
+        pathLayout: {
+          path: { start: { x: 0, y: 0 }, closed: false, segments: [{ type: 'L', to: { x: 0, y: 100 } }] },
+          offset: 0,
+          normalOffset: 0,
+          reverse: false,
+        },
+      }),
+      font,
+    );
+    const vertical = bounds(out.paths);
+    expect(vertical.x1 - vertical.x0).toBeCloseTo(horizontal.y1 - horizontal.y0);
+    expect(vertical.y1 - vertical.y0).toBeCloseTo(horizontal.x1 - horizontal.x0);
+    expect(out.paths).toHaveLength(2);
+  });
+});

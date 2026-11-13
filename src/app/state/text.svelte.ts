@@ -20,7 +20,15 @@ export const DEFAULT_TEXT_SIZE_MM = 10;
 
 type TextStyle = Pick<
   TextObject,
-  'text' | 'fontFamily' | 'fontSize' | 'fontWeight' | 'italic' | 'align' | 'lineHeight' | 'letterSpacing'
+  | 'text'
+  | 'fontFamily'
+  | 'fontSize'
+  | 'fontWeight'
+  | 'italic'
+  | 'align'
+  | 'lineHeight'
+  | 'letterSpacing'
+  | 'pathLayout'
 >;
 
 const styleKey = (t: TextStyle) =>
@@ -33,6 +41,7 @@ const styleKey = (t: TextStyle) =>
     t.align,
     t.lineHeight,
     t.letterSpacing,
+    t.pathLayout,
   ]);
 
 /**
@@ -57,6 +66,7 @@ class TextOutlines {
   pending = $state<ReadonlySet<Id>>(new Set());
   private timers = new Map<Id, ReturnType<typeof setTimeout>>();
   private failed = new Set<string>();
+  private revisions = new Map<Id, number>();
 
   /**
    * Creates a text object with its top-left (as seen on screen) at `at` (bed mm) and selects it.
@@ -133,25 +143,31 @@ class TextOutlines {
   }
 
   private schedule(id: Id, delayMs: number, inPlace = false): void {
+    const revision = (this.revisions.get(id) ?? 0) + 1;
+    this.revisions.set(id, revision);
+    this.pending = new Set([...this.pending, id]);
     clearTimeout(this.timers.get(id));
     this.timers.set(
       id,
-      setTimeout(() => void this.refresh(id, inPlace), delayMs),
+      setTimeout(() => void this.refresh(id, inPlace, revision), delayMs),
     );
   }
 
   /** `inPlace`: same text and style, new outliner; the block stays exactly where it is. */
-  private async refresh(id: Id, inPlace = false): Promise<void> {
+  private async refresh(id: Id, inPlace = false, revision = 0): Promise<void> {
     this.timers.delete(id);
     const object = editor.project?.objects.find((o): o is TextObject => o.id === id && o.kind === 'text');
-    if (!object) return;
+    if (!object) {
+      this.pending = new Set([...this.pending].filter((key) => key !== id));
+      return;
+    }
     const key = styleKey(object);
     this.pending = new Set([...this.pending, id]);
     try {
       const outline = await outlineText(object);
       const latest = editor.project?.objects.find((o): o is TextObject => o.id === id && o.kind === 'text');
       // Drop results for text that changed again while the font was loading.
-      if (!latest || styleKey(latest) !== key) return;
+      if (!latest || styleKey(latest) !== key || this.revisions.get(id) !== revision) return;
       if (!outline) {
         this.failed.add(key);
         return;
@@ -162,7 +178,7 @@ class TextOutlines {
       reportError(error, 'Text outlines');
     } finally {
       const next = new Set(this.pending);
-      next.delete(id);
+      if (this.revisions.get(id) === revision) next.delete(id);
       this.pending = next;
     }
   }
@@ -175,7 +191,7 @@ class TextOutlines {
     inPlace = false,
     missing?: string[],
   ): void {
-    const shift = inPlace ? 0 : blockHeight(object) - height;
+    const shift = inPlace || object.pathLayout ? 0 : blockHeight(object) - height;
     const transform =
       Math.abs(shift) > 1e-9 ? multiply(object.transform, translation(0, shift)) : object.transform;
     editor.commit(

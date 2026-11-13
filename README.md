@@ -101,6 +101,9 @@ Laser Forge designs, previews and runs jobs on GRBL laser engravers and cutters.
 - **Text in any Google Font**, an installed system font or your own TTF, OTF or WOFF files, picked from a searchable list with live previews and burned as clean vector outlines. Bangla, Devanagari, Arabic and other scripts are shaped with HarfBuzz.
 - **Outline tool** that draws one cut line around a selection at any offset: a logo and its key-ring hole get a single outline.
 - **Node editor**: draw paths node by node (B), click the first node to close a shape, double-click a vector or use N to adjust endpoints and Bézier handles, and unite selected closed shapes. Enter finishes an open path; Esc cancels.
+- **Text to paths** converts complete text outlines into node-editable vectors, preserving curves, holes, layers and placement. Undo restores editable text.
+- **Layout** aligns objects to selection bounds, the last-selected object or the bed; distributes centres or edge gaps; and previews rectangular and circular arrays before applying them.
+- **Text on a path** places editable text on a selected single-path vector, with start/baseline offsets and reverse direction. The baseline is copied; the original guide remains separate.
 - **Shape library** with stars, gears, arrows, hearts, callouts and more, each with adjustable parameters, plus rectangle, ellipse and measure tools.
 - **Exact placement** with X, Y, W, H and angle fields, a 9-point anchor, and smart guides that snap dragged art to other objects and the bed.
 - **Preview** every burn and travel move, scrub through the job, and see a time estimate.

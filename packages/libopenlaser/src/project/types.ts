@@ -139,6 +139,14 @@ export interface ImageObject extends BaseObject {
 
 export type TextAlign = 'left' | 'center' | 'right';
 
+/** A baseline snapshot in text-local coordinates, independent of the original vector. */
+export interface TextPathLayout {
+  path: PathData;
+  offset: number;
+  normalOffset: number;
+  reverse: boolean;
+}
+
 /** Text set in a Google Font. CAM burns `paths`, the outlines cached from the font. */
 export interface TextObject extends BaseObject {
   kind: 'text';
@@ -172,6 +180,7 @@ export interface TextObject extends BaseObject {
    * fallback were both out of reach, offline say). They are absent from the burn.
    */
   missingGlyphs?: string[];
+  pathLayout?: TextPathLayout;
 }
 
 export interface Asset {

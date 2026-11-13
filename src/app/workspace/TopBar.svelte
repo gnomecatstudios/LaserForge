@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { convertSelectedText } from '../text-actions';
   import { checkForUpdates } from '../updates/updates.svelte';
   import { DropdownMenu } from 'bits-ui';
   import FolderOpen from '@lucide/svelte/icons/folder-open';
@@ -61,6 +62,7 @@
         run: () => actions.traceSelectedImage(),
         projectOnly: true,
       },
+      { label: 'Convert selected text to paths', run: convertSelectedText, projectOnly: true },
       'separator',
       { label: 'Machine profiles', run: () => (ui.profilesOpen = true) },
       { label: 'Device settings ($$)', run: () => (ui.deviceSettingsOpen = true) },
