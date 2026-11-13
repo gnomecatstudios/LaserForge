@@ -52,8 +52,15 @@ describe('which browser and device this is', () => {
 });
 
 describe('why a connection method is unavailable', () => {
+  it('identifies macOS as unsupported even when browser APIs exist', () => {
+    expect(diagnose('usb', env(UA.macChrome))).toMatchObject({ os: 'mac', reason: 'unsupported' });
+    expect(diagnose('bluetooth', env(UA.macChrome, { bluetooth: true }))).toMatchObject({
+      os: 'mac',
+      reason: 'unsupported',
+    });
+  });
   it('needs nothing when the browser has it', () => {
-    expect(diagnose('bluetooth', env(UA.macChrome, { bluetooth: true }))).toBeNull();
+    expect(diagnose('bluetooth', env(UA.linuxChrome, { bluetooth: true }))).toBeNull();
     expect(diagnose('usb', env(UA.linuxChrome))).toBeNull();
   });
 
@@ -69,7 +76,7 @@ describe('why a connection method is unavailable', () => {
   });
 
   it('points Brave at its own Bluetooth flag', () => {
-    expect(diagnose('bluetooth', env(UA.macChrome, { brave: true }))).toMatchObject({
+    expect(diagnose('bluetooth', env(UA.linuxChrome, { brave: true }))).toMatchObject({
       kind: 'flag',
       address: 'brave://flags/#brave-web-bluetooth-api',
     });
@@ -102,12 +109,10 @@ describe('setup guides', () => {
     expect(guide.retry).toBe(false);
   });
 
-  it('turns Bluetooth on per computer, with the browser permission on macOS', () => {
-    const mac = setupGuide({ kind: 'adapter', browser: 'chrome', os: 'mac' });
-    expect(mac.retry).toBe(true);
-    expect(mac.steps.some((s) => s.art === 'permission' && s.detail?.includes('Privacy & Security'))).toBe(
-      true,
-    );
+  it('gives unsupported-platform guidance and Windows/Linux Bluetooth steps', () => {
+    const unsupported = setupGuide({ kind: 'adapter', browser: 'chrome', os: 'mac' });
+    expect(unsupported.retry).toBe(false);
+    expect(unsupported.lead).toContain('macOS is not supported');
     const win = setupGuide({ kind: 'adapter', browser: 'edge', os: 'windows' });
     expect(win.steps[0]!.links?.[0]!.href).toBe('ms-settings:bluetooth');
     const linux = setupGuide({ kind: 'adapter', browser: 'chrome', os: 'linux' });

@@ -4,7 +4,6 @@ import argparse
 import hashlib
 import json
 import os
-import plistlib
 from pathlib import Path
 import shutil
 import subprocess
@@ -18,44 +17,8 @@ TARGETS = [
     ('raspberry-pi-arm64', 'linux', 'arm64', 'arm64'),
     ('raspberry-pi-arm32', 'linux', 'arm', 'armhf'),
     ('windows-x64', 'windows', 'amd64', None),
-    ('macos-apple-silicon', 'darwin', 'arm64', None),
-    ('macos-intel', 'darwin', 'amd64', None),
 ]
 
-
-def package_macos(app):
-    """Keep the CLI entry point and add a Finder app that opens its terminal launcher."""
-    contents = app / 'Laser Forge.app/Contents'
-    resources = contents / 'Resources'
-    executables = contents / 'MacOS'
-    resources.mkdir(parents=True)
-    executables.mkdir()
-    shutil.move(app / 'LaserForge-Portable', resources / 'LaserForge-Portable')
-    shutil.copy2(ROOT / 'public/laserforge.icns', resources / 'LaserForge.icns')
-    (contents / 'Info.plist').write_bytes(plistlib.dumps({
-        'CFBundleName': 'Laser Forge',
-        'CFBundleDisplayName': 'Laser Forge',
-        'CFBundleIdentifier': 'com.gnomecatstudios.laserforge',
-        'CFBundlePackageType': 'APPL',
-        'CFBundleExecutable': 'launch',
-        'CFBundleIconFile': 'LaserForge.icns',
-        'CFBundleShortVersionString': APP_VERSION,
-        'CFBundleVersion': APP_VERSION,
-        'LSMinimumSystemVersion': '11.0',
-        'NSHighResolutionCapable': True,
-    }))
-    launcher = executables / 'launch'
-    launcher.write_text(
-        '#!/bin/sh\n'
-        'HERE=$(CDPATH= cd -- "$(dirname -- "$0")/../Resources" && pwd)\n'
-        'exec /usr/bin/open -a Terminal "$HERE/LaserForge-Portable"\n')
-    launcher.chmod(0o755)
-    cli = app / 'LaserForge-Portable'
-    cli.write_text(
-        '#!/bin/sh\n'
-        'HERE=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)\n'
-        'exec "$HERE/Laser Forge.app/Contents/Resources/LaserForge-Portable" "$@"\n')
-    cli.chmod(0o755)
 
 
 def embed_windows_icon(launcher, go):
@@ -114,7 +77,7 @@ def main():
     args = parser.parse_args()
     if not (ROOT / 'dist/index.html').is_file():
         parser.error('Run pnpm build first.')
-    for icon in ['icon-192.png', 'favicon.ico', 'laserforge.icns']:
+    for icon in ['icon-192.png', 'favicon.ico']:
         if not (ROOT / 'public' / icon).is_file():
             parser.error('Run pnpm icons before building portable downloads.')
     revision = args.revision or subprocess.check_output(['git', 'rev-parse', '--short', 'HEAD'], cwd=ROOT, text=True).strip()
@@ -149,8 +112,6 @@ def main():
             subprocess.run([args.go, 'build', '-buildvcs=false', '-trimpath', '-ldflags=-s -w', '-o', str(binary), '.'],
                            cwd=launcher, env=environment, check=True)
             binary.chmod(0o755)
-            if system == 'darwin':
-                package_macos(app)
             for filename in ['README.txt', 'LICENSE-LaserForge.txt']:
                 shutil.copy2(ROOT / 'portable' / filename, app / filename)
             shutil.copytree(ROOT / 'portable/Fonts', app / 'Fonts')
@@ -174,13 +135,15 @@ def main():
         shutil.copytree(ROOT / 'portable/Fonts', source / 'Fonts')
         shutil.copy2(ROOT / 'public/icon-192.png', source / 'icon.png')
         shutil.copy2(ROOT / 'public/favicon.ico', source / 'LaserForge.ico')
-        shutil.copy2(ROOT / 'public/laserforge.icns', source / 'LaserForge.icns')
         (source / 'VERSION.txt').write_text(build + '\n')
         zipped = output / 'LaserForge-Portable-source.zip'
         archive(source, zipped)
         artifacts.append(zipped)
     # Include every delivered package, including unchanged targets in a partial build.
-    artifacts = sorted([*output.glob('*.zip'), *output.glob('*.deb')])
+    supported = {'LaserForge-Portable-source.zip'}
+    supported.update(f'LaserForge-Portable-{name}.zip' for name, *_ in TARGETS)
+    supported.update(f'LaserForge-Setup-{name}.deb' for name, _, _, deb_arch in TARGETS if deb_arch)
+    artifacts = sorted(path for path in output.iterdir() if path.name in supported)
     (output / 'SHA256SUMS.txt').write_text(''.join(
         f'{hashlib.sha256(path.read_bytes()).hexdigest()}  {path.name}\n' for path in artifacts))
     print(f'Built {build}. Packages: {output}')

@@ -9,14 +9,7 @@ function release(version = '0.3.0') {
     html_url: `${repo}/tag/v${version}`,
     draft: false,
     prerelease: false,
-    assets: [
-      'linux-x64',
-      'windows-x64',
-      'macos-apple-silicon',
-      'macos-intel',
-      'raspberry-pi-arm64',
-      'raspberry-pi-arm32',
-    ].map((p) => ({
+    assets: ['linux-x64', 'windows-x64', 'raspberry-pi-arm64', 'raspberry-pi-arm32'].map((p) => ({
       name: `LaserForge-Portable-${p}.zip`,
       state: 'uploaded',
       size: 100,
@@ -141,10 +134,10 @@ test('mobile dialog fits and unknown platforms require an explicit selection', a
   const popup = page.getByTestId('update-dialog');
   await expect(popup).toContainText('Update available');
   await expect(popup.getByRole('link', { name: 'Download update', exact: true })).toHaveCount(0);
-  await popup.getByLabel('Your platform').selectOption('macos-intel');
+  await popup.getByLabel('Your platform').selectOption('windows-x64');
   await expect(popup.getByRole('link', { name: 'Download update', exact: true })).toHaveAttribute(
     'href',
-    /macos-intel.zip$/,
+    /windows-x64.zip$/,
   );
   const box = (await popup.boundingBox())!;
   expect(box.x).toBeGreaterThanOrEqual(0);

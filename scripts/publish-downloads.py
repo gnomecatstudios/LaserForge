@@ -15,7 +15,7 @@ import zipfile
 
 ROOT = Path(__file__).resolve().parents[1]
 REPO = 'gnomecatstudios/LaserForgeDownloads'
-PLATFORMS = ['windows-x64', 'macos-apple-silicon', 'macos-intel',
+PLATFORMS = ['windows-x64',
              'linux-x64', 'raspberry-pi-arm64', 'raspberry-pi-arm32']
 
 
@@ -42,7 +42,7 @@ def main():
     args = parser.parse_args()
     version = json.loads((ROOT / 'package.json').read_text())['version']
     files = [args.packages / f'LaserForge-Portable-{p}.zip' for p in PLATFORMS]
-    files += [args.packages / f'LaserForge-Setup-{p}.deb' for p in PLATFORMS[3:]]
+    files += [args.packages / f'LaserForge-Setup-{p}.deb' for p in PLATFORMS[1:]]
     for path in files:
         if not path.is_file():
             parser.error(f'Missing package: {path}')
@@ -53,10 +53,7 @@ def main():
             if any(n.endswith(('.map', '.go', '.ts', '.svelte')) or '/.git/' in n for n in names):
                 parser.error(f'Unexpected source files in {path}')
             binary = next(n for n in names if n.endswith('LaserForge-Portable.exe') or
-                          n.endswith('Resources/LaserForge-Portable') or
                           n == 'LaserForge-Portable/LaserForge-Portable')
-            if platform.startswith('macos-'):
-                binary = next(n for n in names if n.endswith('Resources/LaserForge-Portable'))
             metadata = json.dumps({'platform': platform, 'version': version}).encode()
             if metadata not in package.read(binary):
                 parser.error(f'Wrong platform/version in {path}')
@@ -87,7 +84,7 @@ def main():
             f'[Platform installation instructions](https://github.com/{REPO}#installation)\n\n'
             'Existing installations need one manual download to get the update popup. '
             'Save your project and close the app and launcher before replacing them.\n\n'
-            'Unsigned builds. Windows, macOS and Raspberry Pi packages are cross-compiled; '
+            'Unsigned builds. Windows and Raspberry Pi packages are cross-compiled; '
             'native execution and physical laser hardware have not been tested.\n')
         gh('release', 'create', f'v{version}', '--repo', REPO, '--draft',
            '--title', f'Laser Forge {version}', '--notes-file', str(notes),

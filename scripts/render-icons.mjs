@@ -57,21 +57,7 @@ writeFileSync(
   `${root}public/favicon.ico`,
   Buffer.concat([icoHeader, ...sizes.map((size) => native.get(size))]),
 );
-const chunks = [
-  [128, 'ic07'],
-  [256, 'ic08'],
-  [512, 'ic09'],
-].map(([size, type]) => {
-  const header = Buffer.alloc(8);
-  header.write(type, 0, 'ascii');
-  header.writeUInt32BE(8 + native.get(size).length, 4);
-  return Buffer.concat([header, native.get(size)]);
-});
-const icnsHeader = Buffer.alloc(8);
-icnsHeader.write('icns', 0, 'ascii');
-icnsHeader.writeUInt32BE(8 + chunks.reduce((sum, chunk) => sum + chunk.length, 0), 4);
-writeFileSync(`${root}public/laserforge.icns`, Buffer.concat([icnsHeader, ...chunks]));
-console.log('wrote public/favicon.ico and public/laserforge.icns');
+console.log('wrote public/favicon.ico');
 // Keep the complete source image inside the maskable icon's circular safe zone.
 await render(
   `<div style="width:512px;height:512px;background:#0E0F11;display:flex;align-items:center;justify-content:center">${mark(384)}</div>`,

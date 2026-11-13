@@ -1,5 +1,4 @@
 import importlib.util
-import plistlib
 from pathlib import Path
 import shutil
 import subprocess
@@ -38,24 +37,15 @@ class DebianPackageTests(unittest.TestCase):
             self.assertEqual((extracted / 'usr/lib/laserforge/icon.png').read_bytes(), b'icon')
 
 
-class MacApplicationTests(unittest.TestCase):
-    def test_finder_bundle_keeps_cli_and_uses_brand_icon(self):
-        with tempfile.TemporaryDirectory(prefix='laser forge ') as folder:
-            app = Path(folder) / 'LaserForge-Portable'
-            app.mkdir()
-            (app / 'LaserForge-Portable').write_bytes(b'original launcher')
-            (app / 'LaserForge-Portable').chmod(0o755)
-            build.package_macos(app)
-            contents = app / 'Laser Forge.app/Contents'
-            metadata = plistlib.loads((contents / 'Info.plist').read_bytes())
-            self.assertEqual(metadata['CFBundleIconFile'], 'LaserForge.icns')
-            self.assertEqual(metadata['CFBundleExecutable'], 'launch')
-            self.assertEqual((contents / 'Resources/LaserForge.icns').read_bytes(),
-                             (build.ROOT / 'public/laserforge.icns').read_bytes())
-            self.assertEqual((contents / 'Resources/LaserForge-Portable').read_bytes(), b'original launcher')
-            self.assertEqual((contents / 'MacOS/launch').stat().st_mode & 0o777, 0o755)
-            subprocess.run(['sh', '-n', str(contents / 'MacOS/launch')], check=True)
-            subprocess.run(['sh', '-n', str(app / 'LaserForge-Portable')], check=True)
+
+class SupportedTargetsTests(unittest.TestCase):
+    def test_build_and_publish_platforms_match(self):
+        publish_spec = importlib.util.spec_from_file_location('publish_downloads', build.ROOT / 'scripts/publish-downloads.py')
+        publish = importlib.util.module_from_spec(publish_spec)
+        publish_spec.loader.exec_module(publish)
+        self.assertEqual({target[0] for target in build.TARGETS}, set(publish.PLATFORMS))
+        self.assertEqual({target[1] for target in build.TARGETS}, {'windows', 'linux'})
+        self.assertEqual(len(build.TARGETS), 4)
 
 
 if __name__ == '__main__':

@@ -12,15 +12,12 @@ be installed for USB machine control. The browser is not bundled.
 | Linux x64 | [Portable ZIP](https://github.com/gnomecatstudios/LaserForgeDownloads/releases/latest/download/LaserForge-Portable-linux-x64.zip) |
 | Raspberry Pi OS 64-bit (ARM64) | [Portable ZIP](https://github.com/gnomecatstudios/LaserForgeDownloads/releases/latest/download/LaserForge-Portable-raspberry-pi-arm64.zip) |
 | Raspberry Pi OS 32-bit (ARMv6+) | [Portable ZIP](https://github.com/gnomecatstudios/LaserForgeDownloads/releases/latest/download/LaserForge-Portable-raspberry-pi-arm32.zip) |
-| macOS Apple Silicon | [Portable ZIP](https://github.com/gnomecatstudios/LaserForgeDownloads/releases/latest/download/LaserForge-Portable-macos-apple-silicon.zip) |
-| macOS Intel | [Portable ZIP](https://github.com/gnomecatstudios/LaserForgeDownloads/releases/latest/download/LaserForge-Portable-macos-intel.zip) |
 
 [SHA-256 checksums](https://github.com/gnomecatstudios/LaserForgeDownloads/releases/latest/download/SHA256SUMS.txt)
 
 For Raspberry Pi setup and architecture selection, see [Raspberry Pi](raspberry-pi.md).
 
-On Windows, double-click `LaserForge-Portable.exe`; the executable carries the Laser Forge icon. On macOS, double-click **Laser Forge.app** to open the launcher in Terminal, or run `./LaserForge-Portable` from Terminal. Keep the extracted folder together. On Linux, run `./LaserForge-Portable` in Terminal; `chmod +x LaserForge-Portable` may be needed.
-The builds are unsigned; macOS may require approval in system security settings.
+On Windows, double-click `LaserForge-Portable.exe`; the executable carries the Laser Forge icon. On Linux, run `./LaserForge-Portable` in Terminal; `chmod +x LaserForge-Portable` may be needed.
 Keep the launcher window open. It serves embedded app files only on
 <http://127.0.0.1:5190/> and opens your default browser. Use Chrome or Edge
 manually if your default browser does not support machine connections.
@@ -60,7 +57,7 @@ Older versions need one manual download. Save your project, close the app and la
 
 ## Branding and icons
 
-The app, browser tab, installable web app, Windows executable, macOS app bundle, Linux and Raspberry Pi shortcuts, and setup window use the same gear-and-lightning logo. Each portable package includes `icon.png` and `LaserForge.ico`. These assets come from `public/logo-source.png`; `pnpm icons` also generates the macOS icon container.
+The app, browser tab, installable web app, Windows executable, Linux and Raspberry Pi shortcuts, and setup window use the same gear-and-lightning logo. Each portable package includes `icon.png` and `LaserForge.ico`. These assets come from `public/logo-source.png`; `pnpm icons` generates the shared browser icons and Windows icon container.
 
 ## Offline fonts and project storage
 
@@ -90,13 +87,13 @@ pnpm build
 python3 scripts/build-portable.py
 ```
 
-The script cross-compiles all six ZIPs, builds three Debian installers using
+The script cross-compiles all four platform ZIPs, builds three Debian installers using
 `dpkg-deb`, and refreshes SHA-256 checksums. Use `--target raspberry-pi-arm64`
 to build only that target. Set `--go /path/to/go` to choose the compiler.
 
 For manual cross compilation, add `GOOS` and `GOARCH` before `go build`:
 `windows/amd64` (use an `.exe` output name), `linux/amd64`, `linux/arm64`,
-`linux/arm` (also set `GOARM=6`), `darwin/arm64`, or `darwin/amd64`.
+`linux/arm` (also set `GOARM=6`).
 `launcher/dist/` is generated and excluded from Git.
 Include this README, the app license, and the Fonts folder when distributing.
 
@@ -115,8 +112,8 @@ permissions are checked here. They still need an installation test on actual Pi 
 The Linux launcher was run in Chromium with all non-loopback requests blocked
 and a fresh browser profile. The app loaded, created a project, and connected
 to the virtual machine in Idle state without page errors. Update checks contact GitHub when online; an offline check does not block the app.
-Windows and macOS executables were cross-compiled and their executable formats
-checked; they have not been run on those operating systems. Physical laser
+Windows executables were cross-compiled and their executable formats
+checked; they have not been run on Windows. Physical laser
 hardware has not been tested.
 
 The Raspberry Pi ARM64 and ARM32 launchers were cross-compiled and their ELF
@@ -133,4 +130,4 @@ python3 scripts/publish-downloads.py --packages portable/downloads
 python3 scripts/publish-downloads.py --packages portable/downloads --publish
 ```
 
-The first command validates the packages without publishing. The second requires authenticated GitHub CLI access and creates a public release with six native ZIPs, three Debian installers, and their checksums. It excludes the source ZIP and uploads only the public downloads README, logo and license to the downloads repository. It leaves the source repository private.
+The first command validates the packages without publishing. The second requires authenticated GitHub CLI access and creates a public release with four native ZIPs, three Debian installers, and their checksums. It excludes the source ZIP and uploads only the public downloads README, logo and license to the downloads repository. It leaves the source repository private.
