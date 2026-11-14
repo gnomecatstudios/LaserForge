@@ -1,10 +1,11 @@
 import { readFileSync } from 'node:fs';
 import { expect, test, type Page } from '@playwright/test';
-import { dragOnCanvas, newProject, prepare } from './helpers';
+import { dragOnCanvas, newProject, prepare, selectMachine } from './helpers';
 
 test.beforeEach(async ({ page }) => prepare(page));
 
 async function pickMachine(page: Page, search: string, name: RegExp) {
+  await selectMachine(page);
   await page.getByTestId('change-machine').click();
   await page.getByTestId('preset-search').fill(search);
   await page.getByRole('radio', { name }).click();
@@ -21,6 +22,7 @@ test('an LP4 picks lasers per layer and switches to its rotary from the machine 
   await dragOnCanvas(page, [0.45, 0.45], [0.55, 0.55]);
   await page.getByTestId('layer-laser').getByRole('button', { name: '1064 nm infrared' }).click();
 
+  await selectMachine(page);
   await page.getByTestId('accessory-rotary').click();
   const diameter = page.getByTestId('object-diameter');
   await diameter.fill('50');
@@ -48,6 +50,7 @@ test('an LP2 runs a rotary job on the virtual LaserPecker', async ({ page }) => 
   await pickMachine(page, 'laserpecker lp2', /LP2/);
   await page.getByTestId('tool-rect').click();
   await dragOnCanvas(page, [0.45, 0.45], [0.55, 0.55]);
+  await selectMachine(page);
   await page.getByTestId('accessory-rotary').click();
   await page.getByTestId('lp-connect-virtual').click();
   await expect(page.getByTestId('lp-state')).toHaveText('Idle');
@@ -64,6 +67,7 @@ test('an LP2 runs a rotary job on the virtual LaserPecker', async ({ page }) => 
 
 test('machine profiles edit lasers and accessories', async ({ page }) => {
   await newProject(page);
+  await selectMachine(page);
   await page.getByTestId('change-machine').click();
   await page.getByRole('button', { name: 'Edit machine profiles' }).click();
   const hardware = page.getByTestId('profile-hardware');

@@ -36,7 +36,16 @@ export async function dragOnCanvas(page: Page, from: [number, number], to: [numb
   await page.mouse.up();
 }
 
+export async function selectMachine(page: Page): Promise<void> {
+  await page.getByTestId('sidebar-machine').click();
+}
+
+export async function selectDesign(page: Page): Promise<void> {
+  await page.getByTestId('sidebar-design').click();
+}
+
 export async function connectVirtual(page: Page): Promise<void> {
+  await selectMachine(page);
   await page.getByTestId('connect-virtual').click();
   await expect(page.getByTestId('machine-state')).toHaveText(/ALARM|IDLE/i, { timeout: 15_000 });
   if (/alarm/i.test((await page.getByTestId('machine-state').textContent()) ?? '')) {

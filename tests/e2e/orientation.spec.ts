@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { dragOnCanvas, newProject, prepare } from './helpers';
+import { dragOnCanvas, newProject, prepare, selectMachine, selectDesign } from './helpers';
 
 test.beforeEach(async ({ page }) => prepare(page));
 
@@ -7,6 +7,7 @@ const position = async (page: Page) =>
   Promise.all(['sel-x', 'sel-y', 'sel-w', 'sel-h'].map((id) => page.getByTestId(id).inputValue()));
 
 async function pick(page: Page, search: string, name: RegExp) {
+  await selectMachine(page);
   await page.getByTestId('change-machine').click();
   await page.getByTestId('preset-search').fill(search);
   await page.getByRole('radio', { name }).click();
@@ -24,12 +25,15 @@ test('switching between machines homed in different corners keeps the design in 
   // Bottom-left GRBL to top-left LaserPecker: same machine position.
   await pick(page, 'laserpecker lp2', /LP2/);
   await expect(page.getByTestId('machine-name')).toHaveText('LaserPecker LP2');
+  await selectDesign(page);
   await page.getByTestId('object-row').first().click();
   expect(await position(page)).toEqual(before);
 
   // The whole machine card opens the picker, and switching back restores the layout exactly.
+  await selectMachine(page);
   await page.getByTestId('change-machine').click();
   await page.getByRole('button', { name: /Generic GRBL laser/ }).click();
+  await selectDesign(page);
   await page.getByTestId('object-row').first().click();
   expect(await position(page)).toEqual(before);
 });

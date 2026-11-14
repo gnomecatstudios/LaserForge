@@ -34,74 +34,91 @@
 </script>
 
 <div class="bar mono" data-testid="selection-bar">
-  <AnchorPicker value={editor.anchor} onchange={(a) => (editor.anchor = a)} />
-  <div class="fields" class:off={!has}>
-    <NumberField
-      compact
-      label="X"
-      decimals={3}
-      step={0.1}
-      value={anchorPoint?.x ?? 0}
-      disabled={!has}
-      testid="sel-x"
-      onchange={(v, live) => bounds && apply(moveAnchorTo(bounds, editor.anchor, { x: v }), live, 'x')}
-    />
-    <NumberField
-      compact
-      label="Y"
-      decimals={3}
-      step={0.1}
-      value={anchorPoint?.y ?? 0}
-      disabled={!has}
-      testid="sel-y"
-      onchange={(v, live) => bounds && apply(moveAnchorTo(bounds, editor.anchor, { y: v }), live, 'y')}
-    />
-    <NumberField
-      compact
-      label="W"
-      decimals={3}
-      step={0.1}
-      min={0.01}
-      value={bounds ? bounds.maxX - bounds.minX : 0}
-      disabled={!has}
-      testid="sel-w"
-      onchange={(v, live) =>
-        bounds && apply(resizeAbout(bounds, editor.anchor, { width: v }, editor.keepAspect), live, 'w')}
-    />
-    <button
-      type="button"
-      class="icon-btn sm lock"
-      aria-label={editor.keepAspect ? 'Keep aspect ratio: on' : 'Keep aspect ratio: off'}
-      aria-pressed={editor.keepAspect}
-      title="Keep aspect ratio"
-      onclick={() => (editor.keepAspect = !editor.keepAspect)}
-    >
-      {#if editor.keepAspect}<Link size={14} />{:else}<Unlink size={14} />{/if}
-    </button>
-    <NumberField
-      compact
-      label="H"
-      decimals={3}
-      step={0.1}
-      min={0.01}
-      value={bounds ? bounds.maxY - bounds.minY : 0}
-      disabled={!has}
-      testid="sel-h"
-      onchange={(v, live) =>
-        bounds && apply(resizeAbout(bounds, editor.anchor, { height: v }, editor.keepAspect), live, 'h')}
-    />
-    <NumberField
-      compact
-      label="∠"
-      unit="°"
-      decimals={1}
-      step={1}
-      value={rotation}
-      disabled={!has || !canRotate}
-      testid="sel-angle"
-      onchange={(v, live) => bounds && apply(rotateAbout(bounds, editor.anchor, v - rotation), live, 'r')}
-    />
-  </div>
+  {#if has}
+    <AnchorPicker value={editor.anchor} onchange={(a) => (editor.anchor = a)} />
+    <div class="fields" class:off={!has}>
+      <NumberField
+        compact
+        label="X"
+        decimals={3}
+        step={0.1}
+        value={anchorPoint?.x ?? 0}
+        disabled={!has}
+        testid="sel-x"
+        onchange={(v, live) => bounds && apply(moveAnchorTo(bounds, editor.anchor, { x: v }), live, 'x')}
+      />
+      <NumberField
+        compact
+        label="Y"
+        decimals={3}
+        step={0.1}
+        value={anchorPoint?.y ?? 0}
+        disabled={!has}
+        testid="sel-y"
+        onchange={(v, live) => bounds && apply(moveAnchorTo(bounds, editor.anchor, { y: v }), live, 'y')}
+      />
+      <NumberField
+        compact
+        label="W"
+        decimals={3}
+        step={0.1}
+        min={0.01}
+        value={bounds ? bounds.maxX - bounds.minX : 0}
+        disabled={!has}
+        testid="sel-w"
+        onchange={(v, live) =>
+          bounds && apply(resizeAbout(bounds, editor.anchor, { width: v }, editor.keepAspect), live, 'w')}
+      />
+      <button
+        type="button"
+        class="icon-btn sm lock"
+        aria-label={editor.keepAspect ? 'Keep aspect ratio: on' : 'Keep aspect ratio: off'}
+        aria-pressed={editor.keepAspect}
+        title="Keep aspect ratio"
+        onclick={() => (editor.keepAspect = !editor.keepAspect)}
+      >
+        {#if editor.keepAspect}<Link size={14} />{:else}<Unlink size={14} />{/if}
+      </button>
+      <NumberField
+        compact
+        label="H"
+        decimals={3}
+        step={0.1}
+        min={0.01}
+        value={bounds ? bounds.maxY - bounds.minY : 0}
+        disabled={!has}
+        testid="sel-h"
+        onchange={(v, live) =>
+          bounds && apply(resizeAbout(bounds, editor.anchor, { height: v }, editor.keepAspect), live, 'h')}
+      />
+      <NumberField
+        compact
+        label="∠"
+        unit="°"
+        decimals={1}
+        step={1}
+        value={rotation}
+        disabled={!has || !canRotate}
+        testid="sel-angle"
+        onchange={(v, live) => bounds && apply(rotateAbout(bounds, editor.anchor, v - rotation), live, 'r')}
+      />
+    </div>
+  {:else}
+    <div class="guidance">
+      <strong>Design workspace</strong>
+      <span
+        >{editor.tool === 'text'
+          ? 'Click the bed to place text.'
+          : editor.tool === 'rect' || editor.tool === 'ellipse' || editor.tool === 'shape'
+            ? 'Click and drag on the bed to draw a shape.'
+            : editor.tool === 'pen'
+              ? 'Click to add points. Enter finishes the path.'
+              : editor.tool === 'measure'
+                ? 'Click and drag to measure a distance.'
+                : 'Select an object to edit its size and position.'}</span
+      >
+    </div>
+  {/if}
   <span class="spacer"></span>
   <span class="machine">{profiles.active.name} · {Math.round(area.width)} × {Math.round(area.height)} mm</span
   >
@@ -160,5 +177,40 @@
     color: var(--ol-text-muted);
     font-family: var(--ol-font);
     white-space: nowrap;
+  }
+  .guidance {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    font-family: var(--ol-font);
+  }
+  .guidance strong {
+    font-size: var(--ol-fs-md);
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  .guidance span {
+    color: var(--ol-text-muted);
+  }
+  @media (max-width: 1200px) {
+    .machine {
+      display: none;
+    }
+  }
+  @media (max-width: 700px) {
+    .bar {
+      padding: 8px 12px;
+      min-height: var(--ol-selectionbar-h);
+      height: auto;
+      gap: 8px;
+    }
+    .guidance {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 2px;
+    }
+    .guidance span {
+      font-size: var(--ol-fs-xs);
+    }
   }
 </style>

@@ -105,7 +105,7 @@ export const TOUR_STEPS: TourStep[] = [
   {
     id: 'connect',
     title: 'Connect in one click',
-    body: 'Plug in your laser over USB and pick its port. Practice anytime on the built-in virtual machine.',
+    body: 'Open the Machine tab, plug in your laser over USB and pick its port. Practice anytime on the built-in virtual machine.',
     art: 'connect',
     points: [
       { icon: Usb, text: 'GRBL 1.1, grblHAL and FluidNC over Web Serial' },
@@ -145,7 +145,7 @@ export const TOUR_STEPS: TourStep[] = [
   {
     id: 'layers',
     title: 'Layers drive the laser',
-    body: 'Each layer has a mode, speed, power and passes. Drag layers to set the run order.',
+    body: 'In the Design tab, each layer has a mode, speed, power and passes. Drag layers to set the run order.',
     art: 'layers',
     points: [
       { icon: Spline, text: 'Line for cuts and scores, with kerf offset' },
@@ -245,7 +245,7 @@ export const TOUR_STEPS: TourStep[] = [
   {
     id: 'machine',
     title: 'Full machine control',
-    body: 'Jog, home and set origins. The console shows every line sent and received.',
+    body: 'Use the Machine tab to jog, home and set origins. Expand the console to see every line sent and received.',
     art: 'machine',
     points: [
       { icon: Crosshair, text: 'Jog pad with 0.1 to 50 mm steps, Home and Set origin' },

@@ -26,11 +26,12 @@
   import ConnectHelpButton from '../connect/ConnectHelpButton.svelte';
   import * as actions from '../actions';
   import { sections } from '../state/sections.svelte';
+  import { sidebar } from '../state/workspace.svelte';
 
-  /** Connected from here: the work comes first, so the Machine section starts closed. */
+  /** Show connection progress and setup when connecting from the welcome page. */
   function startConnected() {
-    sections.set('machine', false);
     actions.ensureDocument();
+    sidebar.showMachine();
   }
 
   const serial = isWebSerialSupported();
@@ -79,46 +80,68 @@
   <main class="main">
     <section class="lead">
       <div class="hero">
-        <span class="serial-pill" class:missing={!serial} data-testid="serial-pill">
-          <span class="dot"></span>{serial ? 'Web Serial available' : 'Machine control needs Chrome or Edge'}
-        </span>
-        <h1>Your laser,<br />one tab away.</h1>
+        <h1>Make something<br />with your laser.</h1>
         <p>
-          Import art, set your layers, frame the job and burn, straight from Chrome or Edge. No install, no
-          account, works offline.
+          Create your design, preview the toolpath, then run your laser.<br />Your projects stay in this
+          browser.
         </p>
       </div>
 
       <div class="ctas">
-        <ConnectButton size="big" testid="start-connect" before={startConnected} />
         <button
           type="button"
-          class="btn big secondary"
-          onclick={() => {
-            sections.set('machine', false);
-            void actions.startWithVirtualMachine();
-          }}
-          data-testid="try-virtual"
+          class="btn big signal"
+          onclick={() => actions.newProject()}
+          data-testid="new-project"
         >
-          <Cpu size={18} />Try the virtual machine
+          <Plus size={22} />New project
         </button>
+        <button type="button" class="btn big secondary" onclick={() => actions.openFile()}
+          ><FolderOpen size={22} />Open file…</button
+        >
       </div>
 
-      <div class="cards">
-        <button type="button" class="card" onclick={() => actions.newProject()} data-testid="new-project">
-          <Plus size={20} /><span class="card-title">New project</span><span class="card-sub"
-            >Blank bed from your profile</span
+      <ol class="workflow" aria-label="From design to finished job">
+        <li>
+          <span class="step-number">1</span>
+          <div>
+            <h2>Design</h2>
+            <p>Import art or add text and shapes</p>
+          </div>
+        </li>
+        <li>
+          <span class="step-number">2</span>
+          <div>
+            <h2>Preview</h2>
+            <p>Check layers and toolpaths</p>
+          </div>
+        </li>
+        <li>
+          <span class="step-number">3</span>
+          <div>
+            <h2>Run</h2>
+            <p>Connect, frame and start</p>
+          </div>
+        </li>
+      </ol>
+
+      <div class="file-actions">
+        <button type="button" class="file-action" onclick={() => actions.importArt()}>
+          <Download size={26} />
+          <span class="action-copy"
+            ><span class="action-title">Import art</span><span class="action-sub">SVG, DXF and images</span
+            ></span
           >
+          <ChevronRight size={20} />
         </button>
-        <button type="button" class="card" onclick={() => actions.importArt()}>
-          <Download size={20} /><span class="card-title">Import art</span><span class="card-sub"
-            >SVG, DXF, PNG, JPEG, WebP</span
+        <button type="button" class="file-action" onclick={() => actions.openGcodeFile()}>
+          <FileCode size={26} />
+          <span class="action-copy"
+            ><span class="action-title">Send G-code</span><span class="action-sub"
+              >.gcode, .nc, .ngc files</span
+            ></span
           >
-        </button>
-        <button type="button" class="card" onclick={() => actions.openGcodeFile()}>
-          <FileCode size={20} /><span class="card-title">Send G-code</span><span class="card-sub"
-            >.gcode, .nc, .ngc files</span
-          >
+          <ChevronRight size={20} />
         </button>
       </div>
 
@@ -130,9 +153,6 @@
         <div class="panel recents">
           <div class="panel-head">
             <h2>Recent projects</h2>
-            <button type="button" class="link" onclick={() => actions.openFile()}
-              ><FolderOpen size={14} />Open file…</button
-            >
           </div>
           {#if session.recents.length === 0}
             <p class="empty">Projects you open or create show up here.</p>
@@ -186,16 +206,33 @@
             <dd class="mono">{profile.bedWidth} × {profile.bedHeight} mm</dd>
           </div>
           <div>
-            <dt>Firmware</dt>
-            <dd class="mono">GRBL 1.1</dd>
-          </div>
-          <div>
             <dt>Origin</dt>
             <dd>{ORIGINS[profile.originCorner]}</dd>
           </div>
         </dl>
         <div class="rule"></div>
-        <ConnectHelpButton />
+        <div class="machine-actions">
+          <ConnectButton size="big" testid="start-connect" before={startConnected} />
+          <button
+            type="button"
+            class="btn big virtual"
+            onclick={() => {
+              sections.set('machine', false);
+              void actions.startWithVirtualMachine();
+            }}
+            data-testid="try-virtual"
+          >
+            <Cpu size={18} />Try the virtual machine
+          </button>
+        </div>
+        <div class="connection-help">
+          <span class="serial-pill" class:missing={!serial} data-testid="serial-pill">
+            <span class="dot"></span>{serial
+              ? 'Web Serial available'
+              : 'Machine control needs Chrome or Edge'}
+          </span>
+          <ConnectHelpButton />
+        </div>
       </div>
     </aside>
   </main>
@@ -245,17 +282,16 @@
   .main {
     flex-grow: 1;
     width: 100%;
-    max-width: 1280px;
+    max-width: 1392px;
     margin: 0 auto;
     padding: 24px clamp(16px, 4vw, 48px) 48px;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 32px;
-    align-items: flex-start;
+    display: grid;
+    grid-template-columns: minmax(0, 1.7fr) minmax(340px, 1fr);
+    gap: 48px;
+    align-items: start;
   }
 
   .lead {
-    flex: 999 1 520px;
     min-width: 0;
     display: flex;
     flex-direction: column;
@@ -266,7 +302,7 @@
     display: flex;
     flex-direction: column;
     gap: 16px;
-    padding-top: 24px;
+    padding-top: 12px;
   }
 
   .serial-pill {
@@ -274,13 +310,9 @@
     align-self: flex-start;
     align-items: center;
     gap: 8px;
-    height: 28px;
-    padding: 0 12px;
-    border-radius: 999px;
-    background: var(--ol-surface);
-    border: 1px solid var(--ol-border);
-    font: 500 var(--ol-fs-sm) var(--ol-font-mono);
-    color: var(--ol-text-2);
+    min-height: 24px;
+    font-size: var(--ol-fs-sm);
+    color: var(--ol-text-muted);
   }
 
   .serial-pill .dot {
@@ -291,8 +323,7 @@
   }
 
   .serial-pill.missing {
-    background: var(--ol-hold-tint);
-    border-color: var(--ol-hold);
+    color: var(--ol-hold);
   }
 
   .serial-pill.missing .dot {
@@ -301,22 +332,33 @@
 
   h1 {
     font-size: clamp(44px, 6vw, 76px);
-    line-height: 0.98;
+    line-height: 1.02;
     font-weight: 600;
     letter-spacing: -0.05em;
   }
 
   .hero p {
-    font-size: var(--ol-fs-xl);
-    line-height: 1.5;
+    font-size: 22px;
+    line-height: 1.45;
+    font-weight: 500;
     color: var(--ol-text-muted);
-    max-width: 560px;
+    max-width: 720px;
   }
 
   .ctas {
     display: flex;
-    gap: 12px;
+    gap: 16px;
     flex-wrap: wrap;
+  }
+
+  .ctas .btn {
+    height: 60px;
+    min-width: 256px;
+    font-size: 20px;
+  }
+
+  .ctas .btn.signal {
+    min-width: 296px;
   }
 
   .btn.secondary {
@@ -324,55 +366,119 @@
     border-color: var(--ol-border-strong);
   }
 
-  .cards {
+  .workflow {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-    gap: 12px;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 28px;
+    list-style: none;
+    margin: 4px 0;
+    padding: 0;
   }
 
-  .card {
-    text-align: left;
+  .workflow li {
+    position: relative;
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+  }
+
+  .workflow li:not(:last-child)::after {
+    position: absolute;
+    content: '';
+    top: 18px;
+    right: -16px;
+    width: 24px;
+    height: 1px;
+    background: var(--ol-border-strong);
+  }
+
+  .step-number {
+    display: inline-flex;
+    flex: 0 0 36px;
+    height: 36px;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--ol-signal);
+    border-radius: 50%;
+    color: var(--ol-signal);
+    font-size: var(--ol-fs-xl);
+    font-weight: 500;
+  }
+
+  .workflow h2 {
+    margin: 3px 0 4px;
+    font-size: 21px;
+  }
+
+  .workflow p {
+    margin: 0;
+    padding-right: 10px;
+    font-size: var(--ol-fs-lg);
+    line-height: 1.5;
+    color: var(--ol-text-muted);
+  }
+
+  .file-actions {
     display: flex;
     flex-direction: column;
-    gap: 10px;
-    padding: 18px;
-    border-radius: var(--ol-radius-lg);
-    border: 1px solid var(--ol-border);
-    background: var(--ol-surface);
+    border-top: 1px solid var(--ol-border-strong);
+  }
+
+  .file-action {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    padding: 16px;
+    border: 0;
+    border-bottom: 1px solid var(--ol-border-strong);
+    background: transparent;
+    text-align: left;
     color: var(--ol-text);
   }
 
-  .card:hover {
-    border-color: var(--ol-border-strong);
+  .file-action:hover {
+    background: var(--ol-surface-2);
   }
 
-  .card :global(svg) {
+  .file-action > :global(svg:first-child) {
+    flex-shrink: 0;
     color: var(--ol-signal);
   }
 
-  .card-title {
-    font-size: var(--ol-fs-lg);
+  .file-action > :global(svg:last-child) {
+    color: var(--ol-text-muted);
+  }
+
+  .action-copy {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+
+  .action-title {
+    font-size: 20px;
     font-weight: 600;
   }
 
-  .card-sub {
+  .action-sub {
+    font-size: var(--ol-fs-lg);
     color: var(--ol-text-muted);
   }
 
   .side {
-    flex: 1 1 380px;
-    max-width: 460px;
+    min-width: 0;
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    gap: 22px;
   }
 
   .panel {
     border-radius: var(--ol-radius-xl);
-    padding: 20px;
+    padding: 22px;
     display: flex;
     flex-direction: column;
-    gap: 14px;
+    gap: 18px;
     background: var(--ol-surface);
     border: 1px solid var(--ol-border);
     color: var(--ol-text);
@@ -385,7 +491,7 @@
   }
 
   h2 {
-    font-size: var(--ol-fs-lg);
+    font-size: 22px;
     font-weight: 600;
   }
 
@@ -406,6 +512,7 @@
 
   .empty {
     color: var(--ol-text-muted);
+    font-size: 16px;
   }
 
   ul {
@@ -485,7 +592,7 @@
   .specs {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 12px;
+    gap: 18px;
     margin: 0;
   }
 
@@ -497,11 +604,47 @@
 
   dt {
     color: var(--ol-text-muted);
+    font-size: var(--ol-fs-lg);
   }
 
   dd {
     margin: 0;
     font-weight: 500;
+    font-size: 18px;
+    overflow-wrap: anywhere;
+  }
+
+  .machine-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .machine-actions :global(.split) {
+    display: flex;
+  }
+
+  .machine-actions :global(.btn.big) {
+    font-size: 18px;
+  }
+
+  .virtual {
+    background: var(--ol-start-bg);
+    color: var(--ol-start-text);
+    border-color: var(--ol-start-bg);
+  }
+
+  .connection-help {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+
+  .connection-help :global(.help) {
+    justify-content: flex-start;
+    padding-left: 0;
+    height: 28px;
   }
 
   .rule {
@@ -527,5 +670,134 @@
 
   .foot .link {
     color: var(--ol-text-muted);
+  }
+
+  @media (max-width: 1100px) {
+    .main {
+      gap: 28px;
+      grid-template-columns: minmax(0, 1.5fr) minmax(300px, 1fr);
+    }
+
+    h1 {
+      font-size: clamp(44px, 5.4vw, 60px);
+    }
+
+    .hero p {
+      font-size: var(--ol-fs-xl);
+    }
+
+    .ctas .btn,
+    .ctas .btn.signal {
+      min-width: 180px;
+      font-size: 17px;
+    }
+
+    .workflow {
+      gap: 16px;
+    }
+
+    .workflow li {
+      gap: 8px;
+    }
+
+    .workflow li::after {
+      display: none;
+    }
+
+    .step-number {
+      flex-basis: 28px;
+      height: 28px;
+      font-size: var(--ol-fs-lg);
+    }
+
+    .workflow h2 {
+      font-size: 18px;
+    }
+
+    .workflow p {
+      padding-right: 0;
+      font-size: var(--ol-fs-sm);
+    }
+  }
+
+  @media (max-width: 850px) {
+    .main {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .side {
+      width: 100%;
+    }
+
+    .hero {
+      padding-top: 0;
+    }
+
+    h1 {
+      font-size: clamp(40px, 8vw, 64px);
+    }
+
+    .workflow p {
+      font-size: var(--ol-fs-lg);
+    }
+  }
+
+  @media (max-width: 480px) {
+    .top {
+      gap: 8px;
+      padding-top: 16px;
+      padding-bottom: 16px;
+    }
+
+    nav {
+      gap: 0;
+    }
+
+    .main {
+      padding-top: 12px;
+      padding-bottom: 28px;
+    }
+
+    .lead {
+      gap: 24px;
+    }
+
+    .ctas {
+      gap: 10px;
+    }
+
+    .ctas .btn,
+    .ctas .btn.signal {
+      flex: 1 1 140px;
+      min-width: 0;
+      height: 52px;
+      padding: 0 12px;
+    }
+
+    .workflow {
+      gap: 14px;
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .workflow li {
+      gap: 12px;
+    }
+
+    .workflow h2 {
+      margin-top: 2px;
+    }
+
+    .file-action {
+      padding: 14px 8px;
+      gap: 16px;
+    }
+
+    .panel {
+      padding: 18px;
+    }
+
+    .forget {
+      opacity: 1;
+    }
   }
 </style>

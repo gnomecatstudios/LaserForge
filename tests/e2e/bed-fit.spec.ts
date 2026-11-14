@@ -1,9 +1,10 @@
 import { expect, test, type Page } from '@playwright/test';
-import { dragOnCanvas, newProject, prepare } from './helpers';
+import { dragOnCanvas, newProject, prepare, selectMachine, selectDesign } from './helpers';
 
 test.beforeEach(async ({ page }) => prepare(page));
 
 async function pick(page: Page, search: string, name: RegExp) {
+  await selectMachine(page);
   await page.getByTestId('change-machine').click();
   await page.getByTestId('preset-search').fill(search);
   await page.getByRole('radio', { name }).click();
@@ -20,6 +21,7 @@ test('a smaller machine brings the design along, and art off the bed is flagged'
 
   await pick(page, 'laserpecker lp2', /LP2/);
   await expect(page.getByText('Design resized to fit the work area.')).toBeVisible();
+  await selectDesign(page);
   await page.getByTestId('object-row').first().click();
   expect(await num(page, 'sel-w')).toBeLessThanOrEqual(100);
   await expect(page.getByTestId('bed-warning')).toHaveCount(0);

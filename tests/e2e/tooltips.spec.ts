@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { connectVirtual, dragOnCanvas, newProject, prepare } from './helpers';
+import { connectVirtual, dragOnCanvas, newProject, prepare, selectMachine } from './helpers';
 
 test.beforeEach(async ({ page }) => prepare(page));
 
@@ -53,6 +53,7 @@ test('set origin, console and machine switcher are reachable', async ({ page }) 
   await expect(page.getByTestId('console')).toContainText('Grbl');
   await page.getByTestId('set-origin').click();
   await expect(page.getByTestId('job-origin')).toContainText('0.000, 0.000');
+  await selectMachine(page);
   await page.getByTestId('change-machine').click();
   await page.getByTestId('preset-search').fill('ts3');
   await page.getByRole('radio', { name: /TS3/ }).click();
@@ -61,6 +62,7 @@ test('set origin, console and machine switcher are reachable', async ({ page }) 
 
 test('a tooltip still waiting to appear is dropped when the pointer moves away', async ({ page }) => {
   await newProject(page);
+  await selectMachine(page);
   // Brush over the Absolute origin button and on to bare panel space, quicker than the delay.
   const over = (await page.getByRole('button', { name: 'Absolute' }).boundingBox())!;
   const bare = (await page.getByText('Job origin', { exact: true }).boundingBox())!;
@@ -72,6 +74,7 @@ test('a tooltip still waiting to appear is dropped when the pointer moves away',
 
 test('a tooltip goes away even when its pointerout is missed', async ({ page }) => {
   await newProject(page);
+  await selectMachine(page);
   const absolute = (await page.getByRole('button', { name: 'Absolute' }).boundingBox())!;
   const help = (await page.getByTestId('connect-help-open').boundingBox())!;
   await page.mouse.move(absolute.x + absolute.width / 2, absolute.y + absolute.height / 2, { steps: 4 });

@@ -14,12 +14,11 @@
   import { REPO_URL } from '$lib/config/app';
   import { formatCombo } from '../lib/keys';
   import { editor } from '../state/editor.svelte';
-  import { activeAdapter, connectedAdapter, DEFAULT_ADAPTER } from '../machines/registry';
+  import { activeAdapter } from '../machines/registry';
   import { session } from '../state/session.svelte';
   import { route } from '../state/route.svelte';
   import { ui } from '../state/ui.svelte';
   import * as actions from '../actions';
-  import ConnectButton from '../connect/ConnectButton.svelte';
 
   const saveState = $derived(
     editor.gcode
@@ -38,8 +37,6 @@
   let editingName = $state(false);
   /** An open G-code file exports as G-code, whatever the machine. */
   const exportLabel = $derived(editor.gcode ? 'Export G-code' : activeAdapter().exportLabel);
-  /** The selected machine's first way in; G-code files go to the G-code machine. */
-  const live = $derived((editor.gcode ? DEFAULT_ADAPTER : activeAdapter()).live);
 
   function rename(event: Event) {
     const value = (event.currentTarget as HTMLInputElement).value.trim();
@@ -209,16 +206,13 @@
   </div>
   <button
     type="button"
-    class="btn ghost"
+    class="btn ghost export"
     onclick={() => actions.exportJob()}
     title="{exportLabel} ({formatCombo('Mod+E')})"
     data-testid="export-gcode"
   >
     {exportLabel}
   </button>
-  {#if live && !connectedAdapter()}
-    <ConnectButton size="small" testid="topbar-connect" />
-  {/if}
   <button type="button" class="icon-btn" aria-label="Help" title="Help" onclick={() => route.go('help')}>
     <CircleHelp size={18} />
   </button>
@@ -280,6 +274,7 @@
     align-items: center;
     gap: 8px;
     min-width: 0;
+    flex-shrink: 1;
   }
 
   .name {
@@ -378,5 +373,76 @@
     height: 1px;
     margin: 4px 0;
     background: var(--ol-border);
+  }
+  @media (max-width: 1200px) {
+    .topbar {
+      gap: 8px;
+    }
+    .home :global(.word) {
+      display: none;
+    }
+    .name {
+      max-width: 160px;
+    }
+    .doc {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0;
+    }
+    .save-state {
+      font-size: var(--ol-fs-xs);
+    }
+  }
+
+  @media (max-width: 700px) {
+    .topbar {
+      height: auto;
+      min-height: var(--ol-topbar-h);
+      flex-wrap: wrap;
+      padding: 10px 12px;
+      gap: 8px;
+    }
+    .doc {
+      flex: 1;
+    }
+    .name {
+      max-width: 140px;
+    }
+    .topbar > .divider-v,
+    .spacer {
+      display: none;
+    }
+    .group {
+      order: 2;
+      margin-left: 0;
+    }
+    .view {
+      order: 3;
+      margin-left: auto;
+    }
+    .export {
+      order: 4;
+    }
+    .view button {
+      padding: 0 10px;
+    }
+    .topbar > a {
+      display: none;
+    }
+  }
+
+  @media (max-width: 420px) {
+    .group {
+      gap: 0;
+    }
+    .group .icon-btn {
+      width: 30px;
+    }
+    .group .divider-v {
+      margin: 0 2px;
+    }
+    .export {
+      flex: 1;
+    }
   }
 </style>

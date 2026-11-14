@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { expect, test } from '@playwright/test';
-import { dragOnCanvas, FIXTURES, newProject, prepare } from './helpers';
+import { dragOnCanvas, FIXTURES, newProject, prepare, selectMachine } from './helpers';
 
 const TTF = readFileSync(
   new URL('../../packages/libopenlaser/test/fixtures/fonts/geist-latin-400-normal.ttf', import.meta.url),
@@ -74,6 +74,8 @@ test('the console sits in the side panel and is always visible', async ({ page }
   await newProject(page);
   const console = page.getByTestId('console');
   await expect(console).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Show console' })).toHaveAttribute('aria-expanded', 'false');
+  await selectMachine(page);
   const panel = (await page.getByTestId('machine-panel').boundingBox())!;
   const consoleBox = (await console.boundingBox())!;
   expect(consoleBox.x).toBeGreaterThanOrEqual(panel.x - 1);

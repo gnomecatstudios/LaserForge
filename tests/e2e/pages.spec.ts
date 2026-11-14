@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { prepare } from './helpers';
+import { prepare, selectMachine } from './helpers';
 
 test.beforeEach(async ({ page }) => prepare(page));
 
@@ -72,9 +72,7 @@ test('Help covers a machine that is not showing up', async ({ page }) => {
   await expect(section).toContainText('Install the USB driver');
 });
 
-test('the top bar has the menu after the logo and a connect button until a laser is connected', async ({
-  page,
-}) => {
+test('the project menu stays in the top bar and connection lives in the Machine tab', async ({ page }) => {
   await page.goto('/');
   await page.getByTestId('new-project').click();
   await expect(page.getByRole('button', { name: 'Print template' })).toHaveCount(0);
@@ -82,7 +80,9 @@ test('the top bar has the menu after the logo and a connect button until a laser
   await expect(page.getByRole('menuitem', { name: /Print template/ })).toBeVisible();
   await page.keyboard.press('Escape');
 
-  const connect = page.getByTestId('topbar-connect');
+  await expect(page.getByTestId('topbar-connect')).toHaveCount(0);
+  await selectMachine(page);
+  const connect = page.getByTestId('connect-main');
   await expect(connect).toBeVisible();
   await page.getByTestId('connect-virtual').click();
   await expect(connect).toHaveCount(0);

@@ -1,10 +1,11 @@
 import { expect, test } from '@playwright/test';
-import { dragOnCanvas, newProject, prepare } from './helpers';
+import { dragOnCanvas, newProject, prepare, selectMachine } from './helpers';
 
 test.beforeEach(async ({ page }) => prepare(page));
 
 test('a LaserPecker frames, engraves and stops through its own panel', async ({ page }) => {
   await newProject(page);
+  await selectMachine(page);
   await page.getByTestId('change-machine').click();
   await page.getByTestId('preset-search').fill('laserpecker lp2');
   await page.getByRole('radio', { name: /LP2/ }).click();
@@ -23,6 +24,7 @@ test('a LaserPecker frames, engraves and stops through its own panel', async ({ 
   // Burn settings live on the layer, in LaserPecker's own terms: depth, not a speed.
   await expect(page.getByTestId('layer-settings').getByText('Depth', { exact: true })).toBeVisible();
   await expect(page.getByTestId('layer-settings').getByText('Overscan')).toHaveCount(0);
+  await selectMachine(page);
   await page.getByTestId('lp-connect-virtual').click();
   await expect(page.getByTestId('lp-state')).toHaveText('Idle');
   await expect(panel).toContainText('LP2 3.16');
@@ -66,12 +68,15 @@ test('a LaserPecker frames, engraves and stops through its own panel', async ({ 
 
 test('Stop stays on Help while a LaserPecker is connected', async ({ page }) => {
   await newProject(page);
+  await selectMachine(page);
   await page.getByTestId('change-machine').click();
   await page.getByTestId('preset-search').fill('laserpecker lp3');
   await page.getByRole('radio', { name: /LP3/ }).click();
+  await selectMachine(page);
   await page.getByTestId('lp-connect-virtual').click();
   await expect(page.getByTestId('lp-state')).toHaveText('Idle');
   // Picking another machine keeps the connected one's panel and Stop on screen.
+  await selectMachine(page);
   await page.getByTestId('change-machine').click();
   await page.getByTestId('preset-search').fill('ts3');
   await page.getByRole('radio', { name: /TS3/ }).click();

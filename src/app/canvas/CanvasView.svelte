@@ -4,6 +4,9 @@
   import Minus from '@lucide/svelte/icons/minus';
   import Plus from '@lucide/svelte/icons/plus';
   import Maximize from '@lucide/svelte/icons/maximize';
+  import Upload from '@lucide/svelte/icons/upload';
+  import Type from '@lucide/svelte/icons/type';
+  import { importArt } from '../actions';
   import { IDENTITY, multiply, rotationAbout, translation } from 'libopenlaser/geometry';
   import type { Mat2D, Rect, Vec2 } from 'libopenlaser/geometry';
   import { setObjectTransforms, transformObjects } from 'libopenlaser/project';
@@ -46,6 +49,7 @@
   import { cursorFor, marqueeHits, shapeObject, type DrawnShape } from './tools';
   import { textOutlines } from '../state/text.svelte';
   import { ui } from '../state/ui.svelte';
+  import { sidebar } from '../state/workspace.svelte';
   import TextEditOverlay from './TextEditOverlay.svelte';
   import NodeEditor from './NodeEditor.svelte';
   import PenOverlay from './PenOverlay.svelte';
@@ -96,7 +100,9 @@
     editor.project && designing ? selectedObjects(editor.project, editor.selection) : [],
   );
   const selectionBounds = $derived(boundsOf(selection));
-  const sizeBox = $derived(selectionBounds ? selectionBox(bedRectToScreen(canvas.view, bed, selectionBounds)) : null);
+  const sizeBox = $derived(
+    selectionBounds ? selectionBox(bedRectToScreen(canvas.view, bed, selectionBounds)) : null,
+  );
   const canResize = $derived(selection.length > 0 && selection.every((o) => !o.locked));
 
   function editSize(event: Event, axis: 'width' | 'height') {
@@ -118,8 +124,13 @@
   function sizeKey(event: KeyboardEvent, current: number) {
     event.stopPropagation();
     const input = event.currentTarget as HTMLInputElement;
-    if (event.key === 'Escape') { input.value = current.toFixed(3); input.blur(); }
-    else if (event.key === 'Enter') { event.preventDefault(); input.blur(); }
+    if (event.key === 'Escape') {
+      input.value = current.toFixed(3);
+      input.blur();
+    } else if (event.key === 'Enter') {
+      event.preventDefault();
+      input.blur();
+    }
   }
 
   const rotatable = $derived(selection.length > 0 && selection.every((o) => o.kind !== 'image'));
@@ -339,6 +350,7 @@
     }
     const handle = hitHandle(screen, selectionHandles());
     if (handle && selectionBounds) {
+      sidebar.showDesign();
       if (handle.id === 'rotate') {
         const center = {
           x: (selectionBounds.minX + selectionBounds.maxX) / 2,
@@ -365,6 +377,7 @@
     }
     const hit = hitAt(screen);
     if (hit) {
+      sidebar.showDesign();
       if (event.shiftKey) editor.select([hit.id], 'toggle');
       else if (!editor.selection.has(hit.id)) editor.select([hit.id]);
       drag = {
@@ -597,18 +610,36 @@
   ></canvas>
 
   {#if designing && selectionBounds && sizeBox && editor.tool === 'select' && !canvas.editingTextId}
-    <div class="size-pill" role="group" aria-label="Selection dimensions in millimeters"
+    <div
+      class="size-pill"
+      role="group"
+      aria-label="Selection dimensions in millimeters"
       style:left={`${Math.max(90, Math.min(canvas.size.width - 90, (sizeBox.minX + sizeBox.maxX) / 2))}px`}
-      style:top={`${Math.max(0, Math.min(canvas.size.height - 26, sizeBox.maxY + 8))}px`}>
-      <input aria-label="Selection width in millimeters" data-testid="canvas-size-width" type="text" inputmode="decimal"
-        value={(selectionBounds.maxX - selectionBounds.minX).toFixed(3)} disabled={!canResize || selectionBounds.maxX === selectionBounds.minX}
-        onfocus={(e) => e.currentTarget.select()} onchange={(e) => editSize(e, 'width')}
-        onkeydown={(e) => sizeKey(e, selectionBounds!.maxX - selectionBounds!.minX)} />
+      style:top={`${Math.max(0, Math.min(canvas.size.height - 26, sizeBox.maxY + 8))}px`}
+    >
+      <input
+        aria-label="Selection width in millimeters"
+        data-testid="canvas-size-width"
+        type="text"
+        inputmode="decimal"
+        value={(selectionBounds.maxX - selectionBounds.minX).toFixed(3)}
+        disabled={!canResize || selectionBounds.maxX === selectionBounds.minX}
+        onfocus={(e) => e.currentTarget.select()}
+        onchange={(e) => editSize(e, 'width')}
+        onkeydown={(e) => sizeKey(e, selectionBounds!.maxX - selectionBounds!.minX)}
+      />
       <span>×</span>
-      <input aria-label="Selection height in millimeters" data-testid="canvas-size-height" type="text" inputmode="decimal"
-        value={(selectionBounds.maxY - selectionBounds.minY).toFixed(3)} disabled={!canResize || selectionBounds.maxY === selectionBounds.minY}
-        onfocus={(e) => e.currentTarget.select()} onchange={(e) => editSize(e, 'height')}
-        onkeydown={(e) => sizeKey(e, selectionBounds!.maxY - selectionBounds!.minY)} />
+      <input
+        aria-label="Selection height in millimeters"
+        data-testid="canvas-size-height"
+        type="text"
+        inputmode="decimal"
+        value={(selectionBounds.maxY - selectionBounds.minY).toFixed(3)}
+        disabled={!canResize || selectionBounds.maxY === selectionBounds.minY}
+        onfocus={(e) => e.currentTarget.select()}
+        onchange={(e) => editSize(e, 'height')}
+        onkeydown={(e) => sizeKey(e, selectionBounds!.maxY - selectionBounds!.minY)}
+      />
       <span>mm</span>
     </div>
   {/if}
@@ -617,8 +648,26 @@
   <TextEditOverlay {bed} {bedColor} />
   <ErrorBoundary name="Bed warning" compact><BedWarning /></ErrorBoundary>
 
-  {#if empty}
-    <p class="empty" data-testid="empty-hint">Import art with the Image tool, or drop files here</p>
+  {#if empty && editor.tool === 'select'}
+    <section class="empty" aria-label="Start your design" data-testid="empty-hint">
+      <h1>Start with your artwork</h1>
+      <p>Drop a file here, or add text and shapes.</p>
+      <div class="empty-actions">
+        <button type="button" class="btn signal cta" onclick={() => importArt()} data-testid="empty-import">
+          <Upload size={17} />Import artwork
+        </button>
+        <button
+          type="button"
+          class="btn ghost cta"
+          onclick={() => {
+            const id = textOutlines.create({ x: bed.width / 2, y: bed.height / 2 }, bed);
+            canvas.editText(id, true);
+          }}
+          data-testid="empty-add-text"><Type size={17} />Add text</button
+        >
+      </div>
+      <span>SVG, DXF, PNG, JPEG, WebP</span>
+    </section>
   {/if}
 
   <div class="zoom" role="group" aria-label="Zoom">
@@ -674,18 +723,66 @@
     text-align: center;
     cursor: text;
   }
-  .size-pill input:focus { background: var(--ol-bg); color: var(--ol-text); outline: 1px solid var(--ol-text); }
-  .size-pill input:disabled { cursor: default; }
+  .size-pill input:focus {
+    background: var(--ol-bg);
+    color: var(--ol-text);
+    outline: 1px solid var(--ol-text);
+  }
+  .size-pill input:disabled {
+    cursor: default;
+  }
 
   .empty {
     position: absolute;
     left: 50%;
     top: 50%;
     transform: translate(-50%, -50%);
-    margin: 0;
-    color: var(--ol-text-dim);
-    white-space: nowrap;
-    pointer-events: none;
+    width: min(480px, calc(100% - 48px));
+    padding: 32px 24px;
+    border: 1px solid var(--ol-border-strong);
+    border-radius: var(--ol-radius-md);
+    background: var(--ol-surface);
+    text-align: center;
+    box-shadow: 0 4px 20px rgb(0 0 0 / 3%);
+  }
+  .empty h1 {
+    font-size: clamp(21px, 2.3vw, 30px);
+    line-height: 1.2;
+    letter-spacing: -0.035em;
+    font-weight: 600;
+  }
+  .empty p {
+    margin-top: 10px;
+    font-size: var(--ol-fs-lg);
+    color: var(--ol-text-muted);
+  }
+  .empty-actions {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    margin: 28px 0 18px;
+    flex-wrap: wrap;
+  }
+  .empty span {
+    color: var(--ol-text-muted);
+    font-size: var(--ol-fs-sm);
+  }
+  @media (max-width: 700px) {
+    .empty {
+      padding: 24px 16px;
+      width: calc(100% - 32px);
+    }
+    .empty-actions {
+      gap: 8px;
+      margin-top: 20px;
+    }
+    .empty-actions .btn {
+      height: 38px;
+      font-size: var(--ol-fs-sm);
+    }
+    .empty p {
+      font-size: var(--ol-fs-md);
+    }
   }
 
   .zoom {

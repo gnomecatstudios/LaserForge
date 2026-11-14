@@ -1,10 +1,11 @@
 import { readFileSync } from 'node:fs';
 import { expect, test, type Page } from '@playwright/test';
-import { connectVirtual, dragOnCanvas, newProject, prepare } from './helpers';
+import { connectVirtual, dragOnCanvas, newProject, prepare, selectMachine, selectDesign } from './helpers';
 
 test.beforeEach(async ({ page }) => prepare(page));
 
 async function pickMachine(page: Page, search: string, name: RegExp) {
+  await selectMachine(page);
   await page.getByTestId('change-machine').click();
   await page.getByTestId('preset-search').fill(search);
   await page.getByRole('radio', { name }).click();
@@ -29,6 +30,7 @@ test('a Ruida CO₂ machine exports .rd files to run from a USB stick', async ({
   await expect(page.getByTestId('layer-speed')).toHaveValue(/^\d+(\.\d)?$/);
   await expect(page.getByText('mm/s').first()).toBeVisible();
 
+  await selectMachine(page);
   const [download] = await Promise.all([
     page.waitForEvent('download'),
     page.getByTestId('export-rd').click(),
@@ -56,6 +58,7 @@ test('a CO₂ machine on GRBL burns at constant power and asks about water cooli
   expect(gcode).not.toMatch(/^M4/m);
 
   // Low power warns that a tube may not fire.
+  await selectDesign(page);
   const power = page.getByTestId('layer-power');
   await power.fill('5');
   await power.press('Enter');

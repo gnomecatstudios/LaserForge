@@ -24,9 +24,9 @@ test('the Connect button spins while a chosen laser is still connecting', async 
   await page.getByTestId('start-connect-menu').click();
   await page.getByTestId('start-connect-bluetooth').click();
 
-  await expect(page.getByTestId('topbar-connect-main')).toContainText('Connecting…');
-  await expect(page.getByTestId('topbar-connect-main')).toBeDisabled();
-  await expect(page.getByTestId('topbar-connect-main')).toHaveAttribute('aria-busy', 'true');
+  await expect(page.getByTestId('connect-main')).toContainText('Connecting…');
+  await expect(page.getByTestId('connect-main')).toBeDisabled();
+  await expect(page.getByTestId('connect-main')).toHaveAttribute('aria-busy', 'true');
 });
 
 test.describe('when the browser has Bluetooth switched off', () => {

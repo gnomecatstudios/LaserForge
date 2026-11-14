@@ -14,6 +14,8 @@
   import AccessoryPicker from './AccessoryPicker.svelte';
   import { coord } from '../lib/format';
 
+  let { showBadge = true }: { showBadge?: boolean } = $props();
+
   /** The connected machine's panel, else the selected machine's. */
   const adapter = $derived(shownAdapter());
   const running = $derived(adapter.live?.session.jobActive ?? false);
@@ -33,7 +35,7 @@
 <section class="machine" aria-label="Machine" data-testid="machine-panel">
   <div class="head">
     <SectionToggle id="machine">Machine</SectionToggle>
-    {#if adapter.badge}<adapter.badge />{/if}
+    {#if showBadge && adapter.badge}<adapter.badge />{/if}
   </div>
 
   {#if sections.isOpen('machine')}

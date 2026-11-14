@@ -5,6 +5,7 @@
   import Trash2 from '@lucide/svelte/icons/trash-2';
   import Filter from '@lucide/svelte/icons/filter';
   import ChevronsDown from '@lucide/svelte/icons/chevrons-down';
+  import ChevronDown from '@lucide/svelte/icons/chevron-down';
   import { tick } from 'svelte';
   import { formatConsoleReport, formatConsoleText, type ConsoleEntry } from 'libopenlaser/machine';
   import { APP_NAME, APP_VERSION } from '$lib/config/app';
@@ -13,12 +14,24 @@
   import { machine } from '../state/machine.svelte';
   import { preferences } from '../state/preferences.svelte';
 
-  /** Always on screen at the bottom of the side panel: every line to and from the machine. */
+  /** The log stays available without taking design space while disconnected. */
+  let expanded = $state(false);
+  let wasConnected = false;
   let command = $state('');
   let history: string[] = [];
   let historyIndex = -1;
   let list = $state<HTMLDivElement | null>(null);
   let height = $state(140);
+
+  $effect(() => {
+    const connected = machine.connected;
+    if (connected !== wasConnected) expanded = connected;
+    wasConnected = connected;
+  });
+
+  const issues = $derived(
+    machine.consoleEntries.filter((entry) => entry.kind === 'error' || entry.kind === 'alarm').length,
+  );
 
   function startResize(event: PointerEvent) {
     const handle = event.currentTarget as HTMLElement;
@@ -48,7 +61,7 @@
   // Follow the newest line. Keyed on the last entry: the count stops changing once the log is full.
   $effect(() => {
     void visible.at(-1)?.id;
-    if (!autoScroll || !list) return;
+    if (!expanded || !autoScroll || !list) return;
     void tick().then(() => list && (list.scrollTop = list.scrollHeight));
   });
 
@@ -108,64 +121,88 @@
 </script>
 
 <section class="console" aria-label="Console" data-testid="console">
-  <div
-    class="resize"
-    role="separator"
-    aria-orientation="horizontal"
-    aria-label="Resize console"
-    tabindex="-1"
-    onpointerdown={startResize}
-  ></div>
+  {#if expanded}
+    <div
+      class="resize"
+      role="separator"
+      aria-orientation="horizontal"
+      aria-label="Resize console"
+      tabindex="-1"
+      onpointerdown={startResize}
+    ></div>
+  {/if}
   <div class="head">
-    <Terminal size={14} />
-    <h2>Console</h2>
+    <h2>
+      <button
+        type="button"
+        class="toggle"
+        aria-label={expanded ? 'Hide console' : 'Show console'}
+        aria-expanded={expanded}
+        aria-controls="console-content"
+        onclick={() => (expanded = !expanded)}
+      >
+        <Terminal size={14} />Console<ChevronDown
+          size={14}
+          class={expanded ? 'chevron expanded' : 'chevron'}
+        />
+      </button>
+    </h2>
     <span class="spacer"></span>
-    <button
-      type="button"
-      class="icon-btn sm"
-      aria-label={quiet ? 'Show status reports and ok lines' : 'Hide status reports and ok lines'}
-      aria-pressed={!quiet}
-      onclick={() => preferences.update({ quietConsole: !quiet })}><Filter size={14} /></button
-    >
-    <button
-      type="button"
-      class="icon-btn sm"
-      aria-label={autoScroll ? 'Auto-scroll: on' : 'Auto-scroll: off'}
-      aria-pressed={autoScroll}
-      onclick={() => preferences.update({ consoleAutoScroll: !autoScroll })}
-      data-testid="console-autoscroll"><ChevronsDown size={15} /></button
-    >
-    <button type="button" class="icon-btn sm" aria-label="Copy log" onclick={copy}><Copy size={14} /></button>
-    <button type="button" class="icon-btn sm" aria-label="Download log for bug reports" onclick={download}
-      ><Download size={14} /></button
-    >
-    <button
-      type="button"
-      class="icon-btn sm"
-      aria-label="Clear console"
-      onclick={() => machine.clearConsole()}><Trash2 size={14} /></button
-    >
+    {#if !expanded && issues > 0}
+      <span class="issues">{issues} {issues === 1 ? 'error or alarm' : 'errors or alarms'} in log</span>
+    {/if}
+    {#if expanded}
+      <button
+        type="button"
+        class="icon-btn sm"
+        aria-label={quiet ? 'Show status reports and ok lines' : 'Hide status reports and ok lines'}
+        aria-pressed={!quiet}
+        onclick={() => preferences.update({ quietConsole: !quiet })}><Filter size={14} /></button
+      >
+      <button
+        type="button"
+        class="icon-btn sm"
+        aria-label={autoScroll ? 'Auto-scroll: on' : 'Auto-scroll: off'}
+        aria-pressed={autoScroll}
+        onclick={() => preferences.update({ consoleAutoScroll: !autoScroll })}
+        data-testid="console-autoscroll"><ChevronsDown size={15} /></button
+      >
+      <button type="button" class="icon-btn sm" aria-label="Copy log" onclick={copy}
+        ><Copy size={14} /></button
+      >
+      <button type="button" class="icon-btn sm" aria-label="Download log for bug reports" onclick={download}
+        ><Download size={14} /></button
+      >
+      <button
+        type="button"
+        class="icon-btn sm"
+        aria-label="Clear console"
+        onclick={() => machine.clearConsole()}><Trash2 size={14} /></button
+      >
+    {/if}
   </div>
-  <div class="log mono" bind:this={list} role="log" aria-live="off" style="height: {height}px">
-    {#each visible as e (e.id)}
-      <div class="entry {tone(e)}">{arrow(e)} {e.text}</div>
-    {:else}
-      <div class="empty">
-        {machine.connected ? 'Waiting for messages…' : 'Connect a machine to see what it says.'}
-      </div>
-    {/each}
-  </div>
-  <div class="input-row">
-    <span class="mono prompt">&gt;</span>
-    <input
-      class="cmd mono"
-      placeholder={machine.connected ? 'G-code or $ command' : 'Not connected'}
-      aria-label="Console command"
-      bind:value={command}
-      disabled={!machine.connected || machine.jobActive}
-      {onkeydown}
-      data-testid="console-input"
-    />
+  <div id="console-content" hidden={!expanded}>
+    <div class="log mono" bind:this={list} role="log" aria-live="off" style="height: {height}px">
+      {#each visible as e (e.id)}
+        <div class="entry {tone(e)}">{arrow(e)} {e.text}</div>
+      {:else}
+        <div class="empty">
+          {machine.connected ? 'Waiting for messages…' : 'Connect a machine to see what it says.'}
+        </div>
+      {/each}
+    </div>
+    <div class="input-row">
+      <span class="mono prompt">&gt;</span>
+      <input
+        class="cmd mono"
+        placeholder={machine.connected ? 'G-code or $ command' : 'Not connected'}
+        aria-label="Console command"
+        bind:value={command}
+        disabled={!machine.connected || machine.jobActive}
+        {onkeydown}
+        data-testid="console-input"
+      />
+    </div>
   </div>
 </section>
 
@@ -208,6 +245,39 @@
     font-size: var(--ol-fs-md);
     font-weight: 600;
     color: var(--ol-text);
+  }
+
+  .toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 32px;
+    padding: 0 4px;
+    margin-left: -4px;
+    border: 0;
+    border-radius: var(--ol-radius-sm);
+    background: none;
+    color: inherit;
+    font: inherit;
+  }
+
+  .toggle:hover {
+    background: var(--ol-surface-2);
+  }
+
+  .toggle :global(.chevron) {
+    transform: rotate(-90deg);
+    color: var(--ol-text-muted);
+    transition: transform 0.15s ease;
+  }
+
+  .toggle :global(.chevron.expanded) {
+    transform: rotate(0);
+  }
+
+  .issues {
+    color: var(--ol-console-error);
+    font-size: var(--ol-fs-xs);
   }
 
   .spacer {

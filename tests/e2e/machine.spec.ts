@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { connectVirtual, dragOnCanvas, newProject, prepare } from './helpers';
+import { connectVirtual, dragOnCanvas, newProject, prepare, selectMachine } from './helpers';
 
 test.beforeEach(async ({ page }) => prepare(page));
 
@@ -172,6 +172,7 @@ test('the console follows new lines, and auto-scroll can be turned off', async (
 test('walks through a laser that is not showing up', async ({ page }) => {
   await page.goto('/');
   await page.getByTestId('new-project').click();
+  await selectMachine(page);
   await page.getByTestId('connect-help-open').click();
   const dialog = page.getByTestId('connect-help-dialog');
   await expect(dialog).toContainText('Power on the laser');
