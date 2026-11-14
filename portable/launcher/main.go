@@ -14,12 +14,20 @@ import (
 )
 
 // Include underscore-prefixed Vite chunks as well as ordinary app assets.
+//
 //go:embed all:dist
 var assets embed.FS
 
 func main() {
 	noBrowser := flag.Bool("no-browser", false, "do not open the browser automatically")
+	installRoot := flag.String("install-update", "", "internal portable update helper")
 	flag.Parse()
+	if *installRoot != "" {
+		if err := applyNativeUpdate(*installRoot); err != nil {
+			fail(err)
+		}
+		return
+	}
 	const address = "127.0.0.1:5190"
 	const url = "http://127.0.0.1:5190/"
 	files, err := fs.Sub(assets, "dist")
@@ -47,7 +55,12 @@ func main() {
 			go cmd.Wait()
 		}
 	}
-	server := &http.Server{Handler: http.FileServer(http.FS(files)), ReadHeaderTimeout: 5 * time.Second}
+	mux := http.NewServeMux()
+	mux.Handle("/", http.FileServer(http.FS(files)))
+	if updater := portableUpdates(files); updater != nil {
+		mux.HandleFunc("/api/portable-update", updater.handle)
+	}
+	server := &http.Server{Handler: mux, ReadHeaderTimeout: 5 * time.Second}
 	if err := server.Serve(listener); err != nil {
 		fail(err)
 	}

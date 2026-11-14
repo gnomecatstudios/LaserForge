@@ -23,6 +23,21 @@ Keep the launcher window open. It serves embedded app files only on
 manually if your default browser does not support machine connections.
 Press Ctrl+C in the launcher window to stop.
 
+## Update from the GUI without Python
+
+New native portable packages support **Check for updates → Download update →
+Install and restart** on Windows x64, Linux x64 and Raspberry Pi ARM64/ARM32.
+Disconnect the laser and save your project before restarting. The native Go
+launcher downloads the matching release, checks its SHA-256 checksum and archive
+contents, and uses a separate helper to replace files after the launcher exits.
+Installation rechecks the official release checksum, so keep the internet
+connection available through the restart. The new launcher opens a new browser
+tab; close the old tab. Update failures are shown in the launcher console.
+
+Windows users can open `LaserForge-Portable.exe` or `Start-LaserForge.cmd` without
+installing Python. Older packages need one manual download to get the native
+updater. The Python launcher described below remains an optional legacy path.
+
 ## Easy setup on Raspberry Pi and Linux
 
 The Linux portable ZIPs include `setup.py`. Open it with Python 3 to use the
@@ -43,8 +58,9 @@ x64 and Raspberry Pi OS ARM64/ARM32. macOS is no longer a release target.
 
 - **Pi/Linux Python setup:** run the new package's `setup.py` once. Its menu and
   desktop shortcuts then use `python3 update.py --launch`.
-- **Windows:** install Python 3.9+ with its `py` launcher, then open
-  `Start-LaserForge.cmd` instead of the native executable.
+- **Windows legacy Python path:** install Python 3.9+ with its `py` launcher,
+  then run `py -3 update.py --launch`. The native executable and
+  `Start-LaserForge.cmd` use the Python-free GUI updater.
 - **Other portable folders:** run `python3 update.py --launch` from the extracted
   folder (`py -3 update.py --launch` on Windows).
 
@@ -79,8 +95,8 @@ python3 update.py --download
 python3 update.py --apply
 ```
 
-Running the native executable directly keeps the existing manual-update behavior.
-**About → Check for updates** remains a manual download option. The Python helper refuses system installation paths. It does not request administrator access.
+Current native packages offer the Python-free GUI updater under
+**About → Check for updates**. Older launchers retain manual downloads. The Python helper refuses system installation paths. It does not request administrator access.
 
 Existing users need one manual download/install of a release containing the new
 helper and `release.json`. Existing packages cannot gain this feature remotely.
@@ -163,5 +179,6 @@ Bump the app version in `package.json`, run the required checks, build the app, 
 python3 scripts/publish-downloads.py --packages portable/downloads
 python3 scripts/publish-downloads.py --packages portable/downloads --publish
 ```
+
 
 

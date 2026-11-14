@@ -55,6 +55,11 @@ jobs:
       - run: pnpm exec playwright install --with-deps chromium
       - run: pnpm icons
       - run: pnpm build
+      - name: Test native portable updater
+        run: |
+          cp -R dist portable/launcher/dist
+          cd portable/launcher
+          go test -race ./...
       - run: python3 scripts/build-portable.py --revision "${GITHUB_SHA:0:7}"
       - run: python3 scripts/verify-portable-branding.py
       - uses: actions/upload-artifact@v4
@@ -78,3 +83,4 @@ jobs:
             git push origin HEAD:main
           fi
           gh release create "v$version" portable/downloads/*.zip portable/downloads/SHA256SUMS.txt --target "$(git rev-parse HEAD)" --title "Laser Forge v$version" --generate-notes
+

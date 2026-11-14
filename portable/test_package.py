@@ -28,7 +28,7 @@ class UpdaterPackagingTests(unittest.TestCase):
             for name in ['update.py', 'setup.py', 'Start-LaserForge.cmd']:
                 shutil.copy2(Path(__file__).with_name(name), root / 'portable' / name)
             (root / 'portable/launcher').mkdir(exist_ok=True)
-            for name in ['main.go', 'go.mod']:
+            for name in ['main.go', 'updater.go', 'go.mod']:
                 (root / 'portable/launcher' / name).write_text('build fixture')
             for name in ['README.txt', 'LICENSE-LaserForge.txt']:
                 (root / 'portable' / name).write_text(name)
@@ -79,3 +79,4 @@ class MacApplicationTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+

@@ -5,7 +5,7 @@
   import { connectedSession } from '../machines/registry';
   import { ui } from '../state/ui.svelte';
   import { DOWNLOADS_URL, PLATFORMS, type Platform } from './releases';
-  import { checkForUpdates, updates } from './updates.svelte';
+  import { checkForUpdates, runNativeUpdate, updates } from './updates.svelte';
 
   // A modal must never cover Stop, even if a machine connects while a check is pending.
   const visible = $derived(updates.open && !connectedSession() && !ui.tourOpen);
@@ -36,19 +36,43 @@
     <button class="btn" onclick={() => void checkForUpdates()}>Try again</button>
   {:else if updates.available && updates.release}
     <p>Laser Forge {updates.release.version} is ready to download.</p>
-    <label for="update-platform">Your platform</label>
-    <select id="update-platform" bind:value={updates.platform}>
-      <option value="">Choose your platform</option>
-      {#each Object.entries(PLATFORMS) as [id, label] (id)}
-        <option value={id} disabled={!updates.release.downloads[id as Platform]}>{label}</option>
-      {/each}
-    </select>
-    {#if updates.platform && !download}<p>This release has no package for the selected platform.</p>{/if}
-    <p>
-      Save your project, then close Laser Forge and its launcher before replacing the app. Extract the ZIP
-      into a new folder and open the launcher. If you use the Python update launcher, updates download
-      in the background and install the next time you launch. The native launcher uses manual updates.
-    </p>
+    {#if !updates.native}
+      <label for="update-platform">Your platform</label>
+      <select id="update-platform" bind:value={updates.platform}>
+        <option value="">Choose your platform</option>
+        {#each Object.entries(PLATFORMS) as [id, label] (id)}
+          <option value={id} disabled={!updates.release.downloads[id as Platform]}>{label}</option>
+        {/each}
+      </select>
+      {#if updates.platform && !download}<p>This release has no package for the selected platform.</p>{/if}
+    {/if}
+    {#if updates.native}
+      <p>
+        Download the update here, then save your project before installing and restarting Laser Forge. Python
+        is not required.
+      </p>
+      {#if updates.nativeStatus === 'downloading'}
+        <p role="status">Downloading and verifying the update…</p>
+      {:else if updates.nativeStatus === 'ready'}
+        <p role="status">
+          Version {updates.nativeVersion} is ready to install.
+        </p>
+      {:else if updates.nativeStatus === 'restarting'}
+        <p role="status">
+          Restarting Laser Forge… A new app tab will open. If it does not, reopen the launcher to see the
+          update message.
+        </p>
+      {:else if updates.nativeStatus === 'current'}
+        <p role="status">You’re running the latest available version.</p>
+      {/if}
+      {#if updates.nativeError}<p role="alert">{updates.nativeError}</p>{/if}
+    {:else}
+      <p>
+        Save your project, then close Laser Forge and its launcher before replacing the app. Extract the ZIP
+        into a new folder and open the launcher. If you use the Python update launcher, updates download in
+        the background and install the next time you launch. The native launcher uses manual updates.
+      </p>
+    {/if}
     <a class="notes" href={updates.release.url} target="_blank" rel="noopener noreferrer"
       >Release notes and installation instructions</a
     >
@@ -62,7 +86,21 @@
         updates.open = false;
       }}>{updates.available ? 'Later' : 'Close'}</button
     >
-    {#if !updates.checking && !updates.error && updates.available && download}
+    {#if !updates.checking && !updates.error && updates.available && updates.native}
+      <button
+        class="btn signal"
+        disabled={['downloading', 'restarting', 'current'].includes(updates.nativeStatus)}
+        onclick={() => void runNativeUpdate(updates.nativeStatus === 'ready' ? 'install' : 'download')}
+      >
+        {updates.nativeStatus === 'ready'
+          ? 'Install and restart'
+          : updates.nativeStatus === 'downloading'
+            ? 'Downloading…'
+            : updates.nativeStatus === 'restarting'
+              ? 'Restarting…'
+              : 'Download update'}
+      </button>
+    {:else if !updates.checking && !updates.error && updates.available && download}
       <a class="btn signal download" href={download} target="_blank" rel="noopener noreferrer"
         >Download update</a
       >
@@ -100,4 +138,3 @@
     text-decoration: none;
   }
 </style>
-

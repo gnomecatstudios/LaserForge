@@ -11,6 +11,16 @@ Source snapshot: see VERSION.txt (or dist/portable-version.txt in the source ZIP
 App license: MIT; see LICENSE-LaserForge.txt.
 
 UPDATES
+New native portable builds include a Python-free updater. Open Check for updates
+from About or the project menu, choose Download update, save your project, then
+choose Install and restart. Disconnect the laser first. Downloads are verified
+against the release checksum and installed by a separate native helper after the
+launcher exits. An internet connection is required during download and install.
+The app opens a new browser tab after installation; close the old tab.
+Older launchers need one manual ZIP download to get this feature.
+Start-LaserForge.cmd now opens the native Windows launcher without Python.
+
+Optional legacy Python updater:
 With Python 3.9+ installed, open update.py in the extracted portable folder,
 or run python3 update.py --launch (Windows: py -3 update.py --launch).
 It starts the app, checks for updates in the background, and installs a staged
@@ -71,3 +81,4 @@ Cross builds: GOOS=windows GOARCH=amd64 go build -o LaserForge-Portable.exe .
 Other supported GOOS/GOARCH combinations: linux/amd64, linux/arm64,
 linux/arm (GOARM=6). No CGO is needed.
 These executables are unsigned. Physical laser hardware has not been tested.
+

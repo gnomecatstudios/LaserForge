@@ -63,7 +63,7 @@ def main():
         work = Path(folder)
         launcher = work / 'launcher'
         launcher.mkdir()
-        for name in ['main.go', 'go.mod']:
+        for name in ['main.go', 'updater.go', 'go.mod']:
             shutil.copy2(ROOT / 'portable/launcher' / name, launcher / name)
         shutil.copytree(ROOT / 'dist', launcher / 'dist')
         # Also record the source snapshot in the actual embedded web assets.
@@ -137,4 +137,5 @@ def main():
 
 if __name__ == '__main__':
     main()
+
 
