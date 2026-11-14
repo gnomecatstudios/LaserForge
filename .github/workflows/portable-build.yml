@@ -5,7 +5,7 @@ on:
       publish:
         description: Publish verified ZIPs to LaserForge
         type: boolean
-        default: true
+        default: false
   push:
     branches: [main]
 concurrency:
@@ -28,7 +28,7 @@ jobs:
           go-version: '1.24.x'
           cache: false
       - name: Select next public release version
-        if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || inputs.publish)
+        if: github.ref == 'refs/heads/main' && github.event_name == 'workflow_dispatch' && inputs.publish
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -70,7 +70,7 @@ jobs:
             portable/downloads/SHA256SUMS.txt
           if-no-files-found: error
       - name: Publish verified portable release
-        if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || inputs.publish)
+        if: github.ref == 'refs/heads/main' && github.event_name == 'workflow_dispatch' && inputs.publish
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
