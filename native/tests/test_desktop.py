@@ -115,9 +115,19 @@ class DesktopTests(unittest.TestCase):
         path = self.root / "photo.png"
         image = QImage(4, 4, QImage.Format.Format_RGB32)
         image.fill(QColor("black"))
-        image.setDotsPerMeterX(0)
-        image.setDotsPerMeterY(0)
         image.save(str(path))
+        # Qt writes a default 96-DPI pHYs chunk even when resolution is unset.
+        # Remove that optional chunk to exercise the original 254-DPI fallback.
+        encoded = path.read_bytes()
+        without_density = bytearray(encoded[:8])
+        offset = 8
+        while offset < len(encoded):
+            length = int.from_bytes(encoded[offset:offset + 4], "big")
+            chunk = encoded[offset:offset + length + 12]
+            if chunk[4:8] != b"pHYs":
+                without_density.extend(chunk)
+            offset += length + 12
+        path.write_bytes(without_density)
         with patch("laserforge_native.window.QFileDialog.getOpenFileName", return_value=(str(path), "")):
             self.window.import_art()
         self.settled()
