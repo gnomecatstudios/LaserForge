@@ -1,0 +1,28 @@
+{
+  "renderer": "legacy Canvas2D",
+  "objects": 10000,
+  "first_draw_ms": 85.10000000003492,
+  "redraw": {
+    "median_ms": 46.399999999965075,
+    "p95_ms": 104.60000000003492,
+    "samples": 30
+  },
+  "zoom_pan_redraw": {
+    "median_ms": 47.79999999998836,
+    "p95_ms": 98.19999999995343,
+    "samples": 30
+  },
+  "selection_miss": {
+    "median_ms": 62.5,
+    "p95_ms": 137.70000000001164,
+    "samples": 30
+  },
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "device_pixel_ratio": 1,
+  "user_agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/156.0.0.0 Safari/537.36",
+  "js_heap_bytes": 73951647,
+  "harness_startup_ms": 996.0791919999999
+}

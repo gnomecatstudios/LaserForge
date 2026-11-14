@@ -1,0 +1,30 @@
+{
+  "renderer": "Qt QGraphicsView/QPainter CPU offscreen",
+  "objects": 1000,
+  "scene_load_first_draw_ms": 60.13338000002477,
+  "harness_startup_ms": 234.4580210000231,
+  "redraw": {
+    "median_ms": 15.589156999993747,
+    "p95_ms": 24.680448999959026,
+    "samples": 30
+  },
+  "zoom_pan_redraw": {
+    "median_ms": 15.23247150001339,
+    "p95_ms": 21.742156000016166,
+    "samples": 30
+  },
+  "selection_miss": {
+    "median_ms": 0.009910499983334375,
+    "p95_ms": 0.01479400003745468,
+    "samples": 30
+  },
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "device_pixel_ratio": 1.0,
+  "rss_bytes": 82976768,
+  "platform": "Linux-6.18.57-x86_64-with-glibc2.41",
+  "pyside6": "6.8.3",
+  "python": "3.12.14"
+}
