@@ -5,8 +5,8 @@
 <h1 align="center">Laser Forge</h1>
 
 <p align="center">
-  <strong>Your laser, one tab away.</strong><br />
-  Free, open source laser engraver and cutter control that runs entirely in your browser.
+  <strong>Free, open source laser design and control.</strong><br />
+  Browser application available now; native Qt desktop migration in development.
 </p>
 
 <p align="center">
@@ -15,6 +15,27 @@
   <a href="https://github.com/gnomecatstudios/LaserForge/issues">Report an issue</a> ·
   <a href="./portable/README.md">Run locally</a>
 </p>
+
+## Native desktop migration (experimental)
+
+A separate **Qt 6 / PySide6 Widgets** application is being developed on
+`feature/native-desktop-migration`. Its interface and drawing viewport use no browser or webview;
+a headless Node.js process reuses the existing project, geometry, CAM and simulated-machine code.
+The browser application and its existing portable releases remain functional.
+
+The native preview supports `.olaser` projects, vectors and cached text outlines, raster images,
+rectangles/ellipses, selection and transforms, layers, undo/redo, DXF import, G-code preview/export
+and simulated jobs. **Feature parity is incomplete and physical-machine controls are disabled.**
+It is not the production replacement yet. Automatic native updates are not enabled.
+
+Linux x64 has been built and smoke-tested offscreen in the development container. Windows and
+macOS packaging/CI recipes are provided but have not been executed here; desktop usability,
+Ubuntu/Mint compatibility, Apple Silicon/Intel builds and signing still require validation.
+Raspberry Pi native packaging is also unvalidated; existing browser portable targets remain.
+
+See [native development setup](docs/native/development.md), [architecture and migration plan](docs/native/migration.md),
+[known limitations and test results](docs/native/validation.md), [measured performance](docs/native/performance.md),
+[distribution](docs/native/distribution.md) and [plugin API foundation](docs/native/plugins.md).
 
 ## Development downloads and getting started
 

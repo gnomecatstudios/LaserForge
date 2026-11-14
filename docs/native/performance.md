@@ -72,6 +72,15 @@ On the Linux development container on 2026-11-14, Node 24.22.1 and the frozen pn
 These baseline counts precede the added native bridge tests. Keep later suite totals separate.
 No Windows, macOS or Raspberry Pi performance measurements were made in this container.
 
+After the native additions, the existing browser Playwright subset passed **37/37 tests**
+in 132.13 seconds (0 skipped, 0 flaky): `design.spec.ts` (14), `files.spec.ts` (4),
+`layout.spec.ts` (6), `machine.spec.ts` (8), and `updates.spec.ts` (5). It used the
+production Vite/PWA build on port 5191, installed Chromium 156, two workers, and a
+temporary external configuration selecting `/usr/bin/chromium`. The repository's
+Playwright configuration and browser application source were unchanged. Machine cases
+used existing virtual connections; no physical device was opened. This subset validates
+continued browser operation, not complete native feature parity or all browser scenarios.
+
 ## Initial measured renderer comparison
 
 Run on 2026-11-14 in a shared Linux x86_64 container (kernel 6.18.57, glibc 2.41,
