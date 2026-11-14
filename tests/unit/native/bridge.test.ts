@@ -5,6 +5,7 @@ import { compileJob } from 'libopenlaser/cam';
 import { deserializeProject } from 'libopenlaser/project';
 import { rectanglePath } from 'libopenlaser/project';
 import { reorient } from 'libopenlaser/project';
+import { defaultImageSize, readImageDpi } from 'libopenlaser/import';
 import type { Project, MachineProfile } from 'libopenlaser/project';
 import { dxf, line } from '../../../packages/libopenlaser/test/unit/import/dxf/build';
 
@@ -199,6 +200,51 @@ describe('native retained-core bridge', () => {
     const second = await snapshot(service, 'addImage', imageParams);
     expect(second.project.layers).toHaveLength(2);
     expect(second.project.objects[0].layerId).toBe(second.project.objects[1].layerId);
+  });
+
+  it('derives import dimensions from original metadata, 254 DPI fallback and bed fit', async () => {
+    const service = new NativeService();
+    await service.dispatch('setProfile', { profile: { bedWidth: 400, bedHeight: 300 } });
+    const raw = Buffer.from([0, 0, 0, 255]);
+    for (const pixels of [
+      { width: 1000, height: 500 },
+      { width: 8000, height: 2000 },
+    ]) {
+      const imported = await snapshot(service, 'addImage', {
+        data: raw.toString('base64'),
+        mime: 'image/png',
+        name: 'unannotated',
+        widthPx: pixels.width,
+        heightPx: pixels.height,
+      });
+      const expected = defaultImageSize(pixels, null, { width: 400, height: 300 });
+      expect(imported.project.objects.at(-1)).toMatchObject({
+        width: expected.width,
+        height: expected.height,
+      });
+    }
+    // Minimal JFIF header from the retained image-header test format: 300 × 150 DPI.
+    const jpeg = Buffer.from([
+      0xff, 0xd8, 0xff, 0xe0, 0, 16, 74, 70, 73, 70, 0, 1, 2, 1, 1, 44, 0, 150, 0, 0, 0xff, 0xda, 0, 2,
+    ]);
+    const imported = await snapshot(service, 'addImage', {
+      data: jpeg.toString('base64'),
+      mime: 'application/octet-stream',
+      name: 'density.jpg',
+      widthPx: 300,
+      heightPx: 600,
+    });
+    const image = imported.project.objects.at(-1)!;
+    const expected = defaultImageSize({ width: 300, height: 600 }, readImageDpi(jpeg), {
+      width: 400,
+      height: 300,
+    });
+    expect(image).toMatchObject({ width: expected.width, height: expected.height });
+    if (image.kind !== 'image') throw new Error('Expected image');
+    expect(imported.project.assets[image.assetId]).toMatchObject({
+      mime: 'image/jpeg',
+      data: jpeg.toString('base64'),
+    });
   });
 
   it('rejects malformed changes without corrupting the current document', async () => {

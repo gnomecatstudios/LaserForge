@@ -2,12 +2,14 @@
 import { Buffer } from 'node:buffer';
 import { compileJob } from '../../packages/libopenlaser/src/cam/compile';
 import type { RasterSource } from '../../packages/libopenlaser/src/cam/types';
+import { defaultImageSize, readImageDpi, sniffImageMime } from '../../packages/libopenlaser/src/import/image';
 import { importDxf, DXF_UNITS, type DxfUnit } from '../../packages/libopenlaser/src/import/dxf';
 import { buildProjectObjectsFromSvg } from '../../packages/libopenlaser/src/import/svg/to-project';
 import { GrblConnection } from '../../packages/libopenlaser/src/machine/grbl/connection';
 import { virtualGrblTransport } from '../../packages/libopenlaser/src/machine/simulator/virtual-machine';
 import { VirtualScheduler } from '../../packages/libopenlaser/src/machine/virtual-scheduler';
 import { createProject, defaultMachineProfile } from '../../packages/libopenlaser/src/project/factory';
+import { workArea } from '../../packages/libopenlaser/src/project/accessories';
 import { History } from '../../packages/libopenlaser/src/project/history';
 import { makeId } from '../../packages/libopenlaser/src/project/ids';
 import { MACHINE_PRESETS } from '../../packages/libopenlaser/src/project/machine-presets';
@@ -415,7 +417,7 @@ export class NativeService {
         );
       case 'addImage': {
         const bytes = decode(p.data);
-        const mime = text(p.mime, 'mime');
+        const mime = sniffImageMime(bytes) ?? text(p.mime, 'mime');
         const name = text(p.name, 'name');
         const asset: Asset = {
           id: makeId(),
@@ -425,6 +427,20 @@ export class NativeService {
         };
         if (p.widthPx !== undefined) asset.widthPx = positive(p.widthPx, 'widthPx');
         if (p.heightPx !== undefined) asset.heightPx = positive(p.heightPx, 'heightPx');
+        let size: { width: number; height: number };
+        if (p.width === undefined && p.height === undefined) {
+          const width = positive(p.widthPx, 'widthPx');
+          const height = positive(p.heightPx, 'heightPx');
+          if (!Number.isSafeInteger(width) || !Number.isSafeInteger(height))
+            throw new Error('Pixel dimensions must be positive integers');
+          size = defaultImageSize(
+            { width, height },
+            readImageDpi(bytes),
+            workArea(this.profile, this.project.jobSettings),
+          );
+        } else {
+          size = { width: positive(p.width, 'width'), height: positive(p.height, 'height') };
+        }
         let next = this.project;
         let layer: Layer | undefined;
         if (p.layerId !== undefined) {
@@ -442,8 +458,8 @@ export class NativeService {
           ...this.baseObject(p, name, layer.id),
           kind: 'image',
           assetId: asset.id,
-          width: positive(p.width, 'width'),
-          height: positive(p.height, 'height'),
+          width: size.width,
+          height: size.height,
         };
         return this.commit(ops.addObjects(next, [object], [asset]));
       }
