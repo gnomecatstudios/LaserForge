@@ -125,7 +125,9 @@ def main():
             'draft': False, 'prerelease': False, 'assets': [asset(name, len(valid_bytes)), asset('SHA256SUMS.txt', len(sums))]}))
         environment = {**os.environ, 'LASERFORGE_TEST_FIXTURES': str(fixture)}
         if os.name == 'nt':
-            environment['PATH'] = os.environ['SystemRoot'] + r'\System32;' + os.environ['SystemRoot']
+            environment['PATH'] = os.environ['SystemRoot'] + r'\System32'
+            # The hosted runner installs py.exe in the Windows root. Keep only
+            # System32 so neither Python nor its launcher is discoverable.
             assert shutil.which('python', path=environment['PATH']) is None
             assert shutil.which('py', path=environment['PATH']) is None
             command = [os.environ['COMSPEC'], '/c', str(install / 'Start-LaserForge.cmd')]
