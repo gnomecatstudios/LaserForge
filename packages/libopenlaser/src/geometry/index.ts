@@ -6,3 +6,5 @@ export * from './bezier';
 export * from './path';
 export * from './polygon';
 export * from './clipper';
+
+export * from './simplify';

@@ -1,11 +1,11 @@
 <script lang="ts">
-  import { apply, invert } from 'libopenlaser/geometry';
+  import { apply, invert, cubicPoint } from 'libopenlaser/geometry';
   import type { Vec2 } from 'libopenlaser/geometry';
   import { updateObject, type VectorObject } from 'libopenlaser/project';
   import { editor } from '../state/editor.svelte';
   import { canvas } from '../state/canvas.svelte';
   import { bedToScreen, screenToBed, type BedFrame } from './viewport';
-  import { moveNode, pathNodes, type NodeRef } from './node-edit';
+  import { insertNode, moveNode, pathNodes, type NodeRef } from './node-edit';
   let { bed }: { bed: BedFrame } = $props();
   let host: HTMLDivElement;
   const objects = $derived(
@@ -39,6 +39,56 @@
       { coalesce: 'node-drag' },
     );
   }
+  function addNode(object: VectorObject, pi: number, index: number, event?: PointerEvent) {
+    if (event && event.button !== 0) return;
+    event?.stopPropagation();
+    const path = object.paths[pi];
+    const segment = path.segments[index] ?? { type: 'L' as const, to: path.start };
+    const from = index ? path.segments[index - 1].to : path.start;
+    let t = 0.5;
+    if (event) {
+      const rect = host.getBoundingClientRect();
+      const target = { x: event.clientX - rect.left, y: event.clientY - rect.top };
+      const at = (u: number) =>
+        screen(
+          object,
+          segment.type === 'C'
+            ? cubicPoint(from, segment.c1, segment.c2, segment.to, u)
+            : { x: from.x + (segment.to.x - from.x) * u, y: from.y + (segment.to.y - from.y) * u },
+        );
+      const distance = (u: number) => {
+        const p = at(u);
+        return (p.x - target.x) ** 2 + (p.y - target.y) ** 2;
+      };
+      // Find the nearest neighborhood in screen space, including scaled/skewed objects.
+      let best = 0;
+      for (let i = 1; i <= 64; i++) if (distance(i / 64) < distance(best / 64)) best = i;
+      let lo = Math.max(0, (best - 1) / 64),
+        hi = Math.min(1, (best + 1) / 64);
+      for (let i = 0; i < 30; i++) {
+        const a = lo + (hi - lo) / 3,
+          b = hi - (hi - lo) / 3;
+        if (distance(a) < distance(b)) hi = b;
+        else lo = a;
+      }
+      t = (lo + hi) / 2;
+    }
+    const paths = insertNode(object.paths, pi, index, t);
+    if (paths === object.paths) return;
+    editor.sealHistory();
+    editor.commit((p) => updateObject(p, object.id, { paths, shape: undefined }));
+    editor.sealHistory();
+  }
+  function segmentDrawing(object: VectorObject, pi: number, index: number) {
+    const path = object.paths[pi];
+    const segment = path.segments[index] ?? { type: 'L' as const, to: path.start };
+    const a = screen(object, index ? path.segments[index - 1].to : path.start);
+    const b = screen(object, segment.to);
+    if (segment.type === 'L') return `M${a.x},${a.y} L${b.x},${b.y}`;
+    const c = screen(object, segment.c1),
+      d = screen(object, segment.c2);
+    return `M${a.x},${a.y} C${c.x},${c.y} ${d.x},${d.y} ${b.x},${b.y}`;
+  }
   function end() {
     drag = null;
     editor.sealHistory();
@@ -47,8 +97,26 @@
 
 <div class="nodes" bind:this={host}>
   {#each objects as object (object.id)}
-    <svg aria-hidden="true">
+    <svg aria-label="Editable path segments">
       {#each object.paths as path, pi (pi)}
+        {#each [...path.segments, ...(path.closed && (path.segments.at(-1)?.to.x !== path.start.x || path.segments.at(-1)?.to.y !== path.start.y) ? [{ type: 'L', to: path.start }] : [])] as _, index (index)}
+          <path
+            class="segment-hit"
+            d={segmentDrawing(object, pi, index)}
+            role="button"
+            tabindex="0"
+            aria-label="Insert node on path {pi + 1}, segment {index + 1}"
+            data-testid="path-segment"
+            onpointerdown={(event) => addNode(object, pi, index, event)}
+            onkeydown={(event) => {
+              if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                event.stopPropagation();
+                addNode(object, pi, index);
+              }
+            }}
+          />
+        {/each}
         {#each path.segments as segment, i (i)}
           {#if segment.type === 'C'}
             {@const a = screen(object, i ? path.segments[i - 1].to : path.start)}
@@ -84,7 +152,7 @@
     {/each}
   {/each}
   {#if editor.tool === 'node' && editor.view === 'design'}
-    <p>Select a vector, then drag its nodes or curve handles.</p>
+    <p>Click a path to add a node; drag nodes or curve handles to edit.</p>
   {/if}
 </div>
 
@@ -105,6 +173,16 @@
     fill: none;
     stroke: var(--ol-signal);
     stroke-width: 1;
+  }
+  .segment-hit {
+    stroke: transparent;
+    stroke-width: 12;
+    pointer-events: stroke;
+    cursor: copy;
+  }
+  .segment-hit:focus-visible {
+    stroke: var(--ol-signal);
+    stroke-width: 3;
   }
   button {
     position: absolute;

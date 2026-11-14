@@ -53,3 +53,20 @@ test('double-clicking a vector opens its nodes', async ({ page }) => {
   await expect(page.getByTestId('tool-node')).toHaveAttribute('aria-pressed', 'true');
   await expect(page.getByTestId('path-node')).toHaveCount(4);
 });
+
+test('clicking a selected path inserts a movable node and supports undo', async ({ page }) => {
+  await newProject(page);
+  await page.getByTestId('tool-rect').click();
+  await dragOnCanvas(page, [0.4, 0.4], [0.6, 0.6]);
+  await page.getByTestId('tool-node').click();
+  await expect(page.getByTestId('path-node')).toHaveCount(4);
+  const first = (await page.getByTestId('path-node').nth(0).boundingBox())!;
+  const second = (await page.getByTestId('path-node').nth(1).boundingBox())!;
+  await page.mouse.click(
+    (first.x + second.x) / 2 + first.width / 2,
+    (first.y + second.y) / 2 + first.height / 2,
+  );
+  await expect(page.getByTestId('path-node')).toHaveCount(5);
+  await page.keyboard.press('ControlOrMeta+z');
+  await expect(page.getByTestId('path-node')).toHaveCount(4);
+});

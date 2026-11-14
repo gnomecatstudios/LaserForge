@@ -51,3 +51,33 @@ export function moveNode(paths: PathData[], node: NodeRef, to: Vec2): PathData[]
     return p;
   });
 }
+
+/** Split a line or cubic exactly; index === segments.length addresses implicit closure. */
+export function insertNode(paths: PathData[], pathIndex: number, index: number, t: number): PathData[] {
+  const path = paths[pathIndex];
+  if (!path || !Number.isFinite(t) || t <= 1e-6 || t >= 1 - 1e-6 || index < 0 || index > path.segments.length)
+    return paths;
+  const segment = path.segments[index] ?? (path.closed ? { type: 'L' as const, to: path.start } : null);
+  if (!segment) return paths;
+  const from = index ? path.segments[index - 1].to : path.start;
+  const lerp = (a: Vec2, b: Vec2): Vec2 => ({ x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t });
+  let pieces: PathData['segments'];
+  if (segment.type === 'L') pieces = [{ type: 'L', to: lerp(from, segment.to) }, segment];
+  else {
+    const a = lerp(from, segment.c1),
+      b = lerp(segment.c1, segment.c2),
+      c = lerp(segment.c2, segment.to);
+    const d = lerp(a, b),
+      e = lerp(b, c),
+      point = lerp(d, e);
+    pieces = [
+      { type: 'C', c1: a, c2: d, to: point },
+      { type: 'C', c1: e, c2: c, to: segment.to },
+    ];
+  }
+  return paths.map((p, i) =>
+    i === pathIndex
+      ? { ...p, segments: [...p.segments.slice(0, index), ...pieces, ...p.segments.slice(index + 1)] }
+      : p,
+  );
+}
