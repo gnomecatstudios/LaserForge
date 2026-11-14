@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=LaserForge Native (Experimental)
+Comment=Native Qt laser design workspace
+Exec=LaserForge-Native %f
+Icon=laserforge-native
+Terminal=false
+Categories=Graphics;Engineering;
+MimeType=application/x-openlaser-project;
+StartupNotify=true

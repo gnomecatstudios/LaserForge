@@ -1,0 +1,87 @@
+name: Experimental native desktop
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'native/**'
+      - 'scripts/build-native.py'
+      - 'packages/libopenlaser/**'
+      - '.github/workflows/native-desktop.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  native:
+    name: Native ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-22.04, windows-latest, macos-15-intel, macos-14]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 35
+    env:
+      QT_QPA_PLATFORM: offscreen
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install Linux Qt runtime dependencies
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y libegl1 libopengl0 libxcb-cursor0 libxkbcommon-x11-0 libdbus-1-3
+      - run: pnpm install --frozen-lockfile
+      - run: python -m pip install -r native/requirements-build.txt
+      - run: python -m pip install -e native --no-deps
+      - name: Build retained core bridge
+        run: pnpm exec vite build --config native/bridge/vite.config.ts
+      - name: Native core and Qt interaction tests
+        run: python -m unittest discover -s native/tests -p "test_*.py"
+      - name: Native source smoke
+        run: python -m laserforge_native --smoke-test
+      - name: Package on target operating system
+        run: python scripts/build-native.py --skip-bridge-build
+      - name: Smoke packaged application
+        shell: bash
+        run: |
+          python - <<'PY'
+          import os
+          from pathlib import Path
+          import subprocess
+          import sys
+          import tarfile
+          import tempfile
+          import zipfile
+          archive = next(p for p in Path('native/artifacts').iterdir() if p.name.endswith(('.zip', '.tar.gz')))
+          with tempfile.TemporaryDirectory() as temporary:
+              if sys.platform == 'darwin':
+                  subprocess.run(['ditto', '-x', '-k', str(archive), temporary], check=True)
+              elif archive.suffix == '.zip':
+                  with zipfile.ZipFile(archive) as package:
+                      package.extractall(temporary)
+                      for entry in package.infolist():
+                          mode = entry.external_attr >> 16 & 0o777
+                          if mode:
+                              (Path(temporary) / entry.filename).chmod(mode)
+              else:
+                  with tarfile.open(archive) as package:
+                      package.extractall(temporary, filter='data')
+              root = Path(temporary)
+              if sys.platform == 'darwin':
+                  executable = root / 'LaserForge.app/Contents/MacOS/LaserForge-Native'
+              else:
+                  executable = root / 'LaserForge-Native' / ('LaserForge-Native.exe' if os.name == 'nt' else 'LaserForge-Native')
+              executable.chmod(executable.stat().st_mode | 0o111)
+              subprocess.run([str(executable), '--smoke-test'], check=True, timeout=60)
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: LaserForge-native-experimental-${{ matrix.os }}
+          path: native/artifacts/*
+          if-no-files-found: error
