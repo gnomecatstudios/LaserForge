@@ -20,7 +20,10 @@
     "e2e": "playwright test",
     "icons": "node scripts/render-icons.mjs",
     "fonts:update": "node scripts/update-google-fonts.mjs",
-    "screenshot": "node scripts/screenshot.mjs"
+    "screenshot": "node scripts/screenshot.mjs",
+    "native:bridge": "vite build --config native/bridge/vite.config.ts",
+    "native": "python -m laserforge_native",
+    "native:test": "python -m unittest discover -s native/tests -v"
   },
   "dependencies": {
     "@fontsource/geist-mono": "^5.3.0",

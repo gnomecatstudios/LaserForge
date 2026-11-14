@@ -10,3 +10,10 @@ playwright-report/
 .vite/
 
 __pycache__/
+
+native/bridge/dist/
+native/build/
+native/dist/
+*.egg-info/
+native/artifacts/
+.venv/
