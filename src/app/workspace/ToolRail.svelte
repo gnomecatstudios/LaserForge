@@ -5,6 +5,7 @@
   import PenTool from '@lucide/svelte/icons/pen-tool';
   import Combine from '@lucide/svelte/icons/combine';
   import { uniteSelection } from '../unite';
+  import { ui } from '../state/ui.svelte';
   import { simplifyPath, flattenPaths, polylinesBounds } from 'libopenlaser/geometry';
   import type { VectorObject } from 'libopenlaser/project';
 
@@ -16,6 +17,11 @@
     ) ?? [],
   );
 
+  const selectedImage = $derived(
+    editor.project?.objects.find(
+      (o) => editor.selection.has(o.id) && o.kind === 'image' && o.visible && !o.locked,
+    ),
+  );
   const simplified = $derived(
     vectors.map((o) => ({ ...o, paths: o.paths.map((p) => simplifyPath(p, tolerance, o.transform)) })),
   );
@@ -155,63 +161,77 @@
       )}
     onclick={uniteSelection}><Combine size={18} /></button
   >
-  <Popover.Root bind:open={simplifyOpen}>
-    <Popover.Trigger
+  {#if selectedImage && !vectors.length}
+    <button
+      type="button"
       class="icon-btn tool"
-      aria-label="Simplify path"
-      disabled={!designing || !vectors.length}
+      aria-label="Simplify image paths"
       data-testid="tool-simplify"
+      disabled={!designing}
+      onclick={() => {
+        ui.traceForSimplify = true;
+        ui.traceImageId = selectedImage.id;
+      }}><Spline size={18} /></button
     >
-      <Spline size={18} />
-    </Popover.Trigger>
-    <Popover.Portal>
-      <Popover.Content class="ol-menu simplify-menu" side="right" align="start" sideOffset={8}>
-        <strong>Simplify path</strong>
-        <label for="simplify-tolerance">Tolerance (mm): {tolerance.toFixed(2)}</label>
-        <input id="simplify-tolerance" type="range" min="0.01" max="1" step="0.01" bind:value={tolerance} />
-        <span data-testid="simplify-count">Nodes: {before} → {after}</span>
-        <svg
-          viewBox={previewBox}
-          width="232"
-          height="150"
-          role="img"
-          aria-label="Path simplification preview"
-        >
-          {#each previewOriginal as line, i (i)}
-            <polyline
-              points={[...line.points, ...(line.closed ? line.points.slice(0, 1) : [])]
-                .map((p) => `${p.x},${p.y}`)
-                .join(' ')}
-              fill="none"
-              stroke="currentColor"
-              opacity="0.3"
-              stroke-width="3"
-              vector-effect="non-scaling-stroke"
-            />
-          {/each}
-          {#each previewResult as line, i (i)}
-            <polyline
-              points={[...line.points, ...(line.closed ? line.points.slice(0, 1) : [])]
-                .map((p) => `${p.x},${p.y}`)
-                .join(' ')}
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1"
-              vector-effect="non-scaling-stroke"
-            />
-          {/each}
-        </svg>
-        <span>Original in gray; simplified in foreground. Preview only until Apply.</span>
-        <span
-          >Open and closed straight-segment paths. Sharp corners are kept; Bézier paths stay unchanged.</span
-        >
-        <button type="button" class="btn" onclick={() => (simplifyOpen = false)}>Cancel</button>
-        <button type="button" class="btn start" disabled={after >= before} onclick={applySimplification}
-          >Apply simplification</button
-        >
-      </Popover.Content>
-    </Popover.Portal>
-  </Popover.Root>
+  {:else}
+    <Popover.Root bind:open={simplifyOpen}>
+      <Popover.Trigger
+        class="icon-btn tool"
+        aria-label="Simplify path"
+        disabled={!designing || !vectors.length}
+        data-testid="tool-simplify"
+      >
+        <Spline size={18} />
+      </Popover.Trigger>
+      <Popover.Portal>
+        <Popover.Content class="ol-menu simplify-menu" side="right" align="start" sideOffset={8}>
+          <strong>Simplify path</strong>
+          <label for="simplify-tolerance">Tolerance (mm): {tolerance.toFixed(2)}</label>
+          <input id="simplify-tolerance" type="range" min="0.01" max="1" step="0.01" bind:value={tolerance} />
+          <span data-testid="simplify-count">Nodes: {before} → {after}</span>
+          <svg
+            viewBox={previewBox}
+            width="232"
+            height="150"
+            role="img"
+            aria-label="Path simplification preview"
+          >
+            {#each previewOriginal as line, i (i)}
+              <polyline
+                points={[...line.points, ...(line.closed ? line.points.slice(0, 1) : [])]
+                  .map((p) => `${p.x},${p.y}`)
+                  .join(' ')}
+                fill="none"
+                stroke="currentColor"
+                opacity="0.3"
+                stroke-width="3"
+                vector-effect="non-scaling-stroke"
+              />
+            {/each}
+            {#each previewResult as line, i (i)}
+              <polyline
+                points={[...line.points, ...(line.closed ? line.points.slice(0, 1) : [])]
+                  .map((p) => `${p.x},${p.y}`)
+                  .join(' ')}
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1"
+                vector-effect="non-scaling-stroke"
+              />
+            {/each}
+          </svg>
+          <span>Original in gray; simplified in foreground. Preview only until Apply.</span>
+          <span
+            >Open and closed straight-segment paths. Sharp corners are kept; Bézier paths stay unchanged.</span
+          >
+          <button type="button" class="btn" onclick={() => (simplifyOpen = false)}>Cancel</button>
+          <button type="button" class="btn start" disabled={after >= before} onclick={applySimplification}
+            >Apply simplification</button
+          >
+        </Popover.Content>
+      </Popover.Portal>
+    </Popover.Root>
+  {/if}
 </nav>
 
 <style>

@@ -25,6 +25,7 @@ class Ui {
   vectorImport = $state.raw<PendingVectorImport | null>(null);
   printOpen = $state(false);
   /** Image being traced, when the Trace dialog is open. */
+  traceForSimplify = $state(false);
   traceImageId = $state<string | null>(null);
   /** Layer under the pointer in the Layers panel; its objects glow on the bed. */
   hoverLayerId = $state<string | null>(null);
