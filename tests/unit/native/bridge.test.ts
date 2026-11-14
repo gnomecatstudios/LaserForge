@@ -4,6 +4,7 @@ import { NativeService } from '../../../native/bridge/service';
 import { compileJob } from 'libopenlaser/cam';
 import { deserializeProject } from 'libopenlaser/project';
 import { rectanglePath } from 'libopenlaser/project';
+import { reorient } from 'libopenlaser/project';
 import type { Project, MachineProfile } from 'libopenlaser/project';
 import { dxf, line } from '../../../packages/libopenlaser/test/unit/import/dxf/build';
 
@@ -281,5 +282,44 @@ describe('native retained-core bridge', () => {
     await expect(service.dispatch('simulate')).rejects.toThrow('Simulation blocked: Nothing to burn');
     await rectangle(service, { x: 390, y: 10, width: 20, height: 10 });
     await expect(service.dispatch('simulate')).rejects.toThrow('Simulation blocked: The job moves outside');
+  });
+
+  it('preserves the original corner reorientation on profiles, load, undo, redo and new', async () => {
+    const service = new NativeService();
+    const original = await snapshot(service, 'addPaths', {
+      paths: [
+        {
+          closed: true,
+          start: { x: 0, y: 0 },
+          segments: [
+            { type: 'L', to: { x: 20, y: 3 } },
+            { type: 'L', to: { x: 5, y: 10 } },
+            { type: 'L', to: { x: 0, y: 0 } },
+          ],
+        },
+      ],
+      x: 7,
+      y: 13,
+    });
+    expect(original.project.designCorner).toBe('bl');
+    const saved = (await service.dispatch('save')) as { data: string };
+    const topRight = await snapshot(service, 'setProfile', { profile: { originCorner: 'tr' } });
+    expect(topRight.project.objects).toEqual(reorient(original.project, 'tr').objects);
+    expect(topRight.project.designCorner).toBe('tr');
+    expect(await service.dispatch('compile')).toEqual(
+      compileJob({ project: reorient(original.project, 'tr'), profile: topRight.profile, assets: new Map() }),
+    );
+    const undone = await snapshot(service, 'undo');
+    expect(undone.project.designCorner).toBe('tr');
+    expect(undone.project.objects).toHaveLength(0);
+    const redone = await snapshot(service, 'redo');
+    expect(redone.project.designCorner).toBe('tr');
+    expect(redone.project.objects).toEqual(topRight.project.objects);
+    const back = await snapshot(service, 'setProfile', { profile: { originCorner: 'bl' } });
+    expect(back.project.objects).toEqual(original.project.objects);
+    await service.dispatch('setProfile', { profile: { originCorner: 'tr' } });
+    const loaded = await snapshot(service, 'load', saved);
+    expect(loaded.project.objects).toEqual(reorient(original.project, 'tr').objects);
+    expect((await snapshot(service, 'new')).project.designCorner).toBe('tr');
   });
 });

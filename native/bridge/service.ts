@@ -14,6 +14,7 @@ import { MACHINE_PRESETS } from '../../packages/libopenlaser/src/project/machine
 import { MATERIAL_PRESETS, presetLayerPatch } from '../../packages/libopenlaser/src/project/materials';
 import { defaultLayer } from '../../packages/libopenlaser/src/project/layer-defaults';
 import * as ops from '../../packages/libopenlaser/src/project/operations';
+import { reorient } from '../../packages/libopenlaser/src/project/orientation';
 import { deserializeProject, serializeProject } from '../../packages/libopenlaser/src/project/serialize';
 import { ellipsePath, rectanglePath } from '../../packages/libopenlaser/src/project/shapes';
 import type {
@@ -201,7 +202,10 @@ export class NativeService {
   }
 
   private emptyProject(name = 'Untitled'): Project {
-    return ops.addLayer(createProject({ name }), defaultLayer({ id: makeId() }));
+    return reorient(
+      ops.addLayer(createProject({ name }), defaultLayer({ id: makeId() })),
+      this.profile.originCorner,
+    );
   }
 
   private async snapshot() {
@@ -301,7 +305,11 @@ export class NativeService {
           ['laserModeRequired', 'supportsAirAssist', 'constantPower'],
           ['id', 'name', 'controller', 'gcodeHeader', 'gcodeFooter', 'flatModeGcode'],
         );
-        this.profile = validateProfile(defaultMachineProfile({ ...this.profile, ...patch }));
+        const profile = validateProfile(defaultMachineProfile({ ...this.profile, ...patch }));
+        const oriented = reorient(this.project, profile.originCorner);
+        validateProject(oriented);
+        this.profile = profile;
+        if (oriented !== this.project) this.project = { ...oriented, updatedAt: new Date().toISOString() };
         return this.snapshot();
       }
       case 'applyMaterial': {
@@ -354,7 +362,7 @@ export class NativeService {
         this.history.clear();
         return this.snapshot();
       case 'load': {
-        const project = await deserializeProject(decode(p.data));
+        const project = reorient(await deserializeProject(decode(p.data)), this.profile.originCorner);
         validateProject(project);
         this.project = project;
         this.history.clear();
@@ -430,12 +438,12 @@ export class NativeService {
       }
       case 'undo': {
         const previous = this.history.undo(this.project);
-        if (previous) this.project = previous;
+        if (previous) this.project = reorient(previous, this.profile.originCorner);
         return this.snapshot();
       }
       case 'redo': {
         const next = this.history.redo(this.project);
-        if (next) this.project = next;
+        if (next) this.project = reorient(next, this.profile.originCorner);
         return this.snapshot();
       }
       case 'addLayer':
