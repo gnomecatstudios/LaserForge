@@ -4,9 +4,10 @@ from __future__ import annotations
 import base64
 import json
 import math
+import mimetypes
 from pathlib import Path
 
-from PySide6.QtCore import QByteArray, QBuffer, QIODevice, QSettings, Qt, QTimer
+from PySide6.QtCore import QSettings, Qt, QTimer
 from PySide6.QtGui import QAction, QActionGroup, QIcon, QImage, QKeySequence
 from PySide6.QtWidgets import (
     QAbstractItemView, QApplication, QCheckBox, QComboBox, QDialog, QDialogButtonBox,
@@ -25,7 +26,7 @@ MUTATIONS = {"createShape", "addPaths", "addImage", "transform", "delete", "dupl
 
 def icon_path() -> Path:
     root = resource_root()
-    return root / "assets/mark.png" if (root / "assets/mark.png").exists() else root.parent / "public/mark.png"
+    return root / "branding/mark.png" if (root / "branding/mark.png").exists() else root.parent / "public/mark.png"
 
 
 def spin(minimum=-1_000_000, maximum=1_000_000, suffix=" mm"):
@@ -549,10 +550,7 @@ class MainWindow(QMainWindow):
             image = QImage.fromData(data)
             if image.isNull():
                 raise ValueError("Unsupported image. SVG, G-code document imports and font editing are still available in the legacy app.")
-            buffer = QBuffer()
-            buffer.open(QIODevice.OpenModeFlag.WriteOnly)
-            image.save(buffer, "PNG")
-            self.command("addImage", {"data": base64.b64encode(bytes(buffer.data())).decode(), "mime": "image/png", "name": Path(path).name, "width": image.width()*25.4/96, "height": image.height()*25.4/96, "widthPx": image.width(), "heightPx": image.height()})
+            self.command("addImage", {"data": base64.b64encode(data).decode(), "mime": mimetypes.guess_type(path)[0] or "application/octet-stream", "name": Path(path).name, "widthPx": image.width(), "heightPx": image.height()})
         except (OSError, ValueError) as error:
             self._error("import", str(error))
 

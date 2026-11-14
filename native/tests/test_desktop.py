@@ -1,5 +1,6 @@
 """Real native shell + bundled Node core, with simulated controllers only."""
 import os
+import base64
 from pathlib import Path
 import tempfile
 import time
@@ -16,7 +17,7 @@ from PySide6.QtTest import QTest
 from PySide6.QtWidgets import QApplication
 
 from laserforge_native.bridge import bridge_path
-from laserforge_native.window import MainWindow
+from laserforge_native.window import MainWindow, icon_path
 
 
 @unittest.skipUnless(bridge_path().is_file(), "Build the native bridge before desktop integration tests")
@@ -114,12 +115,17 @@ class DesktopTests(unittest.TestCase):
         path = self.root / "photo.png"
         image = QImage(4, 4, QImage.Format.Format_RGB32)
         image.fill(QColor("black"))
+        image.setDotsPerMeterX(0)
+        image.setDotsPerMeterY(0)
         image.save(str(path))
         with patch("laserforge_native.window.QFileDialog.getOpenFileName", return_value=(str(path), "")):
             self.window.import_art()
         self.settled()
         project = self.window.snapshot["project"]
         obj = project["objects"][0]
+        self.assertAlmostEqual(obj["width"], .4)
+        self.assertAlmostEqual(obj["height"], .4)
+        self.assertEqual(base64.b64decode(project["assets"][obj["assetId"]]["data"]), path.read_bytes())
         layer = next(layer for layer in project["layers"] if layer["id"] == obj["layerId"])
         self.assertEqual(layer["mode"], "image")
         self.assertEqual(len(self.window._compile_params()["rasters"]), 1)
@@ -164,3 +170,13 @@ class DesktopTests(unittest.TestCase):
         self.settled()
         self.assertFalse(self.window.previewing)
         self.assertFalse(self.window.actions["preview"].isChecked())
+
+    def test_packaged_icon_uses_staged_branding_directory(self):
+        branding = self.root / "branding"
+        branding.mkdir()
+        image = QImage(4, 4, QImage.Format.Format_RGB32)
+        image.fill(QColor("red"))
+        image.save(str(branding / "mark.png"))
+        with patch("laserforge_native.window.resource_root", return_value=self.root):
+            self.assertEqual(icon_path(), branding / "mark.png")
+        self.assertFalse(self.window.windowIcon().isNull())
