@@ -257,6 +257,27 @@ export class NativeService {
     const profile = validateProfile(
       params.profile === undefined ? this.profile : defaultMachineProfile(record(params.profile, 'profile')),
     );
+    if (profile.originCorner !== this.project.designCorner) {
+      throw new Error('Apply the profile with setProfile before compiling for a different origin corner');
+    }
+    let machinePosition: { x: number; y: number } | undefined;
+    if (params.machinePosition !== undefined) {
+      const point = record(params.machinePosition, 'machinePosition');
+      machinePosition = { x: finite(point.x, 'machinePosition.x'), y: finite(point.y, 'machinePosition.y') };
+    }
+    if (this.project.jobSettings.origin === 'current-position' && !machinePosition) {
+      throw new Error(
+        'Current-position jobs require an explicit machinePosition; native hardware position is unavailable',
+      );
+    }
+    if (this.project.jobSettings.origin === 'user-origin' && !this.project.jobSettings.userOrigin) {
+      throw new Error('Set a user origin before compiling a user-origin job');
+    }
+    if (this.project.jobSettings.origin === 'user-origin') {
+      const origin = record(this.project.jobSettings.userOrigin, 'userOrigin');
+      finite(origin.x, 'userOrigin.x');
+      finite(origin.y, 'userOrigin.y');
+    }
     const rasters = new Map<string, RasterSource>();
     for (const [id, value] of Object.entries(
       params.rasters === undefined ? {} : record(params.rasters, 'rasters'),
@@ -287,7 +308,7 @@ export class NativeService {
         throw new Error(`Decoded raster required for asset ${object.assetId}`);
       }
     }
-    return { profile, job: compileJob({ project: this.project, profile, assets: rasters }) };
+    return { profile, job: compileJob({ project: this.project, profile, assets: rasters, machinePosition }) };
   }
 
   async dispatch(method: string, input: unknown = {}): Promise<unknown> {

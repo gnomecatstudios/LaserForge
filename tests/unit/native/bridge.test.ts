@@ -322,4 +322,34 @@ describe('native retained-core bridge', () => {
     expect(loaded.project.objects).toEqual(reorient(original.project, 'tr').objects);
     expect((await snapshot(service, 'new')).project.designCorner).toBe('tr');
   });
+
+  it('requires explicit nonabsolute origins and preserves exact retained-core coordinates', async () => {
+    const service = new NativeService();
+    await rectangle(service);
+    await service.dispatch('setJobSettings', { patch: { origin: 'current-position', anchor: 'c' } });
+    await expect(service.dispatch('compile')).rejects.toThrow('require an explicit machinePosition');
+    await expect(service.dispatch('simulate')).rejects.toThrow('require an explicit machinePosition');
+    await expect(service.dispatch('compile', { machinePosition: { x: NaN, y: 10 } })).rejects.toThrow(
+      'machinePosition.x must be finite',
+    );
+    const current = await snapshot(service);
+    const machinePosition = { x: 150, y: 200 };
+    expect(await service.dispatch('compile', { machinePosition })).toEqual(
+      compileJob({
+        project: current.project,
+        profile: current.profile,
+        assets: new Map(),
+        machinePosition,
+      }),
+    );
+    await service.dispatch('setJobSettings', { patch: { origin: 'user-origin', userOrigin: null } });
+    await expect(service.dispatch('compile')).rejects.toThrow('Set a user origin');
+    const placed = await snapshot(service, 'setJobSettings', { patch: { userOrigin: { x: 100, y: 120 } } });
+    expect(await service.dispatch('compile')).toEqual(
+      compileJob({ project: placed.project, profile: placed.profile, assets: new Map() }),
+    );
+    await expect(
+      service.dispatch('compile', { profile: { ...placed.profile, originCorner: 'tr' } }),
+    ).rejects.toThrow('setProfile');
+  });
 });
