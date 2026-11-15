@@ -399,3 +399,63 @@ describe('native retained-core bridge', () => {
     ).rejects.toThrow('setProfile');
   });
 });
+
+describe('native clipboard and simplification', () => {
+  it('copies self-contained archives and pastes with fresh ids without overwriting destination layers or assets', async () => {
+    const service = new NativeService();
+    await rectangle(service);
+    await service.dispatch('addImage', {
+      data: Buffer.from('pixel bytes').toString('base64'),
+      mime: 'image/png',
+      name: 'image',
+      width: 2,
+      height: 3,
+    });
+    const before = await snapshot(service);
+    const clipboard = (await service.dispatch('copy', { ids: before.project.objects.map((o) => o.id) })) as {
+      data: string;
+    };
+    const copied = await deserializeProject(Buffer.from(clipboard.data, 'base64'));
+    expect(copied.objects).toHaveLength(2);
+    expect(Object.values(copied.assets)[0].data.size).toBe(11);
+    const pasted = await snapshot(service, 'paste', clipboard);
+    expect(pasted.project.objects).toHaveLength(4);
+    expect(pasted.project.layers).toEqual(before.project.layers);
+    expect(new Set(pasted.project.objects.map((o) => o.id)).size).toBe(4);
+    expect(Object.keys(pasted.project.assets)).toHaveLength(2);
+    expect(pasted.project.objects[2].transform).toEqual([1, 0, 0, 1, 10, 2]);
+    expect((await snapshot(service, 'undo')).project.objects).toEqual(before.project.objects);
+    await service.dispatch('new');
+    const restored = await snapshot(service, 'paste', clipboard);
+    expect(restored.project.objects).toHaveLength(2);
+    expect(Object.values(restored.project.assets)).toHaveLength(1);
+  });
+
+  it('uses original transformed-mm simplification, retains cubic paths and restores via undo', async () => {
+    const { simplifyPath } = await import('libopenlaser/geometry');
+    const service = new NativeService();
+    const path = {
+      closed: false,
+      start: { x: 0, y: 0 },
+      segments: [
+        { type: 'L' as const, to: { x: 1, y: 0.01 } },
+        { type: 'L' as const, to: { x: 2, y: 0 } },
+        { type: 'L' as const, to: { x: 3, y: 0 } },
+      ],
+    };
+    await service.dispatch('addPaths', { paths: [path] });
+    const initial = await snapshot(service);
+    await service.dispatch('transform', {
+      ids: [initial.project.objects[0].id],
+      matrix: [1, 0, 0, 20, 0, 0],
+    });
+    const before = await snapshot(service);
+    const id = before.project.objects[0].id;
+    const result = await snapshot(service, 'simplify', { ids: [id], tolerance: 0.1 });
+    expect((result.project.objects[0] as { paths: unknown }).paths).toEqual([
+      simplifyPath(path, 0.1, before.project.objects[0].transform),
+    ]);
+    expect((await snapshot(service, 'undo')).project.objects).toEqual(before.project.objects);
+    await expect(service.dispatch('simplify', { ids: [id], tolerance: -1 })).rejects.toThrow();
+  });
+});

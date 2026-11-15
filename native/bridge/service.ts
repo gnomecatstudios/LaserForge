@@ -1,5 +1,7 @@
 /** Private protocol v1 adapter. The existing library remains the canonical document/CAM engine. */
 import { Buffer } from 'node:buffer';
+import { multiply, translation } from '../../packages/libopenlaser/src/geometry/mat2d';
+import { simplifyPath } from '../../packages/libopenlaser/src/geometry/simplify';
 import { compileJob } from '../../packages/libopenlaser/src/cam/compile';
 import type { RasterSource } from '../../packages/libopenlaser/src/cam/types';
 import { defaultImageSize, readImageDpi, sniffImageMime } from '../../packages/libopenlaser/src/import/image';
@@ -38,6 +40,9 @@ const METHODS = [
   'snapshot',
   'load',
   'save',
+  'copy',
+  'paste',
+  'simplify',
   'createShape',
   'addPaths',
   'addImage',
@@ -390,6 +395,63 @@ export class NativeService {
         this.project = project;
         this.history.clear();
         return this.snapshot();
+      }
+      case 'copy': {
+        const ids = this.ids(p.ids);
+        const objects = this.project.objects.filter((o) => ids.has(o.id));
+        const layers = this.project.layers.filter((l) => objects.some((o) => o.layerId === l.id));
+        const fragment = ops.removeUnusedAssets({ ...this.project, objects, layers });
+        return { data: Buffer.from(await serializeProject(fragment)).toString('base64') };
+      }
+      case 'paste': {
+        const fragment = reorient(await deserializeProject(decode(p.data)), this.profile.originCorner);
+        validateProject(fragment);
+        const layers = new Map(
+          fragment.layers.map((l) => [
+            l.id,
+            this.project.layers.some(
+              (existing) => existing.id === l.id && JSON.stringify(existing) === JSON.stringify(l),
+            )
+              ? l.id
+              : makeId(),
+          ]),
+        );
+        const assets = new Map(Object.keys(fragment.assets).map((id) => [id, makeId()]));
+        for (const o of fragment.objects)
+          if (o.kind === 'image' && !assets.has(o.assetId))
+            throw new Error('Clipboard image asset is missing');
+        const objects = fragment.objects.map((o) => ({
+          ...o,
+          id: makeId(),
+          layerId: layers.get(o.layerId)!,
+          transform: multiply(translation(5, -5), o.transform),
+          ...(o.kind === 'image' ? { assetId: assets.get(o.assetId)! } : {}),
+        })) as SceneObject[];
+        let next = this.project;
+        for (const layer of fragment.layers)
+          if (!next.layers.some((l) => l.id === layers.get(layer.id)))
+            next = ops.addLayer(next, { ...layer, id: layers.get(layer.id)! });
+        return this.commit(
+          ops.addObjects(
+            next,
+            objects,
+            Object.values(fragment.assets).map((a) => ({ ...a, id: assets.get(a.id)! })),
+          ),
+        );
+      }
+      case 'simplify': {
+        const ids = this.ids(p.ids);
+        const tolerance = positive(p.tolerance, 'tolerance');
+        const objects = this.project.objects.map((o) =>
+          o.kind === 'vector' && ids.has(o.id) && !o.locked
+            ? {
+                ...o,
+                paths: o.paths.map((path) => simplifyPath(path, tolerance, o.transform)),
+                shape: undefined,
+              }
+            : o,
+        );
+        return this.commit({ ...this.project, objects });
       }
       case 'save':
         return { data: Buffer.from(await serializeProject(this.project)).toString('base64') };
