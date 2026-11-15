@@ -16,6 +16,14 @@
   <a href="./portable/README.md">Run locally</a>
 </p>
 
+## Rendering and desktop launchers
+
+Laser Forge uses the browser Canvas renderer for design editing and job previews on
+all supported platforms. The portable desktop launcher embeds the same production
+web app, serves it locally, and opens it in your default browser. Use Chrome, Edge,
+or Chromium for machine controls. Keep the launcher window open while using the app. Desktop shortcuts, offline operation,
+and the Python-free portable updater remain supported.
+
 ## Development downloads and getting started
 
 This is the development repository. [Development releases and downloads](https://github.com/gnomecatstudios/LaserForge/releases) are hosted here. For public downloads, visit [Laser Forge downloads](https://github.com/gnomecatstudios/LaserForge).
