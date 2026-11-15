@@ -35,7 +35,7 @@ def main():
         for key in ('LASERFORGE_NODE', 'PYTHONPATH', 'PYTHONHOME'):
             environment.pop(key, None)
         environment['PATH'] = os.path.join(os.environ['SystemRoot'], 'System32') if os.name == 'nt' else '/nonexistent'
-        environment['QT_QPA_PLATFORM'] = 'offscreen'
+        environment['QT_QPA_PLATFORM'] = 'windows' if os.name == 'nt' else 'offscreen'
         screenshot = folder / 'packaged-startup.png'
         subprocess.run([str(executable), '--smoke-test', '--screenshot', str(screenshot)],
                        cwd=temporary, env=environment, timeout=60, check=True)
