@@ -535,22 +535,29 @@ class DesignView(QGraphicsView):
         super().focusOutEvent(event)
 
     def contextMenuEvent(self, event):
-        picked = self._pick(event.pos())
+        self.create_context_menu(event.pos()).exec(event.globalPos())
+
+    def create_context_menu(self, position):
+        picked = self._pick(position)
         if picked and not picked.isSelected():
             self.set_selected([picked.obj["id"]])
         ids = self.selected_ids()
         menu = QMenu(self)
-        for label, method, params in (("Duplicate", "duplicate", {"ids": ids}),
+        for label, method, params in (("Copy", "clipboardCopy", {}),
+                                      ("Cut", "clipboardCut", {}),
+                                      ("Simplify paths…", "simplifySelection", {}),
+                                      ("Duplicate", "duplicate", {"ids": ids}),
                                       ("Delete", "delete", {"ids": ids}),
                                       ("Bring to front", "reorder", {"ids": ids, "where": "front"}),
                                       ("Send to back", "reorder", {"ids": ids, "where": "back"})):
             action = menu.addAction(label)
             action.setEnabled(bool(ids))
             action.triggered.connect(lambda checked=False, m=method, p=params: self.command.emit(m, p))
+        menu.addAction("Paste", lambda: self.command.emit("clipboardPaste", {}))
         menu.addSeparator()
         menu.addAction("Fit bed", self.fit_bed)
         menu.addAction("Fit selection", self.fit_selection).setEnabled(bool(ids))
-        menu.exec(event.globalPos())
+        return menu
 
     def drawBackground(self, painter, rect):
         super().drawBackground(painter, rect)

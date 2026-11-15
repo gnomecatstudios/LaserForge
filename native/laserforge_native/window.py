@@ -7,7 +7,7 @@ import math
 import mimetypes
 from pathlib import Path
 
-from PySide6.QtCore import QSettings, Qt, QTimer
+from PySide6.QtCore import QMimeData, QSettings, Qt, QTimer
 from PySide6.QtGui import QAction, QActionGroup, QIcon, QImage, QKeySequence
 from PySide6.QtWidgets import (
     QAbstractItemView, QApplication, QCheckBox, QComboBox, QDialog, QDialogButtonBox,
@@ -21,7 +21,9 @@ from .bridge import CoreProcess, resource_root
 from .files import atomic_write, read_project
 from .viewport import DesignView
 
-MUTATIONS = {"createShape", "addPaths", "addImage", "transform", "delete", "duplicate", "reorder", "undo", "redo", "addLayer", "updateLayer", "moveLayer", "updateObject", "importDxf", "applyMaterial", "setJobSettings"}
+CLIPBOARD_MIME = "application/x-laserforge-objects+zip"
+
+MUTATIONS = {"paste", "simplify", "createShape", "addPaths", "addImage", "transform", "delete", "duplicate", "reorder", "undo", "redo", "addLayer", "updateLayer", "moveLayer", "updateObject", "importDxf", "applyMaterial", "setJobSettings"}
 
 
 def icon_path() -> Path:
@@ -59,6 +61,9 @@ class MainWindow(QMainWindow):
         self.resize(1440, 900)
         self.view = DesignView()
         self.setCentralWidget(self.view)
+        self.setAcceptDrops(True)
+        self.view.setAcceptDrops(False)
+        self.view.viewport().setAcceptDrops(False)
         self.view.command.connect(self.command)
         self.view.selectionChanged.connect(self.update_properties)
         self.view.status.connect(self.statusBar().showMessage)
@@ -110,6 +115,10 @@ class MainWindow(QMainWindow):
         edit = bar.addMenu("&Edit")
         self._action(edit, "undo", "&Undo", QKeySequence.StandardKey.Undo, lambda: self.command("undo"))
         self._action(edit, "redo", "&Redo", ["Ctrl+Shift+Z", "Ctrl+Y"], lambda: self.command("redo"))
+        self._action(edit, "copy", "Copy", QKeySequence.StandardKey.Copy, self.copy_selection)
+        self._action(edit, "cut", "Cut", QKeySequence.StandardKey.Cut, lambda: self.copy_selection(cut=True))
+        self._action(edit, "paste", "Paste", QKeySequence.StandardKey.Paste, self.paste_selection)
+        self._action(edit, "simplify", "Simplify paths…", None, self.simplify_selection)
         self._action(edit, "duplicate", "&Duplicate", "Ctrl+D", lambda: self.selected_command("duplicate"))
         self._action(edit, "delete", "&Delete", ["Delete", "Backspace"], lambda: self.selected_command("delete"))
         self._action(edit, "selectAll", "Select &all", QKeySequence.StandardKey.SelectAll, self.select_all)
@@ -300,7 +309,7 @@ class MainWindow(QMainWindow):
             self.profile = result.get("profile", self.profile)
             self.view.set_document(result["project"], self.profile)
             added = [o["id"] for o in result["project"]["objects"] if o["id"] not in previous_ids]
-            self.view.set_selected(added if method in {"createShape", "duplicate", "addPaths", "addImage", "importDxf"} else selection)
+            self.view.set_selected(added if method in {"createShape", "duplicate", "addPaths", "addImage", "importDxf", "paste"} else selection)
             self.previewing = False
             self.actions["preview"].setChecked(False)
             self.view.set_preview(None)
@@ -344,6 +353,11 @@ class MainWindow(QMainWindow):
             QMessageBox.warning(self, "LaserForge", f"{method}: {message}")
 
     def command(self, method, params=None):
+        handlers = {"clipboardCopy": self.copy_selection, "clipboardCut": lambda: self.copy_selection(cut=True),
+                    "clipboardPaste": self.paste_selection, "simplifySelection": self.simplify_selection}
+        if method in handlers:
+            handlers[method]()
+            return
         if method == "createShape":
             params = dict(params or {})
             layer = self.current_layer()
@@ -354,6 +368,55 @@ class MainWindow(QMainWindow):
             self.dirty = True
             self._title()
         self.core.request(method, params or {})
+
+    def copy_selection(self, checked=False, *, cut=False):
+        ids = self.view.selected_ids()
+        if not ids:
+            return
+        generation = self.edit_generation
+        document_id = self.snapshot["project"]["id"]
+        def copied(result):
+            mime = QMimeData()
+            mime.setData(CLIPBOARD_MIME, base64.b64decode(result["data"], validate=True))
+            QApplication.clipboard().setMimeData(mime)
+            if cut and generation == self.edit_generation and document_id == self.snapshot["project"]["id"]:
+                self.command("delete", {"ids": ids})
+        self.core.request("copy", {"ids": ids}, copied)
+
+    def paste_selection(self, checked=False):
+        mime = QApplication.clipboard().mimeData()
+        if mime and mime.hasFormat(CLIPBOARD_MIME):
+            data = bytes(mime.data(CLIPBOARD_MIME))
+            if len(data) > 64 * 1024 * 1024:
+                self._error("paste", "Clipboard project exceeds 64 MiB.")
+                return
+            self.command("paste", {"data": base64.b64encode(data).decode()})
+
+    def simplify_selection(self, checked=False):
+        if not self.view.selected_ids():
+            return
+        tolerance, accepted = QInputDialog.getDouble(self, "Simplify paths", "Tolerance in physical mm (cubic curves remain exact)", .1, .01, 1., 3)
+        if accepted:
+            self.selected_command("simplify", tolerance=tolerance)
+
+    def dragEnterEvent(self, event):
+        urls = event.mimeData().urls()
+        if len(urls) == 1 and urls[0].isLocalFile():
+            event.acceptProposedAction()
+        else:
+            event.ignore()
+
+    def dropEvent(self, event):
+        urls = event.mimeData().urls()
+        if len(urls) != 1 or not urls[0].isLocalFile():
+            event.ignore()
+            return
+        path = urls[0].toLocalFile()
+        if Path(path).suffix.lower() == ".olaser":
+            self._discard_then(lambda: self.load_path(path))
+        else:
+            self.import_path(path)
+        event.acceptProposedAction()
 
     def selected_command(self, method, **params):
         ids = self.view.selected_ids()
@@ -542,6 +605,9 @@ class MainWindow(QMainWindow):
         path, _ = QFileDialog.getOpenFileName(self, "Import art", "", "DXF and raster images (*.dxf *.png *.jpg *.jpeg *.bmp *.webp);;All files (*)")
         if not path:
             return
+        self.import_path(path)
+
+    def import_path(self, path):
         try:
             data = read_project(path)
             if Path(path).suffix.lower() == ".dxf":
@@ -644,7 +710,7 @@ class MainWindow(QMainWindow):
             self.core.request("setProfile", {"profile": profile}, applied)
 
     def show_help(self):
-        QMessageBox.information(self, "Native migration status", "Native preview: vectors and cached text outlines, images, rectangles/ellipses, selection, transforms, layers, undo/redo, DXF, .olaser files, G-code preview/export and simulation.\n\nV Select · H Pan · R Rectangle · E Ellipse · M Measure · wheel Zoom · middle/Space drag Pan\nCtrl+N/O/S New/Open/Save · Ctrl+Z Undo · Ctrl+Shift+Z/Ctrl+Y Redo · Ctrl+D Duplicate · Delete · Ctrl+0 Fit · Shift+2 Fit selection · P Preview\n\nStill use the browser application for pen/node/text editing, SVG and G-code document imports, tracing, advanced laser/accessory controls, printing and automatic updates. Hardware is disabled in this preview. See docs/native/migration.md and validation.md.")
+        QMessageBox.information(self, "Native migration status", "Native preview: vectors and cached text outlines, images, rectangles/ellipses, selection, transforms, layers, undo/redo, DXF, .olaser files, G-code preview/export and simulation.\n\nV Select · H Pan · R Rectangle · E Ellipse · M Measure · wheel Zoom · middle/Space drag Pan\nCtrl+N/O/S New/Open/Save · Ctrl+Z Undo · Ctrl+Shift+Z/Ctrl+Y Redo · Ctrl+C/X/V Copy/Cut/Paste · Ctrl+D Duplicate · Delete · Ctrl+0 Fit · Shift+2 Fit selection · P Preview\n\nStill use the browser application for pen/node/text editing, SVG and G-code document imports, tracing, advanced laser/accessory controls, printing and automatic updates. Hardware is disabled in this preview. See docs/native/migration.md and validation.md.")
 
     def show_updates(self):
         QMessageBox.information(self, "Native update channel", "This experimental native build does not self-update yet. The existing browser/portable update channel remains unchanged. Native releases require separate signed manifests, staging and rollback before automatic updates are enabled. Projects and preferences are stored outside the installation.")

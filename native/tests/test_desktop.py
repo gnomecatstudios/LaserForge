@@ -38,6 +38,7 @@ class DesktopTests(unittest.TestCase):
         self.wait(lambda: self.window.snapshot is not None and not self.window.core.pending)
 
     def tearDown(self):
+        QApplication.clipboard().clear()  # Release Qt-owned MIME data before offscreen platform teardown.
         self.window.dirty = False
         self.window.close()
         self.dialog.stop()
@@ -190,3 +191,53 @@ class DesktopTests(unittest.TestCase):
         with patch("laserforge_native.window.resource_root", return_value=self.root):
             self.assertEqual(icon_path(), branding / "mark.png")
         self.assertFalse(self.window.windowIcon().isNull())
+
+    def test_native_clipboard_shortcuts_cut_paste_and_undo(self):
+        self.shape()
+        self.window.view.setFocus()
+        QTest.keyClick(self.window.view, Qt.Key.Key_C, Qt.KeyboardModifier.ControlModifier)
+        self.settled()
+        QTest.keyClick(self.window.view, Qt.Key.Key_V, Qt.KeyboardModifier.ControlModifier)
+        self.settled()
+        self.assertEqual(len(self.window.snapshot["project"]["objects"]), 2)
+        self.assertEqual(len(self.window.view.selected_ids()), 1)
+        QTest.keyClick(self.window.view, Qt.Key.Key_X, Qt.KeyboardModifier.ControlModifier)
+        self.settled()
+        self.assertEqual(len(self.window.snapshot["project"]["objects"]), 1)
+        self.window.actions["undo"].trigger()
+        self.settled()
+        self.assertEqual(len(self.window.snapshot["project"]["objects"]), 2)
+
+    def test_native_simplification_and_local_file_drop(self):
+        from PySide6.QtCore import QMimeData, QPointF, QUrl
+        from PySide6.QtGui import QDropEvent
+        self.window.command("addPaths", {"paths": [{"closed": False, "start": {"x": 0, "y": 0}, "segments": [
+            {"type": "L", "to": {"x": 10, "y": .01}}, {"type": "L", "to": {"x": 20, "y": 0}}]}]})
+        self.settled()
+        with patch("laserforge_native.window.QInputDialog.getDouble", return_value=(.1, True)):
+            self.window.actions["simplify"].trigger()
+        self.settled()
+        self.assertEqual(len(self.window.snapshot["project"]["objects"][0]["paths"][0]["segments"]), 1)
+        self.window.path = self.root / "drop.olaser"
+        self.window.save_project()
+        self.settled()
+        self.window.new_project()
+        self.settled()
+        mime = QMimeData()
+        mime.setUrls([QUrl.fromLocalFile(str(self.root / "drop.olaser"))])
+        event = QDropEvent(QPointF(100, 100), Qt.DropAction.CopyAction, mime, Qt.MouseButton.LeftButton, Qt.KeyboardModifier.NoModifier)
+        self.window.dropEvent(event)
+        self.settled()
+        self.assertTrue(event.isAccepted())
+        self.assertEqual(len(self.window.snapshot["project"]["objects"]), 1)
+
+    def test_native_context_menu_copy_and_paste(self):
+        self.shape()
+        point = self.window.view.mapFromScene(self.window.view.selection_bounds().center())
+        menu = self.window.view.create_context_menu(point)
+        next(action for action in menu.actions() if action.text() == "Copy").trigger()
+        self.settled()
+        pasted_menu = self.window.view.create_context_menu(point)
+        next(action for action in pasted_menu.actions() if action.text() == "Paste").trigger()
+        self.settled()
+        self.assertEqual(len(self.window.snapshot["project"]["objects"]), 2)
