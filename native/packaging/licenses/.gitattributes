@@ -1,2 +1,0 @@
-# Preserve upstream legal texts verbatim, including their trailing blank lines.
-*.txt -whitespace

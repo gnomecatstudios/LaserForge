@@ -32,7 +32,6 @@
     "packages/libopenlaser/examples/**/*.ts",
     "vite.config.ts",
     "playwright.config.ts",
-    "scripts/**/*.ts",
-    "native/bridge/**/*.ts"
+    "scripts/**/*.ts"
   ]
 }
