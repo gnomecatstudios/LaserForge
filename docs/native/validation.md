@@ -1,7 +1,7 @@
 # Native validation and remaining work
 
 Status on 2026-11-14: **working experimental native editor, not a completed migration**.
-Work is on `feature/native-desktop-migration`; main and the existing browser application are retained.
+Work is on `native-render-version`; main and the existing browser application are retained.
 No physical laser was activated or connected during validation. No merge or production release
 has been performed. Cross-platform packaging recipes are not cross-platform validation.
 
@@ -29,8 +29,8 @@ Linux x86_64, Python 3.12.14, Node 24.22.1, PySide6 6.8.3; headless Qt `offscree
 | Check | Result |
 | --- | --- |
 | Before native changes: existing Vitest suite | 120 files / 1,036 tests passed |
-| With native bridge tests | 121 files / 1,051 tests passed (15 bridge tests) |
-| Native Python/Qt suite | 39 passed after Windows/Mint/Pi scope update: 17 viewport, 10 plugin, 7 desktop integration, 1 atomic-file test, 4 packaging-target tests |
+| With native bridge tests | 121 files / 1,053 tests passed (17 bridge tests) |
+| Native Python/Qt suite | 42 passed after clipboard/drop/simplification work: 17 viewport, 10 plugin, 10 desktop integration, 1 atomic-file test, 4 packaging-target tests |
 | TypeScript/Svelte check | 0 errors, 0 warnings |
 | Existing browser Playwright subset | 37/37 passed: design 14, files 4, layout 6, simulated machine 8, updates 5 |
 | ESLint | Passed |
@@ -67,10 +67,10 @@ legacy feature has been exercised in Qt or that all browser E2E scenarios have p
 ## Local Linux build artifact
 
 `native/artifacts/LaserForge-Native-linux-x64-v0.2.5.tar.gz` (generated, not tracked),
-121,213,900 bytes, built from final product commits `ccb7555`/`ddf8903`.
-SHA-256: `3b7ddc4bb3704a9caf7a3d1c76d361bc969169a1fe945939afa47ec60ff08892`.
+121,209,894 bytes, rebuilt for the native editing stage.
+SHA-256: `6d614fa4bddc66e4023ac4edf98b671d19d29fd17324f9236d3d030fe3bdd8a5`.
 The extracted executable initialized and rendered offscreen with no Python/Node on PATH;
-the included bridge matches the final build byte for byte, the red icon loads, runtime/license
+the red icon loads, runtime/license
 resources are present, and QtWebEngine is absent. This validates startup in this container only.
 
 ## Measured performance
@@ -87,13 +87,13 @@ input-to-presentation latency, raster preview and CPU/GPU utilization are not ye
 | --- | --- |
 | Hardware and safety | No native serial/USB/BLE discovery or transmission, jog, framing, job cancel/stop or emergency controls. Keep legacy machine workflows. Extract all app-layer safety preflight, adapt transports, test faults/cancellation before enabling hardware. |
 | Controllers | Native export/simulation currently GRBL G-code only. Existing Ruida RD and LaserPecker encode/control paths remain in browser/library; native panels/exports need adapters. |
-| Text, shapes, paths | Cached text outlines render and compile unchanged; no native font loading, Unicode shaping/editor, parametric shape catalog UI, pen or node editing, tracing, boolean/outline/simplify UI. Retained algorithms are the migration path. |
+| Text, shapes, paths | Cached text outlines render and compile unchanged; no native font loading, Unicode shaping/editor, parametric shape catalog UI, pen or node editing, tracing, boolean/outline UI. Native simplification applies the original algorithm; its before/after preview is not migrated. Retained algorithms are the migration path. |
 | Imports/exports | No native SVG DOM adapter, G-code document import, print templates or RD/LaserPecker export UI. DXF currently uses core declared units/default mm; native unit chooser, unsupported-entity/warning dialogs and import placement parity remain. |
 | Measurements | Selection dimension fields are editable; free measurement line length is read-only. |
 | Layers/settings | Basic mode/speed/power/passes/material/visibility/output UI exists. Detailed fill, image dithering, air-assist/source/accessory/rotary/job-origin controls and custom material library UI remain. Project settings/unknown fields are retained by original serialization. |
 | Profiles/preferences | Native current-profile/window/grid settings are separate. Browser IndexedDB/recent-file/autosave/profile/material preference migration and full preset management are incomplete. No crash recovery. |
 | Machine origin | Core corner reorientation retained. Current-position export requires an explicit machine position; no live native position exists. Missing user origin is rejected. Auto-fit when switching to smaller bed is not migrated; inspect bounds and resolve blocking CAM warnings. |
-| Clipboard/hotkeys | Implemented actions preserve corresponding shortcuts; copy/cut/paste, node/pen/text/trace/print and controller shortcuts/context actions remain in legacy. Qt StandardKeys/portable Ctrl strings provide native platform mapping; target-desktop keyboard testing remains. |
+| Clipboard/hotkeys | Implemented actions preserve corresponding shortcuts; node/pen/text/trace/print and controller shortcuts/context actions remain in legacy. Qt StandardKeys/portable Ctrl strings provide native platform mapping; target-desktop keyboard testing remains. |
 | Performance | Full snapshots/base64 asset transfer and synchronous Qt raster decode/RGBA preparation can freeze UI for large images. Core CAM runs outside GUI process. Add delta snapshots, bounded worker decode/cache and profile-driven render optimization. |
 | File sizes | Native input capped at 64 MiB; IPC capped at 128 MiB. Larger projects need streaming/incremental asset protocol, not silent truncation. |
 | Plugins | Metadata-only foundation; no extension execution host, panels/tools/import registration, package installer/updater or marketplace. Unrestricted Python cannot be treated as sandboxed; future broker must enforce capabilities out of process. |
@@ -118,3 +118,19 @@ architecture, plugin metadata foundation, test harnesses and current documentati
 Full feature parity, real-world project coverage, native machine integration, validated desktop
 builds on all requested platforms, native updating, and release-level performance remain open.
 The migration must not be merged as complete or replace existing downloads at this stage.
+
+## Native editing stage on native-render-version
+
+Added system-clipboard copy/cut/paste through an original-format `.olaser` fragment, including
+layer settings and binary assets. Pasting assigns fresh object/asset IDs and avoids overwriting
+destination layer settings; cut removes source objects only after clipboard serialization succeeds
+and the document has not changed. Added native context actions and single-local-file drops for
+projects/DXF/raster images; unsupported formats still report an error and preserve source files.
+Path simplification uses the existing transformed-millimetre algorithm in the headless core,
+retains cubic curves and supports undo. These operations use no browser rendering.
+
+Viewport tests passed in separate offscreen processes at scale factors 1, 1.5 and 2 (17 tests
+each). Pixel assertions account for device pixel ratio; persisted dimensions stay in millimetres.
+The complete native suite passed 42 tests. A representative rectangle/ellipse scene was rendered
+and visually inspected with rulers, selection handles and editable dimensions. See
+[feature inventory and review notes](review.md) for supported and missing tools.

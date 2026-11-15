@@ -19,13 +19,13 @@
 ## Native desktop migration (experimental)
 
 A separate **Qt 6 / PySide6 Widgets** application is being developed on
-`feature/native-desktop-migration`. Its interface and drawing viewport use no browser or webview;
+`native-render-version`. Its interface and drawing viewport use no browser or webview;
 a headless Node.js process reuses the existing project, geometry, CAM and simulated-machine code.
 The browser application and its existing portable releases remain functional.
 
 The native preview supports `.olaser` projects, vectors and cached text outlines, raster images,
 rectangles/ellipses, selection and transforms, layers, undo/redo, DXF import, G-code preview/export
-and simulated jobs. **Feature parity is incomplete and physical-machine controls are disabled.**
+and simulated jobs. Native object copy/cut/paste, file drops and path simplification are also implemented. **Feature parity is incomplete and physical-machine controls are disabled.**
 It is not the production replacement yet. Automatic native updates are not enabled.
 
 The native targets are **Windows x64, Linux Mint x64, and Raspberry Pi OS**. Linux x64 has
