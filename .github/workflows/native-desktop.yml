@@ -1,11 +1,15 @@
 name: Experimental native desktop
 
 on:
+  push:
+    branches: [native-render-version-2]
+    paths: ['native/**', 'scripts/build-native.py', 'scripts/smoke-native-package.py', '.github/workflows/native-desktop.yml']
   workflow_dispatch:
   pull_request:
     paths:
       - 'native/**'
       - 'scripts/build-native.py'
+      - 'scripts/smoke-native-package.py'
       - 'packages/libopenlaser/**'
       - '.github/workflows/native-desktop.yml'
 
@@ -18,13 +22,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - target: windows-x64
-            os: windows-latest
-          - target: linux-x64-mint-candidate
-            os: ubuntu-22.04
-          - target: linux-arm64-pi-candidate
-            os: ubuntu-24.04-arm
+        include: ${{ fromJSON(github.event_name == 'push' && '[{"target":"windows-x64","os":"windows-latest"}]' || '[{"target":"windows-x64","os":"windows-latest"},{"target":"linux-x64-mint-candidate","os":"ubuntu-22.04"},{"target":"linux-arm64-pi-candidate","os":"ubuntu-24.04-arm"}]') }}
     runs-on: ${{ matrix.os }}
     timeout-minutes: 35
     env:
@@ -53,33 +51,8 @@ jobs:
         run: python -m laserforge_native --smoke-test
       - name: Package on target operating system
         run: python scripts/build-native.py --skip-bridge-build
-      - name: Smoke packaged application
-        shell: bash
-        run: |
-          python - <<'PY'
-          import os
-          from pathlib import Path
-          import subprocess
-          import tarfile
-          import tempfile
-          import zipfile
-          archive = next(p for p in Path('native/artifacts').iterdir() if p.name.endswith(('.zip', '.tar.gz')))
-          with tempfile.TemporaryDirectory() as temporary:
-              if archive.suffix == '.zip':
-                  with zipfile.ZipFile(archive) as package:
-                      package.extractall(temporary)
-                      for entry in package.infolist():
-                          mode = entry.external_attr >> 16 & 0o777
-                          if mode:
-                              (Path(temporary) / entry.filename).chmod(mode)
-              else:
-                  with tarfile.open(archive) as package:
-                      package.extractall(temporary, filter='data')
-              root = Path(temporary)
-              executable = root / 'LaserForge-Native' / ('LaserForge-Native.exe' if os.name == 'nt' else 'LaserForge-Native')
-              executable.chmod(executable.stat().st_mode | 0o111)
-              subprocess.run([str(executable), '--smoke-test'], check=True, timeout=60)
-          PY
+      - name: Smoke packaged application using bundled runtime
+        run: python scripts/smoke-native-package.py
       - uses: actions/upload-artifact@v4
         with:
           name: LaserForge-native-experimental-${{ matrix.target }}
