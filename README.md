@@ -19,7 +19,7 @@
 ## Native desktop migration (experimental)
 
 A separate **Qt 6 / PySide6 Widgets** application is being developed on
-`native-render-version`. Its interface and drawing viewport use no browser or webview;
+`native-render-version-2`. Its interface and drawing viewport use no browser or webview;
 a headless Node.js process reuses the existing project, geometry, CAM and simulated-machine code.
 The browser application and its existing portable releases remain functional.
 
@@ -30,8 +30,9 @@ It is not the production replacement yet. Automatic native updates are not enabl
 
 The native targets are **Windows x64, Linux Mint x64, and Raspberry Pi OS**. Linux x64 has
 been built and smoke-tested offscreen in the development container; that does not validate
-Linux Mint. Windows and ARM64 build recipes/CI are provided but have not run here, and Pi
-hardware remains untested. The pinned Qt/Node runtimes have no packaged ARM32 path; retain
+Linux Mint. Windows x64 now has an experimental portable ZIP built and startup-tested on
+a Windows CI runner; see [Windows download and validation](docs/native/windows.md).
+ARM64 packaging and Pi hardware remain untested. The pinned Qt/Node runtimes have no packaged ARM32 path; retain
 the existing Raspberry Pi OS 32-bit browser package. macOS is outside the target scope.
 
 See [native development setup](docs/native/development.md), [architecture and migration plan](docs/native/migration.md),

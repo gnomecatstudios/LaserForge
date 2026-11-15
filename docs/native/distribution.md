@@ -80,7 +80,8 @@ The version comes from the root package.json; package names include it:
 
 These are build recipes and experimental artifacts, not a statement that all
 platforms have passed validation. See the migration validation record for actual
-executed checks. Native Windows, Mint and Pi validation is still required; the
+executed checks. Windows CI build/startup passed (see [Windows evidence](windows.md));
+Windows 10/11 interactive, Mint and Pi validation is still required; the
 Pi table entry does not announce a tested native Pi package.
 
 PyInstaller does not cross-compile. Build Windows on Windows, Linux x64 on a
@@ -164,9 +165,9 @@ were present. The offscreen plugin emitted only its expected size-hint warning.
 
 This host uses glibc 2.41, newer than both Mint baselines above. The resulting
 archive must not be presented as a validated Mint download. Rebuild on the
-Ubuntu 22.04 baseline and test on Mint 21/22 before distributing. Windows, Mint
-and Pi runtime tests and the newly added CI matrix have not been executed from
-this workspace. AppImage and Windows signing remain pending.
+Ubuntu 22.04 baseline and test on Mint 21/22 before distributing. The Windows CI
+job has since passed native tests, packaging and startup; see [Windows evidence](windows.md).
+Mint/Pi runtime tests, the remaining CI targets, AppImage and Windows signing remain pending.
 
 ## Linux integration and troubleshooting
 

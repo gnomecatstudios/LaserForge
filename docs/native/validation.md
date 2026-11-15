@@ -1,7 +1,7 @@
 # Native validation and remaining work
 
-Status on 2026-11-14: **working experimental native editor, not a completed migration**.
-Work is on `native-render-version`; main and the existing browser application are retained.
+Status on 2026-11-15: **working experimental native editor, not a completed migration**.
+Work is on `native-render-version-2`; main and the existing browser application are retained.
 No physical laser was activated or connected during validation. No merge or production release
 has been performed. Cross-platform packaging recipes are not cross-platform validation.
 
@@ -42,12 +42,13 @@ Linux x86_64, Python 3.12.14, Node 24.22.1, PySide6 6.8.3; headless Qt `offscree
 | Go updater suite | Passed: 4 top-level tests plus 7 unsafe-path subtests using verified temporary Go 1.27.4 linux/amd64 |
 | Native source CLI smoke | Passed, native window screenshot rendered |
 | Linux frozen/extracted package smoke | Passed with PATH lacking Python/Node; bundled runtime and bridge used |
-| Windows, Linux Mint and Raspberry Pi desktop/device tests | Not run; generic Linux container smoke is not Mint/Pi validation |
+| Windows native automated tests and packaged startup | 42 tests and source/extracted-package smoke passed on Windows Server 2025; see [Windows evidence](windows.md) |
+| Windows 10/11 interactive, Linux Mint and Raspberry Pi desktop/device tests | Not run; CI smoke is not end-user desktop or hardware validation |
 
 The earlier portable parity failure (stale `og-image.png`) was resolved by rebuilding all four
 browser targets and the source ZIP from revision `f048312`. Branding, SHA-256 and executable
 architecture checks passed. This is a branch artifact refresh, not a public updater release.
-Windows and Pi binaries were cross-compiled and inspected; they have not been run on those OSes.
+Legacy browser Windows and Pi binaries were cross-compiled and inspected; they have not been run on those OSes.
 Go tests used a byte-identical copy of launcher sources plus production web assets in a temporary directory; no launcher files were changed.
 The stale skipped macOS test in `portable/test_package.py` refers to a removed legacy function;
 it is unrelated to the active Windows/Mint/Pi native target matrix; macOS is excluded.
@@ -98,7 +99,7 @@ input-to-presentation latency, raster preview and CPU/GPU utilization are not ye
 | File sizes | Native input capped at 64 MiB; IPC capped at 128 MiB. Larger projects need streaming/incremental asset protocol, not silent truncation. |
 | Plugins | Metadata-only foundation; no extension execution host, panels/tools/import registration, package installer/updater or marketplace. Unrestricted Python cannot be treated as sandboxed; future broker must enforce capabilities out of process. |
 | Updates | Existing browser/PWA/portable updates untouched. Native automatic/incremental updates, signed manifests, full fallback/rollback/startup health checks and update UI remain unimplemented. Do not use legacy updater for Qt packages. |
-| Packaging | Linux tar.gz tested only in this glibc 2.41 container; Ubuntu/Mint desktop compatibility and AppImage pending. Windows portable ZIP and ARM64 build recipes unexecuted; actual Mint/Pi native validation remains. Pi ARM32 stays on the legacy browser distribution because pinned Qt/Node runtimes lack the required packages. |
+| Packaging | Linux tar.gz tested only in this glibc 2.41 container; Ubuntu/Mint desktop compatibility and AppImage pending. Windows portable ZIP built and startup-tested on Windows CI; Windows 10/11 manual checks and ARM64 build execution pending; actual Mint/Pi native validation remains. Pi ARM32 stays on the legacy browser distribution because pinned Qt/Node runtimes lack the required packages. |
 
 ## Next independently reviewable stages
 

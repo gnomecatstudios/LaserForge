@@ -1,6 +1,6 @@
 # Native editor review
 
-Active branch: `native-render-version`. Native Qt editor development continues alongside the
+Active branch: `native-render-version-2`. Native Qt editor development continues alongside the
 unchanged browser release. The default browser launcher has not been switched. Do not merge as a
 completed migration or publish experimental packages over the stable downloads.
 
@@ -46,9 +46,10 @@ and physical rendering at multiple display scales. Test only simulated devices. 
 serialization and expensive simplification run outside the GUI process. Large file reads, image
 decode and base64 preparation still have GUI-thread costs; background adapters remain necessary.
 
-The Linux container package can be smoke-tested; it is not Mint/Pi hardware validation. Windows and
-Pi packaging, AppImage, missing tools, native updates, real-world project corpus and hardware safety
-integration remain open. See [validation.md](validation.md) for measured results and limitations.
+The Linux container package can be smoke-tested; it is not Mint/Pi hardware validation. Windows
+CI tests, packaging and startup passed; see [Windows evidence](windows.md). Windows 10/11 manual
+checks, Pi packaging, AppImage, missing tools, native updates, real-world project corpus and hardware
+safety integration remain open. See [validation.md](validation.md) for measured results and limitations.
 
 Run from source using [development.md](development.md): install Python dependencies in a virtual
 environment, `pnpm install --frozen-lockfile`, `pnpm native:bridge`, then
