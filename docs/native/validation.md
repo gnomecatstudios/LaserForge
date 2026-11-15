@@ -30,7 +30,7 @@ Linux x86_64, Python 3.12.14, Node 24.22.1, PySide6 6.8.3; headless Qt `offscree
 | --- | --- |
 | Before native changes: existing Vitest suite | 120 files / 1,036 tests passed |
 | With native bridge tests | 121 files / 1,051 tests passed (15 bridge tests) |
-| Native Python/Qt suite | 35 passed: 17 viewport, 10 plugin, 7 desktop integration, 1 atomic-file test |
+| Native Python/Qt suite | 39 passed after Windows/Mint/Pi scope update: 17 viewport, 10 plugin, 7 desktop integration, 1 atomic-file test, 4 packaging-target tests |
 | TypeScript/Svelte check | 0 errors, 0 warnings |
 | Existing browser Playwright subset | 37/37 passed: design 14, files 4, layout 6, simulated machine 8, updates 5 |
 | ESLint | Passed |
@@ -42,7 +42,7 @@ Linux x86_64, Python 3.12.14, Node 24.22.1, PySide6 6.8.3; headless Qt `offscree
 | Go updater suite | Passed: 4 top-level tests plus 7 unsafe-path subtests using verified temporary Go 1.27.4 linux/amd64 |
 | Native source CLI smoke | Passed, native window screenshot rendered |
 | Linux frozen/extracted package smoke | Passed with PATH lacking Python/Node; bundled runtime and bridge used |
-| Windows/macOS interactive/build tests | Not run in this Linux environment |
+| Windows, Linux Mint and Raspberry Pi desktop/device tests | Not run; generic Linux container smoke is not Mint/Pi validation |
 
 The parity failure is not concealed or fixed by rewriting shipped archives: browser sources,
 public assets, library sources and legacy portable packaging remain unchanged from the audited
@@ -50,7 +50,7 @@ baseline. Legacy release artifacts need an intentional rebuild and all four-targ
 before their next publication. Nothing in this migration publishes or replaces those archives.
 Go tests used a byte-identical copy of launcher sources plus production web assets in a temporary directory; no launcher files were changed.
 The stale skipped macOS test in `portable/test_package.py` refers to a removed legacy function;
-new macOS testing uses the separate native workflow and has not run here.
+it is unrelated to the active Windows/Mint/Pi native target matrix; macOS is excluded.
 
 The native bridge tests compare actual direct-core vector/raster job plans and G-code with bridge
 results, exercise original ZIP/legacy JSON/assets/text outlines and DXF units, transforms/history/
@@ -93,12 +93,12 @@ input-to-presentation latency, raster preview and CPU/GPU utilization are not ye
 | Layers/settings | Basic mode/speed/power/passes/material/visibility/output UI exists. Detailed fill, image dithering, air-assist/source/accessory/rotary/job-origin controls and custom material library UI remain. Project settings/unknown fields are retained by original serialization. |
 | Profiles/preferences | Native current-profile/window/grid settings are separate. Browser IndexedDB/recent-file/autosave/profile/material preference migration and full preset management are incomplete. No crash recovery. |
 | Machine origin | Core corner reorientation retained. Current-position export requires an explicit machine position; no live native position exists. Missing user origin is rejected. Auto-fit when switching to smaller bed is not migrated; inspect bounds and resolve blocking CAM warnings. |
-| Clipboard/hotkeys | Implemented actions preserve corresponding shortcuts; copy/cut/paste, node/pen/text/trace/print and controller shortcuts/context actions remain in legacy. Qt StandardKeys/portable Ctrl strings provide native platform mapping; real macOS keyboard testing remains. |
+| Clipboard/hotkeys | Implemented actions preserve corresponding shortcuts; copy/cut/paste, node/pen/text/trace/print and controller shortcuts/context actions remain in legacy. Qt StandardKeys/portable Ctrl strings provide native platform mapping; target-desktop keyboard testing remains. |
 | Performance | Full snapshots/base64 asset transfer and synchronous Qt raster decode/RGBA preparation can freeze UI for large images. Core CAM runs outside GUI process. Add delta snapshots, bounded worker decode/cache and profile-driven render optimization. |
 | File sizes | Native input capped at 64 MiB; IPC capped at 128 MiB. Larger projects need streaming/incremental asset protocol, not silent truncation. |
 | Plugins | Metadata-only foundation; no extension execution host, panels/tools/import registration, package installer/updater or marketplace. Unrestricted Python cannot be treated as sandboxed; future broker must enforce capabilities out of process. |
 | Updates | Existing browser/PWA/portable updates untouched. Native automatic/incremental updates, signed manifests, full fallback/rollback/startup health checks and update UI remain unimplemented. Do not use legacy updater for Qt packages. |
-| Packaging | Linux tar.gz tested only in this glibc 2.41 container; Ubuntu/Mint desktop compatibility and AppImage pending. Windows portable ZIP/macOS .app recipes unexecuted, signing/notarization absent; Pi native unvalidated. |
+| Packaging | Linux tar.gz tested only in this glibc 2.41 container; Ubuntu/Mint desktop compatibility and AppImage pending. Windows portable ZIP and ARM64 build recipes unexecuted; actual Mint/Pi native validation remains. Pi ARM32 stays on the legacy browser distribution because pinned Qt/Node runtimes lack the required packages. |
 
 ## Next independently reviewable stages
 

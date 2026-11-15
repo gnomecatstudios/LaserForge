@@ -70,7 +70,7 @@ On the Linux development container on 2026-11-14, Node 24.22.1 and the frozen pn
 | Existing `pnpm build` | Passed; Vite/PWA output generated; existing large-chunk advisory |
 
 These baseline counts precede the added native bridge tests. Keep later suite totals separate.
-No Windows, macOS or Raspberry Pi performance measurements were made in this container.
+No Windows, Linux Mint desktop or Raspberry Pi performance measurements were made in this container.
 
 After the native additions, the existing browser Playwright subset passed **37/37 tests**
 in 132.13 seconds (0 skipped, 0 flaky): `design.spec.ts` (14), `files.spec.ts` (4),

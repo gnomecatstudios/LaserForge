@@ -28,10 +28,11 @@ rectangles/ellipses, selection and transforms, layers, undo/redo, DXF import, G-
 and simulated jobs. **Feature parity is incomplete and physical-machine controls are disabled.**
 It is not the production replacement yet. Automatic native updates are not enabled.
 
-Linux x64 has been built and smoke-tested offscreen in the development container. Windows and
-macOS packaging/CI recipes are provided but have not been executed here; desktop usability,
-Ubuntu/Mint compatibility, Apple Silicon/Intel builds and signing still require validation.
-Raspberry Pi native packaging is also unvalidated; existing browser portable targets remain.
+The native targets are **Windows x64, Linux Mint x64, and Raspberry Pi OS**. Linux x64 has
+been built and smoke-tested offscreen in the development container; that does not validate
+Linux Mint. Windows and ARM64 build recipes/CI are provided but have not run here, and Pi
+hardware remains untested. The pinned Qt/Node runtimes have no packaged ARM32 path; retain
+the existing Raspberry Pi OS 32-bit browser package. macOS is outside the target scope.
 
 See [native development setup](docs/native/development.md), [architecture and migration plan](docs/native/migration.md),
 [known limitations and test results](docs/native/validation.md), [measured performance](docs/native/performance.md),

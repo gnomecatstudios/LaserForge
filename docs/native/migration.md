@@ -25,9 +25,11 @@ all four existing portable targets remain available and unchanged.
 | Tests | Vitest unit/property/golden/simulated machine tests; Playwright browser scenarios; Python portable and Go updater tests | Keep existing suites; add native IPC, file/output parity, offscreen Qt tests and benchmarks |
 
 Root and library MIT licenses and original contributor attribution remain intact. Qt/PySide
-and other bundled runtime licenses must accompany native distributions. The user's explicit
-macOS requirement overrides AGENTS.md's older platform preference for this additive migration;
-legacy packaging retains its existing four targets.
+and other bundled runtime licenses must accompany native distributions. Current native targets
+are Windows x64, Linux Mint x64 and Raspberry Pi OS. macOS is excluded, consistent with the
+repository's platform preference. Legacy packaging retains Windows/Linux x64 and both Pi
+ARM64/ARM32 targets. Native Pi ARM64 needs compatible Qt/Python/OS builds; ARM32 remains on
+the working browser package until its Qt/Node runtime blockers are resolved.
 
 ### Framework evaluation
 
@@ -77,5 +79,5 @@ results, benchmark conditions and incomplete features are recorded in [validatio
 Never reuse the legacy updater for a Qt package: its archive allowlist/128 MiB size ceiling and
 browser-launching replacement behavior are incompatible. File deltas need trusted versioned
 manifests, per-file hashes, safe paths, staged atomic replacement, rollback and full-package fallback;
-Qt/Python runtime changes and signed macOS bundles may require full updates. User data must live
+Qt/Python runtime changes may require full updates. User data must live
 outside the installation tree. Checksums alone do not authenticate a publisher.

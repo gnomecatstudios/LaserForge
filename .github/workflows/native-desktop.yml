@@ -14,11 +14,17 @@ permissions:
 
 jobs:
   native:
-    name: Native ${{ matrix.os }}
+    name: Native ${{ matrix.target }}
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-22.04, windows-latest, macos-15-intel, macos-14]
+        include:
+          - target: windows-x64
+            os: windows-latest
+          - target: linux-x64-mint-candidate
+            os: ubuntu-22.04
+          - target: linux-arm64-pi-candidate
+            os: ubuntu-24.04-arm
     runs-on: ${{ matrix.os }}
     timeout-minutes: 35
     env:
@@ -54,15 +60,12 @@ jobs:
           import os
           from pathlib import Path
           import subprocess
-          import sys
           import tarfile
           import tempfile
           import zipfile
           archive = next(p for p in Path('native/artifacts').iterdir() if p.name.endswith(('.zip', '.tar.gz')))
           with tempfile.TemporaryDirectory() as temporary:
-              if sys.platform == 'darwin':
-                  subprocess.run(['ditto', '-x', '-k', str(archive), temporary], check=True)
-              elif archive.suffix == '.zip':
+              if archive.suffix == '.zip':
                   with zipfile.ZipFile(archive) as package:
                       package.extractall(temporary)
                       for entry in package.infolist():
@@ -73,15 +76,12 @@ jobs:
                   with tarfile.open(archive) as package:
                       package.extractall(temporary, filter='data')
               root = Path(temporary)
-              if sys.platform == 'darwin':
-                  executable = root / 'LaserForge.app/Contents/MacOS/LaserForge-Native'
-              else:
-                  executable = root / 'LaserForge-Native' / ('LaserForge-Native.exe' if os.name == 'nt' else 'LaserForge-Native')
+              executable = root / 'LaserForge-Native' / ('LaserForge-Native.exe' if os.name == 'nt' else 'LaserForge-Native')
               executable.chmod(executable.stat().st_mode | 0o111)
               subprocess.run([str(executable), '--smoke-test'], check=True, timeout=60)
           PY
       - uses: actions/upload-artifact@v4
         with:
-          name: LaserForge-native-experimental-${{ matrix.os }}
+          name: LaserForge-native-experimental-${{ matrix.target }}
           path: native/artifacts/*
           if-no-files-found: error

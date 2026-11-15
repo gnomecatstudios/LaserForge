@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "laserforge-native"
 version = "0.2.5"
 description = "Experimental native Qt Widgets interface for LaserForge"
-requires-python = ">=3.11"
+requires-python = ">=3.11,<3.14"
 license = "MIT"
 dependencies = ["PySide6==6.8.3"]
 

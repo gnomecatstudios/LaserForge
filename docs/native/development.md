@@ -7,7 +7,11 @@ preview; it has simulation-only machine endpoints.
 
 ## Install and run
 
-Requires Python 3.11+ (3.12 tested), Node.js 24+, Corepack/pnpm 10.24.0, and a desktop environment.
+Targets Windows x64, Linux Mint x64 and Raspberry Pi OS; macOS is excluded.
+Requires CPython 3.11–3.13 (3.12 tested with pinned PySide6), Node.js 24+, Corepack/pnpm 10.24.0,
+and a desktop environment. The standard ARM64 Qt wheels require glibc 2.39 or newer; older
+Pi OS images and ARM32 do not have a validated native package. See the distribution guide
+for Raspberry Pi and Mint version constraints before installing.
 From the repository root:
 
 ```sh
@@ -68,8 +72,7 @@ passed as bytes, with no sidecar filesystem or shell endpoint. Messages are boun
 source file inputs at 64 MiB. Core failures surface in the native UI and never silently restart
 with an empty document. This stage has no crash-recovery/autosave feature.
 
-Qt menus use QKeySequence StandardKeys and portable Ctrl sequences (Qt maps these to Command on
-macOS). V/H/R/E/M select tools, P toggles preview, arrow keys nudge 1 mm, Shift arrows 10 mm,
+Qt menus use QKeySequence StandardKeys and portable Ctrl sequences. V/H/R/E/M select tools, P toggles preview, arrow keys nudge 1 mm, Shift arrows 10 mm,
 Delete removes selection, Ctrl+D duplicates, Ctrl+0 fits bed, Shift+2 fits selection. Focused input
 fields retain text-editing keys. Unported shortcuts and menus remain in the browser implementation.
 

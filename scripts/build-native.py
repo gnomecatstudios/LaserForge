@@ -10,6 +10,7 @@ import os
 from pathlib import Path
 import platform
 import shutil
+import struct
 import subprocess
 import sys
 import sysconfig
@@ -80,13 +81,29 @@ def copy_runtime_notices(stage: Path, node: Path, node_license: Path | None) -> 
     (notices / 'runtime-versions.json').write_text(json.dumps(versions, indent=2) + '\n')
 
 
-def target_id() -> str:
-    system = {'win32': 'windows', 'darwin': 'macos'}.get(sys.platform, sys.platform)
-    architecture = {'x86_64': 'x64', 'amd64': 'x64', 'aarch64': 'arm64'}.get(
-        platform.machine().lower(), platform.machine().lower())
-    if system not in {'windows', 'linux', 'macos'}:
-        raise ValueError(f'No native packaging recipe for {system}')
-    return f'{system}-{architecture}'
+def target_id(system: str | None = None, machine: str | None = None,
+              pointer_bits: int | None = None) -> str:
+    """Accept only planned native targets, using the Python process architecture.
+
+    A 64-bit kernel can run a 32-bit Pi userspace; never label that arm64.
+    This validates packaging prerequisites, not target-device compatibility.
+    """
+    system = sys.platform if system is None else system
+    machine = platform.machine().lower() if machine is None else machine.lower()
+    pointer_bits = struct.calcsize('P') * 8 if pointer_bits is None else pointer_bits
+    if system == 'darwin':
+        raise ValueError('macOS is not a LaserForge target. Use Windows, Linux Mint, or Raspberry Pi OS.')
+    if pointer_bits != 64:
+        raise ValueError('Native packaging requires a 64-bit Python/Qt runtime. '
+                         'Keep using the existing Raspberry Pi OS ARM32 browser package on 32-bit systems.')
+    architecture = {'x86_64': 'x64', 'amd64': 'x64', 'aarch64': 'arm64',
+                    'arm64': 'arm64'}.get(machine)
+    family = {'win32': 'windows', 'linux': 'linux'}.get(system)
+    if (family, architecture) not in {('windows', 'x64'), ('linux', 'x64'), ('linux', 'arm64')}:
+        raise ValueError(f'No native packaging recipe for {system}/{machine}. '
+                         'Targets are Windows x64, Linux Mint x64, and Raspberry Pi OS ARM64; '
+                         'their desktop validation is still required.')
+    return f'{family}-{architecture}'
 
 
 def main() -> int:
@@ -96,6 +113,10 @@ def main() -> int:
     parser.add_argument('--node-license', type=Path, help='complete license for the packaged Node version')
     parser.add_argument('--skip-bridge-build', action='store_true', help='use existing native/bridge/dist/server.mjs')
     args = parser.parse_args()
+    try:
+        target = target_id()
+    except ValueError as error:
+        parser.error(str(error))
     version = json.loads((ROOT / 'package.json').read_text())['version']
     node = (args.node or Path(shutil.which('node') or 'missing-node')).resolve()
     if not node.is_file():
@@ -104,7 +125,7 @@ def main() -> int:
     if int(node_version.removeprefix('v').split('.')[0]) < 24:
         parser.error('Node.js 24 or newer is required')
     node_architecture = subprocess.check_output([str(node), '-p', 'process.arch'], text=True).strip()
-    host_architecture = target_id().rsplit('-', 1)[-1]
+    host_architecture = target.rsplit('-', 1)[-1]
     if node_architecture != host_architecture:
         parser.error(f'Node architecture {node_architecture} differs from target {host_architecture}')
     if not args.skip_bridge_build:
@@ -125,10 +146,6 @@ def main() -> int:
         branding.mkdir()
         for name in ('mark.png', 'icon-192.png', 'icon-512.png', 'favicon.ico'):
             shutil.copy2(ROOT / 'public' / name, branding / name)
-        if sys.platform == 'darwin':
-            from PIL import Image
-            with Image.open(ROOT / 'public/icon-512.png') as artwork:
-                artwork.save(branding / 'LaserForge.icns')
         copy_runtime_notices(stage, node, args.node_license)
         environment = {**os.environ, 'LASERFORGE_BUILD_ROOT': str(ROOT),
                        'LASERFORGE_BUILD_STAGE': str(stage), 'LASERFORGE_BUILD_VERSION': version,
@@ -136,20 +153,15 @@ def main() -> int:
         subprocess.run([sys.executable, '-m', 'PyInstaller', '--noconfirm', '--clean',
                         '--distpath', str(work / 'dist'), '--workpath', str(work / 'build'),
                         str(ROOT / 'native/packaging/LaserForge.spec')], env=environment, cwd=ROOT, check=True)
-        package = work / 'dist' / ('LaserForge.app' if sys.platform == 'darwin' else 'LaserForge-Native')
+        package = work / 'dist' / 'LaserForge-Native'
         # QtWebEngine is neither imported nor permitted in the distributable.
         if any('webengine' in path.name.lower() for path in package.rglob('*')):
             raise RuntimeError('Unexpected QtWebEngine dependency in native package')
         if sys.platform.startswith('linux'):
             shutil.copy2(ROOT / 'native/packaging/laserforge-native.desktop', package)
             shutil.copy2(ROOT / 'public/icon-192.png', package / 'laserforge-native.png')
-        archive_base = work / f'LaserForge-Native-{target_id()}-v{version}'
-        if sys.platform == 'darwin':
-            # ditto preserves .app framework symlinks and resource forks.
-            archive = Path(str(archive_base) + '.zip')
-            subprocess.run(['ditto', '-c', '-k', '--sequesterRsrc', '--keepParent',
-                            str(package), str(archive)], check=True)
-        elif sys.platform.startswith('linux'):
+        archive_base = work / f'LaserForge-Native-{target}-v{version}'
+        if sys.platform.startswith('linux'):
             archive = Path(str(archive_base) + '.tar.gz')
             with tarfile.open(archive, 'w:gz', compresslevel=6) as bundle:
                 bundle.add(package, arcname=package.name)
