@@ -38,16 +38,16 @@ Linux x86_64, Python 3.12.14, Node 24.22.1, PySide6 6.8.3; headless Qt `offscree
 | Library build/declarations | Passed from package working directory |
 | Legacy portable Python tests | 23 run, 1 skipped (macOS), no failures |
 | Existing portable branding checks | Passed for five checked archives (four runtime targets plus source) |
-| Existing portable payload parity | **Failed:** tracked Windows ZIP does not contain current `og-image.png`; existing release payload is stale relative to source build |
+| Existing portable payload parity | Passed after portable refresh: all four target ZIPs contain the 36 current production assets and update/offline companions |
 | Go updater suite | Passed: 4 top-level tests plus 7 unsafe-path subtests using verified temporary Go 1.27.4 linux/amd64 |
 | Native source CLI smoke | Passed, native window screenshot rendered |
 | Linux frozen/extracted package smoke | Passed with PATH lacking Python/Node; bundled runtime and bridge used |
 | Windows, Linux Mint and Raspberry Pi desktop/device tests | Not run; generic Linux container smoke is not Mint/Pi validation |
 
-The parity failure is not concealed or fixed by rewriting shipped archives: browser sources,
-public assets, library sources and legacy portable packaging remain unchanged from the audited
-baseline. Legacy release artifacts need an intentional rebuild and all four-target validation
-before their next publication. Nothing in this migration publishes or replaces those archives.
+The earlier portable parity failure (stale `og-image.png`) was resolved by rebuilding all four
+browser targets and the source ZIP from revision `f048312`. Branding, SHA-256 and executable
+architecture checks passed. This is a branch artifact refresh, not a public updater release.
+Windows and Pi binaries were cross-compiled and inspected; they have not been run on those OSes.
 Go tests used a byte-identical copy of launcher sources plus production web assets in a temporary directory; no launcher files were changed.
 The stale skipped macOS test in `portable/test_package.py` refers to a removed legacy function;
 it is unrelated to the active Windows/Mint/Pi native target matrix; macOS is excluded.
@@ -67,8 +67,8 @@ legacy feature has been exercised in Qt or that all browser E2E scenarios have p
 ## Local Linux build artifact
 
 `native/artifacts/LaserForge-Native-linux-x64-v0.2.5.tar.gz` (generated, not tracked),
-121,209,894 bytes, rebuilt for the native editing stage.
-SHA-256: `6d614fa4bddc66e4023ac4edf98b671d19d29fd17324f9236d3d030fe3bdd8a5`.
+121,210,922 bytes, refreshed from revision `f048312`.
+SHA-256: `c1a9a33e60b786b857204dc777c019bd584f4fa1b20cc9bbacdf98ab56208e4c`.
 The extracted executable initialized and rendered offscreen with no Python/Node on PATH;
 the red icon loads, runtime/license
 resources are present, and QtWebEngine is absent. This validates startup in this container only.
