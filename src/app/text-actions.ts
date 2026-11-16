@@ -109,6 +109,8 @@ export function weldSelectedText(): void {
 export function focusTextProperty(label: string): void {
   const text = editor.project?.objects.find((o) => editor.selection.has(o.id) && o.kind === 'text');
   if (!text || text.locked) return;
+  const parent = editor.project?.groups?.find((g) => g.children.includes(text.id));
+  if (parent && editor.groupScope !== parent.id) editor.enterGroup(parent.id);
   editor.select([text.id]);
   editor.tool = 'select';
   sections.set('inspector', true);

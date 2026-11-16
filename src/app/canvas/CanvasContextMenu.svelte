@@ -22,6 +22,7 @@
   import { formatCombo } from '../lib/keys';
   import { booleanSelection, booleanSelectionIssue } from '../unite';
   import { groupSelection, ungroupSelection, renameGroup } from '../group-actions';
+  import { textOutlines } from '../state/text.svelte';
   import * as textActions from '../text-actions';
   import BooleanIcon from './BooleanIcon.svelte';
 
@@ -36,6 +37,10 @@
   const selected = $derived(editor.project?.objects.filter((o) => editor.selection.has(o.id)) ?? []);
   const editable = $derived(selected.length > 0 && selected.every((o) => !o.locked));
   const texts = $derived(selected.filter((o) => o.kind === 'text'));
+  const textGeometryReady = $derived(
+    texts.length > 0 &&
+      texts.every((o) => !textOutlines.pending.has(o.id) && o.paths.length > 0 && !o.missingGlyphs?.length),
+  );
   const issue = $derived(open ? booleanSelectionIssue() : null);
   const base = $derived(
     editor.project?.objects.find((o) => o.id === [...editor.selection][0])?.name ?? 'first selected object',
@@ -263,11 +268,15 @@
               >Warp Text</ContextMenu.Item
             >
             <ContextMenu.Separator class="ol-menu-sep" />
-            <ContextMenu.Item class="ol-menu-item" onSelect={textActions.convertSelectedText}
-              >Convert to Path</ContextMenu.Item
+            <ContextMenu.Item
+              class="ol-menu-item"
+              disabled={!textGeometryReady}
+              onSelect={textActions.convertSelectedText}>Convert to Path</ContextMenu.Item
             >
-            <ContextMenu.Item class="ol-menu-item" onSelect={textActions.weldSelectedText}
-              >Weld Letters</ContextMenu.Item
+            <ContextMenu.Item
+              class="ol-menu-item"
+              disabled={!textGeometryReady}
+              onSelect={textActions.weldSelectedText}>Weld Letters</ContextMenu.Item
             >
           </ContextMenu.SubContent></ContextMenu.Portal
         >
