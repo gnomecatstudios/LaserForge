@@ -1,5 +1,14 @@
 # Progress
 
+## v0.2.7 — Canvas menu and Boolean geometry
+
+- [x] Accessible canvas context menu: Cut, Copy, Paste, Duplicate, Boolean, Delete; selection-aware, themed, viewport constrained, keyboard navigable.
+- [x] Union, Subtract, Intersect, Exclude (XOR), including compound holes, transformed curves, multiple operands and empty results.
+- [x] First-selected subtraction base, preserved layer and properties, atomic undo/redo, validation of locked/open/invalid operands.
+- [x] Central shortcuts and help: Ctrl+Shift+U / D / I / X. Existing Union tool retained.
+- [x] Unit and Playwright regression coverage. Browser Canvas renderer and all four portable targets retained.
+
+
 ## v1 (M0–M7) — 2026-10-20
 
 Built in one pass from SPEC.md and the design handoff.

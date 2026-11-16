@@ -201,3 +201,26 @@ LaserPecker protocol details come from the [LaserPecker protocol notes](https://
 ## License
 
 [MIT](./LICENSE)
+
+### Canvas context menu and Boolean operations
+
+Right-click the design canvas for Cut, Copy, Paste, Duplicate, Boolean and Delete.
+Right-clicking an unselected object selects it; right-clicking a selected object keeps
+the group. Empty space clears selection and offers Paste. Use arrows, Enter and Escape
+to navigate or dismiss the menu. Boolean actions require at least two visible, unlocked
+vector objects with closed, nondegenerate paths. Hover the disabled Boolean entry for
+an explanation. Convert images or text to vectors first; open paths are never closed implicitly.
+
+| Operation | Shortcut | Result |
+| --- | --- | --- |
+| Union | Ctrl+Shift+U | All selected areas combined |
+| Subtract | Ctrl+Shift+D | First-selected object minus all later selections |
+| Intersect | Ctrl+Shift+I | Area shared by every selection |
+| Exclude (XOR) | Ctrl+Shift+X | Areas covered an odd number of times |
+
+Select the subtraction base first, then Shift-select the cutters. The submenu tooltip
+names the base. Every operation preserves the base layer and settings, applies object
+transforms, and retains holes and disconnected regions as closed compound paths.
+The standalone Union tool remains available. Empty results remove the operands and
+clear selection, with an explanatory notification. Undo restores all operands in one step.
+Results use the existing line, fill, kerf and G-code pipeline and `.olaser` format.

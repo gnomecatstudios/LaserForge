@@ -19,3 +19,4 @@ export * from './outline';
 export * from './serialize';
 export * from './shapes';
 export * from './materials';
+export * from './boolean';

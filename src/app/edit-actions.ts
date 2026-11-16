@@ -16,6 +16,10 @@ import { editor } from './state/editor.svelte';
 /** Copied objects with their assets and layers, so a cut layer comes back with its settings. */
 let clipboard: { objects: SceneObject[]; assets: Asset[]; layers: Layer[] } | null = null;
 
+export function canPaste(): boolean {
+  return !!clipboard?.objects.length;
+}
+
 export function copySelection(): void {
   const project = editor.project;
   if (!project || editor.selection.size === 0) return;

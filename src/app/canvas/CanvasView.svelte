@@ -50,6 +50,7 @@
   import NodeEditor from './NodeEditor.svelte';
   import PenOverlay from './PenOverlay.svelte';
   import { pen } from '../state/pen.svelte';
+  import CanvasContextMenu from './CanvasContextMenu.svelte';
   import BedWarning from './BedWarning.svelte';
   import ErrorBoundary from '$lib/ui/ErrorBoundary.svelte';
 
@@ -580,6 +581,11 @@
 </script>
 
 <div class="canvas-host" bind:this={host}>
+  <CanvasContextMenu disabled={!designing} oncontextmenu={(event) => {
+    const hit = hitAt(local(event));
+    if (hit && !editor.selection.has(hit.id)) editor.select([hit.id]);
+    else if (!hit) editor.clearSelection();
+  }}>
   <canvas
     bind:this={el}
     tabindex="0"
@@ -592,9 +598,9 @@
     onpointercancel={onpointerup}
     onpointerleave={() => (canvas.cursor = null)}
     {onwheel}
-    oncontextmenu={(e) => e.preventDefault()}
     {ondblclick}
   ></canvas>
+  </CanvasContextMenu>
 
   {#if designing && selectionBounds && sizeBox && editor.tool === 'select' && !canvas.editingTextId}
     <div class="size-pill" role="group" aria-label="Selection dimensions in millimeters"

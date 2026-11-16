@@ -41,6 +41,11 @@ export function difference(subject: Vec2[][], clip: Vec2[][], fillRule: FillRule
   return fromPaths(booleanOp(ClipType.Difference, toPaths(subject), toPaths(clip), toFillRule(fillRule)));
 }
 
+/** Symmetric difference: regions covered an odd number of times. */
+export function xor(subject: Vec2[][], clip: Vec2[][], fillRule: FillRule = 'evenodd'): Vec2[][] {
+  return fromPaths(booleanOp(ClipType.Xor, toPaths(subject), toPaths(clip), toFillRule(fillRule)));
+}
+
 /**
  * Clips open polylines to a closed region, returning the parts inside it.
  * Useful for scoring lines limited to a shape.

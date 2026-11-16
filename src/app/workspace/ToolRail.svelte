@@ -4,7 +4,7 @@
   import Spline from '@lucide/svelte/icons/spline';
   import PenTool from '@lucide/svelte/icons/pen-tool';
   import Combine from '@lucide/svelte/icons/combine';
-  import { uniteSelection } from '../unite';
+  import { uniteSelection, booleanSelectionIssue } from '../unite';
   import { ui } from '../state/ui.svelte';
   import { simplifyPath, flattenPaths, polylinesBounds } from 'libopenlaser/geometry';
   import type { VectorObject } from 'libopenlaser/project';
@@ -152,13 +152,8 @@
     class="icon-btn tool"
     aria-label="Unite closed shapes"
     data-testid="tool-unite"
-    disabled={!designing ||
-      (editor.project?.objects.filter((o) => editor.selection.has(o.id)).length ?? 0) < 2 ||
-      !!editor.project?.objects.some(
-        (o) =>
-          editor.selection.has(o.id) &&
-          (o.kind !== 'vector' || o.locked || !o.visible || o.paths.some((p) => !p.closed)),
-      )}
+    disabled={!designing || booleanSelectionIssue() !== null}
+    title={booleanSelectionIssue() ?? 'Union closed shapes (Ctrl+Shift+U)'}
     onclick={uniteSelection}><Combine size={18} /></button
   >
   {#if selectedImage && !vectors.length}

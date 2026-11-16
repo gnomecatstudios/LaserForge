@@ -11,6 +11,7 @@ import { connectedSession } from './machines/registry';
 import { route } from './state/route.svelte';
 import { currentBed } from './state/work-area';
 import { ui } from './state/ui.svelte';
+import { booleanSelection, booleanSelectionIssue } from './unite';
 import * as actions from './actions';
 
 export interface Shortcut {
@@ -43,7 +44,21 @@ function bed() {
   return currentBed();
 }
 
+export const BOOLEAN_COMMANDS = [
+  { operation: 'union', label: 'Union', keys: 'Mod+Shift+U' },
+  { operation: 'subtract', label: 'Subtract', keys: 'Mod+Shift+D' },
+  { operation: 'intersect', label: 'Intersect', keys: 'Mod+Shift+I' },
+  { operation: 'exclude', label: 'Exclude (XOR)', keys: 'Mod+Shift+X' },
+] as const;
+
 export const SHORTCUTS: Shortcut[] = [
+  ...BOOLEAN_COMMANDS.map((command): Shortcut => ({
+    keys: [command.keys],
+    label: command.label,
+    group: 'Edit',
+    when: () => designing() && booleanSelectionIssue() === null,
+    run: () => booleanSelection(command.operation),
+  })),
   {
     keys: ['Enter'],
     label: 'Finish drawn path',
@@ -293,7 +308,7 @@ export function handleKeydown(event: KeyboardEvent): boolean {
   for (const shortcut of SHORTCUTS) {
     if (!shortcut.keys.some((k) => matches(event, k))) continue;
     if ((typing || arrowWidget) && !shortcut.global) continue;
-    if (!shortcut.global && dialogOpen()) continue;
+    if (!shortcut.global && (dialogOpen() || document.querySelector('[data-canvas-menu]'))) continue;
     if (shortcut.when && !shortcut.when()) continue;
     event.preventDefault();
     event.stopPropagation();
