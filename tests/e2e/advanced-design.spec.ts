@@ -85,3 +85,26 @@ test('editable text modifiers, weld and undo render through the existing canvas'
   await expect(page.getByTestId('text-content')).toHaveValue('Laser');
   expect(errors).toEqual([]);
 });
+
+test('text subtraction uses font contours and undo restores editable text', async ({ page }) => {
+  await page.getByTestId('tool-rect').click();
+  await dragOnCanvas(page, [0.28, 0.28], [0.5, 0.5]);
+  await page.getByTestId('tool-text').click();
+  const box = (await page.getByTestId('bed-canvas').boundingBox())!;
+  await page.mouse.click(box.x + box.width * 0.32, box.y + box.height * 0.32);
+  await page.keyboard.type('O');
+  await page.keyboard.press('Escape');
+  await expect(page.getByLabel('Loading font')).toHaveCount(0);
+  await page.keyboard.press('ControlOrMeta+a');
+  await rightClick(page, 0.32, 0.32);
+  await page.getByRole('menuitem', { name: 'Boolean', exact: true }).hover();
+  await page.getByRole('menuitem', { name: /^Subtract/ }).click();
+  await expect(page.getByTestId('status-bar')).toContainText('1 object');
+  await page.keyboard.press('ControlOrMeta+z');
+  await expect(page.getByTestId('status-bar')).toContainText('2 objects');
+  await page.keyboard.press('ControlOrMeta+a');
+  await rightClick(page, 0.32, 0.32);
+  await expect(page.getByRole('menuitem', { name: 'Modify Text', exact: true })).not.toHaveAttribute(
+    'data-disabled',
+  );
+});

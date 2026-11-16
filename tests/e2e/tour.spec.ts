@@ -19,10 +19,11 @@ test('the tour shows on first visit, walks every step and stays dismissed', asyn
   await page.getByTestId('tour-finish').click();
   await expect(tour).toBeHidden();
   await expect(page.getByTestId('start-screen')).toContainText('Two Trees TS3');
-  await expect(page.getByTestId('start-screen')).toContainText('300 × 200 mm');
   await page.reload();
   await expect(page.getByTestId('start-screen')).toBeVisible();
   await expect(page.getByTestId('tour')).toBeHidden();
+  await page.getByTestId('new-project').click();
+  await expect(page.getByTestId('workspace')).toContainText('300 × 200 mm');
 });
 
 test('the tour can be skipped and reopened', async ({ page }) => {

@@ -111,7 +111,7 @@ class TextOutlines {
   update(id: Id, patch: Partial<TextStyle>, options: { live?: boolean; field?: string } = {}): void {
     if (editor.project?.objects.find((o) => o.id === id)?.locked) return;
     const named = patch.text !== undefined ? { name: patch.text.split('\n')[0].slice(0, 40) || 'Text' } : {};
-    editor.commit((p) => updateObject(p, id, { ...patch, ...named, paths: [], outlineVersion: undefined }), {
+    editor.commit((p) => updateObject(p, id, { ...patch, ...named, outlineDirty: true }), {
       coalesce: `text-${id}-${options.field ?? 'style'}`,
     });
     if (!options.live) editor.sealHistory();
@@ -130,7 +130,7 @@ class TextOutlines {
     editor.commit((p) => ({
       ...p,
       objects: p.objects.map((o) =>
-        ids.includes(o.id) ? { ...o, ...changes.get(o.id), paths: [], outlineVersion: undefined } : o,
+        ids.includes(o.id) ? { ...o, ...changes.get(o.id), outlineDirty: true } : o,
       ),
     }));
     editor.sealHistory();
@@ -151,7 +151,7 @@ class TextOutlines {
       const never = o.paths.length === 0 && o.outlineVersion === undefined;
       const stale =
         o.outlineVersion !== undefined ? o.outlineVersion < TEXT_OUTLINE_VERSION : o.paths.length > 0;
-      if (never || stale) this.schedule(o.id, 0, stale && o.paths.length > 0);
+      if (never || stale || o.outlineDirty) this.schedule(o.id, 0, stale && o.paths.length > 0);
     }
   }
 
@@ -233,6 +233,7 @@ class TextOutlines {
           transform,
           blockHeight: height,
           outlineVersion: TEXT_OUTLINE_VERSION,
+          outlineDirty: false,
           missingGlyphs: missing,
         }),
       {

@@ -120,3 +120,17 @@ it('rejects incomplete or pending font geometry without changing sources or hist
     ),
   ).toThrow(/missing glyphs/);
 });
+
+it('retains a stale display cache but blocks clipping, print SVG and every CAM encoder input', async () => {
+  const { compileJob } = await import('libopenlaser/cam');
+  const { compileInput } = await import('../../../packages/libopenlaser/test/unit/cam/fixtures');
+  const { designPrintSvg } = await import('$app/lib/print-svg');
+  const source = { ...text(), outlineDirty: true };
+  const p = { ...createProject(), layers: [defaultLayer({ id: 'l', mode: 'line' })], objects: [source] };
+  expect(source.paths.length).toBeGreaterThan(0);
+  expect(() => booleanPaths([source, rectangle('cover')], 'union')).toThrow(/stale/);
+  const plan = compileJob(compileInput(p));
+  expect(plan.toolpaths).toEqual([]);
+  expect(plan.warnings).toContainEqual(expect.objectContaining({ code: 'text-not-ready', blocking: true }));
+  expect(designPrintSvg(p, { bedWidth: 400, bedHeight: 400, originCorner: 'bl' }, () => '')).toBeNull();
+});

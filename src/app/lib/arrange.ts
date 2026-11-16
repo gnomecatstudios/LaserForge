@@ -123,7 +123,10 @@ function arrangePass(
   };
   const buckets = new Map<string, SceneObject[]>();
   for (const object of project.objects.filter((o) => selected.has(o.id) && o.visible)) {
-    if (object.kind === 'text' && (!object.paths.length || object.missingGlyphs?.length))
+    if (
+      object.kind === 'text' &&
+      (object.outlineDirty || !object.paths.length || object.missingGlyphs?.length)
+    )
       throw new Error('Wait for complete text outlines before arranging.');
     const key = unitId(object.id);
     buckets.set(key, [...(buckets.get(key) ?? []), object]);

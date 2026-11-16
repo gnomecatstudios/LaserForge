@@ -131,6 +131,7 @@
       data-testid="text-to-paths"
       disabled={object.locked ||
         textOutlines.pending.has(object.id) ||
+        object.outlineDirty ||
         !object.paths.length ||
         !!object.missingGlyphs?.length}
       onclick={convertSelectedText}>Convert text to paths</button
@@ -140,6 +141,7 @@
       class="btn"
       disabled={object.locked ||
         textOutlines.pending.has(object.id) ||
+        object.outlineDirty ||
         !object.paths.length ||
         !!object.missingGlyphs?.length}
       onclick={weldSelectedText}>Weld Letters</button

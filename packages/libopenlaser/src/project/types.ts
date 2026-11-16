@@ -205,6 +205,8 @@ export interface TextObject extends BaseObject {
   blockHeight?: number;
   /** TEXT_OUTLINE_VERSION the paths were made with; older text is re-outlined on open. */
   outlineVersion?: number;
+  /** Last valid outlines remain visible during a refresh, but cannot be used for output. */
+  outlineDirty?: boolean;
   /**
    * Characters no available face could draw when the paths were made (the font and its script's
    * fallback were both out of reach, offline say). They are absent from the burn.

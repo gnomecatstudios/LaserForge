@@ -15,6 +15,8 @@ export function booleanPaths(objects: readonly SceneObject[], operation: Boolean
       throw new Error(`${object.name} is locked. Unlock it before using Boolean operations.`);
     if (!isOutlined(object) || !object.visible)
       throw new Error('Boolean operations require visible vector or text objects. Trace images first.');
+    if (object.kind === 'text' && object.outlineDirty)
+      throw new Error(`${object.name} has stale outlines. Wait for its font to finish loading.`);
     if (object.kind === 'text' && object.missingGlyphs?.length)
       throw new Error(`${object.name} has missing glyphs. Load the complete font first.`);
     if (!object.paths.length || object.paths.some((p) => !p.closed))

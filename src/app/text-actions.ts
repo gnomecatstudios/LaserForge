@@ -26,7 +26,11 @@ export function convertSelectedText(): void {
   const selected = editor.project?.objects.filter((o) => editor.selection.has(o.id)) ?? [];
   const texts = selected.filter((o): o is TextObject => o.kind === 'text' && !o.locked && o.visible);
   if (!texts.length) return;
-  if (texts.some((o) => textOutlines.pending.has(o.id) || !o.paths.length || o.missingGlyphs?.length)) {
+  if (
+    texts.some(
+      (o) => textOutlines.pending.has(o.id) || o.outlineDirty || !o.paths.length || o.missingGlyphs?.length,
+    )
+  ) {
     toast.warning('Wait for complete font outlines before converting text.');
     return;
   }
@@ -88,7 +92,11 @@ export function weldSelectedText(): void {
     ) ?? [];
   if (!texts.length) return;
   try {
-    if (texts.some((o) => textOutlines.pending.has(o.id) || !o.paths.length || o.missingGlyphs?.length))
+    if (
+      texts.some(
+        (o) => textOutlines.pending.has(o.id) || o.outlineDirty || !o.paths.length || o.missingGlyphs?.length,
+      )
+    )
       throw new Error('Wait for complete font outlines before welding text.');
     const vectors = new Map(
       texts.map((text) => {

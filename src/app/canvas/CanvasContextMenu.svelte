@@ -39,7 +39,13 @@
   const texts = $derived(selected.filter((o) => o.kind === 'text'));
   const textGeometryReady = $derived(
     texts.length > 0 &&
-      texts.every((o) => !textOutlines.pending.has(o.id) && o.paths.length > 0 && !o.missingGlyphs?.length),
+      texts.every(
+        (o) =>
+          !textOutlines.pending.has(o.id) &&
+          !o.outlineDirty &&
+          o.paths.length > 0 &&
+          !o.missingGlyphs?.length,
+      ),
   );
   const issue = $derived(open ? booleanSelectionIssue() : null);
   const base = $derived(
