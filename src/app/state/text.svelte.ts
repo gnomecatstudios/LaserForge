@@ -11,6 +11,7 @@ import { makeId } from 'libopenlaser/project';
 import { updateObject } from 'libopenlaser/project';
 import { textPlaceholderSize } from 'libopenlaser/project';
 import type { Id, Project, TextObject } from 'libopenlaser/project';
+import { toast } from '$lib/ui/toasts.svelte';
 import { reportError } from '$lib/ui/errors';
 import type { BedFrame } from '../canvas/viewport';
 import { uprightTextAt } from '../lib/placement';
@@ -30,6 +31,7 @@ type TextStyle = Pick<
   | 'letterSpacing'
   | 'pathLayout'
   | 'arcAngle'
+  | 'modifiers'
 >;
 
 const styleKey = (t: TextStyle) =>
@@ -44,6 +46,7 @@ const styleKey = (t: TextStyle) =>
     t.letterSpacing,
     t.pathLayout,
     t.arcAngle,
+    t.modifiers,
   ]);
 
 /**
@@ -106,12 +109,32 @@ class TextOutlines {
 
   /** Applies a style or text edit and refreshes the outlines. */
   update(id: Id, patch: Partial<TextStyle>, options: { live?: boolean; field?: string } = {}): void {
+    if (editor.project?.objects.find((o) => o.id === id)?.locked) return;
     const named = patch.text !== undefined ? { name: patch.text.split('\n')[0].slice(0, 40) || 'Text' } : {};
-    editor.commit((p) => updateObject(p, id, { ...patch, ...named }), {
+    editor.commit((p) => updateObject(p, id, { ...patch, ...named, outlineDirty: true }), {
       coalesce: `text-${id}-${options.field ?? 'style'}`,
     });
     if (!options.live) editor.sealHistory();
     this.schedule(id, patch.text !== undefined ? 150 : 60);
+  }
+
+  /** Apply one modifier action to multiple sources as one undo transaction. */
+  updateMany(changes: ReadonlyMap<Id, Partial<TextStyle>>): void {
+    const project = editor.project;
+    if (!project) return;
+    const ids = project.objects
+      .filter((o) => o.kind === 'text' && !o.locked && changes.has(o.id))
+      .map((o) => o.id);
+    if (!ids.length) return;
+    editor.sealHistory();
+    editor.commit((p) => ({
+      ...p,
+      objects: p.objects.map((o) =>
+        ids.includes(o.id) ? { ...o, ...changes.get(o.id), outlineDirty: true } : o,
+      ),
+    }));
+    editor.sealHistory();
+    for (const id of ids) this.schedule(id, 60);
   }
 
   /**
@@ -128,7 +151,7 @@ class TextOutlines {
       const never = o.paths.length === 0 && o.outlineVersion === undefined;
       const stale =
         o.outlineVersion !== undefined ? o.outlineVersion < TEXT_OUTLINE_VERSION : o.paths.length > 0;
-      if (never || stale) this.schedule(o.id, 0, stale && o.paths.length > 0);
+      if (never || stale || o.outlineDirty) this.schedule(o.id, 0, stale && o.paths.length > 0);
     }
   }
 
@@ -171,6 +194,10 @@ class TextOutlines {
       // Drop results for text that changed again while the font was loading.
       if (!latest || styleKey(latest) !== key || this.revisions.get(id) !== revision) return;
       if (!outline) {
+        if (!this.failed.has(key))
+          toast.warning(
+            `Unable to load ${object.fontFamily}. Reconnect or choose an available font; this text cannot be exported until its outlines are ready.`,
+          );
         this.failed.add(key);
         return;
       }
@@ -193,7 +220,10 @@ class TextOutlines {
     inPlace = false,
     missing?: string[],
   ): void {
-    const shift = inPlace || object.pathLayout || object.arcAngle ? 0 : blockHeight(object) - height;
+    const shift =
+      inPlace || object.pathLayout || object.arcAngle || object.modifiers?.length
+        ? 0
+        : blockHeight(object) - height;
     const transform =
       Math.abs(shift) > 1e-9 ? multiply(object.transform, translation(0, shift)) : object.transform;
     editor.commit(
@@ -203,6 +233,7 @@ class TextOutlines {
           transform,
           blockHeight: height,
           outlineVersion: TEXT_OUTLINE_VERSION,
+          outlineDirty: false,
           missingGlyphs: missing,
         }),
       {

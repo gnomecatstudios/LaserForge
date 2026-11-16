@@ -67,8 +67,16 @@ test('keyboard navigation opens Boolean and returns focus without clearing selec
   await rightClick(page);
   await page.keyboard.press('ArrowDown');
   await expect(page.getByRole('menuitem', { name: /^Cut/ })).toBeFocused();
-  await page.keyboard.press('End');
-  await page.keyboard.press('ArrowUp');
+  await page.keyboard.press('Home');
+  for (let i = 0; i < 10; i++) {
+    if (
+      await page
+        .getByRole('menuitem', { name: 'Boolean', exact: true })
+        .evaluate((el) => el === document.activeElement)
+    )
+      break;
+    await page.keyboard.press('ArrowDown');
+  }
   await expect(page.getByRole('menuitem', { name: 'Boolean', exact: true })).toBeFocused();
   await page.keyboard.press('ArrowRight');
   await expect(page.getByRole('menuitem', { name: /^Union/ })).toBeFocused();

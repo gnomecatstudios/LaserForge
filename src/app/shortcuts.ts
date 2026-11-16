@@ -3,6 +3,7 @@
  * open file, zoom) are captured and remapped to app commands. Shortcuts stay out of text fields,
  * except Esc during a job: Stop must be instant wherever focus is.
  */
+import { groupSelection, ungroupSelection } from './group-actions';
 import { isTypingTarget, matches, ownsArrowKeys } from './lib/keys';
 import { editor } from './state/editor.svelte';
 import { pen } from './state/pen.svelte';
@@ -52,6 +53,20 @@ export const BOOLEAN_COMMANDS = [
 ] as const;
 
 export const SHORTCUTS: Shortcut[] = [
+  {
+    keys: ['Mod+G'],
+    label: 'Group Selection',
+    group: 'Edit',
+    when: () => designing() && editor.selectedUnits.length > 1,
+    run: groupSelection,
+  },
+  {
+    keys: ['Mod+Shift+G'],
+    label: 'Ungroup',
+    group: 'Edit',
+    when: () => designing() && !!editor.selectedGroup,
+    run: ungroupSelection,
+  },
   ...BOOLEAN_COMMANDS.map((command): Shortcut => ({
     keys: [command.keys],
     label: command.label,
@@ -209,8 +224,13 @@ export const SHORTCUTS: Shortcut[] = [
     keys: ['Escape'],
     label: 'Clear selection',
     group: 'Edit',
-    when: () => editor.selection.size > 0 || canvas.measure !== null || editor.tool !== 'select',
+    when: () =>
+      !!editor.groupScope || editor.selection.size > 0 || canvas.measure !== null || editor.tool !== 'select',
     run: () => {
+      if (editor.groupScope) {
+        editor.exitGroup();
+        return;
+      }
       pen.points = [];
       editor.clearSelection();
       canvas.measure = null;

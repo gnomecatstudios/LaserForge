@@ -2,6 +2,7 @@
  * Editor state: the open project, selection, tools and undo history. Every project mutation goes
  * through `commit`, which records an undo step and marks the document dirty.
  */
+import { groupLeaves, pruneGroups, syncGroupFrames, addNewObjectsToScope } from 'libopenlaser/project';
 import { syncLinkedText } from '../lib/linked-text';
 import type { MoveList } from 'libopenlaser/cam';
 import { defaultLayer, LAYER_PALETTE, MODE_COLORS } from 'libopenlaser/project';
@@ -27,6 +28,7 @@ export class Editor {
   selection = $state.raw<ReadonlySet<Id>>(new Set());
   activeLayerId = $state<Id | null>(null);
   tool = $state<Tool>('select');
+  groupScope = $state<Id | null>(null);
   /** Shape the Shapes tool draws. */
   shapeKind = $state('star');
   /** Reference point for the X/Y/W/H fields and scaling. */
@@ -77,7 +79,9 @@ export class Editor {
   commit(change: (project: Project) => Project, options: { coalesce?: string; record?: boolean } = {}): void {
     const current = this.project;
     if (!current) return;
-    const next = syncLinkedText(change(current));
+    const next = syncLinkedText(
+      syncGroupFrames(current, pruneGroups(addNewObjectsToScope(current, change(current), this.groupScope))),
+    );
     if (next === current) return;
     // `record: false` is for derived data (text outlines) that follows an edit already on the stack.
     if (options.record !== false) this.history.record(current, options.coalesce ?? null);
@@ -114,6 +118,7 @@ export class Editor {
   private pruneSelection(): void {
     const project = this.project;
     if (!project) return;
+    if (this.groupScope && !project.groups?.some((g) => g.id === this.groupScope)) this.groupScope = null;
     if (this.selection.size) {
       const ids = new Set(project.objects.map((o) => o.id));
       const kept = [...this.selection].filter((id) => ids.has(id));
@@ -126,6 +131,7 @@ export class Editor {
 
   open(project: Project, file: { name?: string | null; handle?: FileSystemFileHandle | null } = {}): void {
     this.project = project;
+    this.groupScope = null;
     this.gcode = null;
     this.selection = new Set();
     this.activeLayerId = project.layers[0]?.id ?? null;
@@ -143,6 +149,7 @@ export class Editor {
   }
 
   openGcode(doc: GcodeDocument): void {
+    this.groupScope = null;
     this.project = null;
     this.gcode = doc;
     this.selection = new Set();
@@ -155,6 +162,7 @@ export class Editor {
   }
 
   close(): void {
+    this.groupScope = null;
     this.project = null;
     this.gcode = null;
     this.selection = new Set();
@@ -168,7 +176,15 @@ export class Editor {
 
   select(ids: Iterable<Id>, mode: 'replace' | 'toggle' | 'add' = 'replace'): void {
     const next = mode === 'replace' ? new Set<Id>() : new Set(this.selection);
+    const expanded = new Set<Id>();
     for (const id of ids) {
+      if (!this.inScope(id)) continue;
+      const unit = this.scopeUnit(id);
+      const leaves = this.project ? groupLeaves(this.project, unit) : [unit];
+      if (unit !== id && this.project?.objects.some((o) => leaves.includes(o.id) && o.locked)) continue;
+      for (const leaf of leaves) expanded.add(leaf);
+    }
+    for (const id of expanded) {
       if (mode === 'toggle' && next.has(id)) next.delete(id);
       else next.add(id);
     }
@@ -176,6 +192,43 @@ export class Editor {
     // Selecting objects on one layer makes it the active layer, so its settings show.
     const first = this.project?.objects.find((o) => next.has(o.id));
     if (first) this.activeLayerId = first.layerId;
+  }
+
+  inScope(id: Id): boolean {
+    return !this.groupScope || (!!this.project && groupLeaves(this.project, this.groupScope).includes(id));
+  }
+
+  scopeUnit(id: Id): Id {
+    const groups = this.project?.groups ?? [];
+    let unit = id;
+    let parent = groups.find((g) => g.children.includes(unit));
+    while (parent && parent.id !== this.groupScope) {
+      unit = parent.id;
+      parent = groups.find((g) => g.children.includes(unit));
+    }
+    return unit;
+  }
+
+  get selectedUnits(): Id[] {
+    return [...new Set([...this.selection].map((id) => this.scopeUnit(id)))];
+  }
+
+  get selectedGroup(): Id | null {
+    const units = this.selectedUnits;
+    return units.length === 1 && this.project?.groups?.some((g) => g.id === units[0]) ? units[0] : null;
+  }
+
+  enterGroup(id: Id): void {
+    if (!this.project?.groups?.some((g) => g.id === id)) return;
+    this.groupScope = id;
+    this.clearSelection();
+    this.tool = 'select';
+  }
+
+  exitGroup(): void {
+    const id = this.groupScope;
+    this.groupScope = this.project?.groups?.find((g) => g.children.includes(id!))?.id ?? null;
+    this.clearSelection();
   }
 
   selectAll(): void {

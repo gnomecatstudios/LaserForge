@@ -1,5 +1,13 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
+  import ArrangeDialog from '../workspace/ArrangeDialog.svelte';
+  import { arrangement } from '../state/arrange.svelte';
+  import { alignObjects, distributeObjects, type Alignment } from '../lib/layout';
+  import { boundsOf } from '../lib/selection';
+  import { setObjectTransforms, groupLeaves } from 'libopenlaser/project';
+  import { currentBed } from '../state/work-area';
+  import { multiply, translation } from 'libopenlaser/geometry';
+  import Dialog from '$lib/ui/Dialog.svelte';
   import { ContextMenu } from 'bits-ui';
   import Scissors from '@lucide/svelte/icons/scissors';
   import Copy from '@lucide/svelte/icons/copy';
@@ -13,6 +21,9 @@
   import { BOOLEAN_COMMANDS } from '../shortcuts';
   import { formatCombo } from '../lib/keys';
   import { booleanSelection, booleanSelectionIssue } from '../unite';
+  import { groupSelection, ungroupSelection, renameGroup } from '../group-actions';
+  import { textOutlines } from '../state/text.svelte';
+  import * as textActions from '../text-actions';
   import BooleanIcon from './BooleanIcon.svelte';
 
   let {
@@ -21,12 +32,74 @@
     oncontextmenu,
   }: { children: Snippet; disabled: boolean; oncontextmenu: (event: MouseEvent) => void } = $props();
   let open = $state(false);
+  let renaming = $state(false);
+  let groupName = $state('');
   const selected = $derived(editor.project?.objects.filter((o) => editor.selection.has(o.id)) ?? []);
   const editable = $derived(selected.length > 0 && selected.every((o) => !o.locked));
+  const texts = $derived(selected.filter((o) => o.kind === 'text'));
+  const textGeometryReady = $derived(
+    texts.length > 0 &&
+      texts.every(
+        (o) =>
+          !textOutlines.pending.has(o.id) &&
+          !o.outlineDirty &&
+          o.paths.length > 0 &&
+          !o.missingGlyphs?.length,
+      ),
+  );
   const issue = $derived(open ? booleanSelectionIssue() : null);
   const base = $derived(
     editor.project?.objects.find((o) => o.id === [...editor.selection][0])?.name ?? 'first selected object',
   );
+  function layoutUnits() {
+    const p = editor.project;
+    if (!p) return [];
+    return editor.selectedUnits.flatMap((id) => {
+      const objects = p.objects.filter((o) => groupLeaves(p, id).includes(o.id));
+      const bounds = boundsOf(objects);
+      if (!bounds || objects.some((o) => o.locked)) return [];
+      return [{ id, objects, bounds }];
+    });
+  }
+  function layoutAction(command: Alignment | 'distribute-x' | 'distribute-y' | 'fit') {
+    const units = layoutUnits();
+    const proxies = units.map((u) => ({
+      id: u.id,
+      name: u.id,
+      kind: 'image' as const,
+      assetId: '',
+      layerId: '',
+      locked: false,
+      visible: true,
+      width: u.bounds.maxX - u.bounds.minX,
+      height: u.bounds.maxY - u.bounds.minY,
+      transform: translation(u.bounds.minX, u.bounds.minY),
+    }));
+    const bounds = boundsOf(proxies);
+    if (!bounds) return;
+    let changes;
+    if (command.startsWith('distribute'))
+      changes = distributeObjects(proxies, command === 'distribute-x' ? 'x' : 'y', 'gaps');
+    else if (command === 'fit') {
+      const bed = currentBed();
+      if (bounds.maxX - bounds.minX > bed.width || bounds.maxY - bounds.minY > bed.height) {
+        arrangement.show();
+        return;
+      }
+      const dx = Math.max(-bounds.minX, Math.min(0, bed.width - bounds.maxX));
+      const dy = Math.max(-bounds.minY, Math.min(0, bed.height - bounds.maxY));
+      changes = new Map(proxies.map((o) => [o.id, multiply(translation(dx, dy), o.transform)]));
+    } else changes = alignObjects(proxies, bounds, command as Alignment);
+    const transforms = new Map();
+    for (const unit of units) {
+      const changed = changes.get(unit.id);
+      if (!changed) continue;
+      const delta = translation(changed[4] - unit.bounds.minX, changed[5] - unit.bounds.minY);
+      for (const object of unit.objects) transforms.set(object.id, multiply(delta, object.transform));
+    }
+    editor.sealHistory();
+    editor.commit((p) => setObjectTransforms(p, transforms));
+  }
   const edits = [
     { label: 'Cut', key: 'Mod+X', icon: Scissors, run: actions.cutSelection, editable: true },
     { label: 'Copy', key: 'Mod+C', icon: Copy, run: actions.copySelection, editable: false },
@@ -90,6 +163,130 @@
           </ContextMenu.SubContent>
         </ContextMenu.Portal>
       </ContextMenu.Sub>
+      <ContextMenu.Sub>
+        <ContextMenu.SubTrigger class="ol-menu-item" disabled={!selected.length}
+          ><span>Arrange</span><ChevronRight size={15} /></ContextMenu.SubTrigger
+        >
+        <ContextMenu.Portal
+          ><ContextMenu.SubContent class="ol-menu canvas-menu" data-canvas-menu collisionPadding={8}>
+            <ContextMenu.Item class="ol-menu-item" onSelect={() => arrangement.show()}
+              >Smart Arrange</ContextMenu.Item
+            >
+            <ContextMenu.Item class="ol-menu-item" onSelect={() => arrangement.show('contour', true)}
+              >Auto Nest</ContextMenu.Item
+            >
+            <ContextMenu.Separator class="ol-menu-sep" />
+            {#each [{ label: 'Arrange Horizontally', mode: 'horizontal' }, { label: 'Arrange Vertically', mode: 'vertical' }, { label: 'Arrange in Grid', mode: 'grid' }, { label: 'Arrange in Circle', mode: 'circle' }] as item (item.label)}
+              <ContextMenu.Item
+                class="ol-menu-item"
+                onSelect={() => arrangement.show(item.mode as 'horizontal' | 'vertical' | 'grid' | 'circle')}
+                >{item.label}</ContextMenu.Item
+              >
+            {/each}
+            <ContextMenu.Separator class="ol-menu-sep" />
+            <ContextMenu.Sub
+              ><ContextMenu.SubTrigger class="ol-menu-item"
+                ><span>Distribute Evenly</span><ChevronRight size={15} /></ContextMenu.SubTrigger
+              ><ContextMenu.Portal
+                ><ContextMenu.SubContent class="ol-menu canvas-menu" collisionPadding={8}>
+                  <ContextMenu.Item class="ol-menu-item" onSelect={() => layoutAction('distribute-x')}
+                    >Horizontal gaps</ContextMenu.Item
+                  >
+                  <ContextMenu.Item class="ol-menu-item" onSelect={() => layoutAction('distribute-y')}
+                    >Vertical gaps</ContextMenu.Item
+                  >
+                </ContextMenu.SubContent></ContextMenu.Portal
+              ></ContextMenu.Sub
+            >
+            <ContextMenu.Sub
+              ><ContextMenu.SubTrigger class="ol-menu-item"
+                ><span>Align Objects</span><ChevronRight size={15} /></ContextMenu.SubTrigger
+              ><ContextMenu.Portal
+                ><ContextMenu.SubContent class="ol-menu canvas-menu" collisionPadding={8}>
+                  {#each [{ label: 'Left', mode: 'left' }, { label: 'Horizontal center', mode: 'center-x' }, { label: 'Right', mode: 'right' }, { label: 'Top', mode: 'top' }, { label: 'Vertical center', mode: 'center-y' }, { label: 'Bottom', mode: 'bottom' }] as item (item.label)}
+                    <ContextMenu.Item
+                      class="ol-menu-item"
+                      onSelect={() => layoutAction(item.mode as Alignment)}>{item.label}</ContextMenu.Item
+                    >
+                  {/each}
+                </ContextMenu.SubContent></ContextMenu.Portal
+              ></ContextMenu.Sub
+            >
+            <ContextMenu.Item class="ol-menu-item" onSelect={() => layoutAction('fit')}
+              >Fit to Material</ContextMenu.Item
+            >
+          </ContextMenu.SubContent></ContextMenu.Portal
+        >
+      </ContextMenu.Sub>
+      <ContextMenu.Sub>
+        <ContextMenu.SubTrigger class="ol-menu-item" disabled={!selected.length}
+          ><span>Group</span><ChevronRight size={15} /></ContextMenu.SubTrigger
+        >
+        <ContextMenu.Portal
+          ><ContextMenu.SubContent class="ol-menu canvas-menu" data-canvas-menu collisionPadding={8}>
+            <ContextMenu.Item
+              class="ol-menu-item"
+              disabled={!editable || editor.selectedUnits.length < 2}
+              onSelect={groupSelection}
+              ><span>Group Selection</span><span class="ol-menu-keys mono">{formatCombo('Mod+G')}</span
+              ></ContextMenu.Item
+            >
+            <ContextMenu.Item
+              class="ol-menu-item"
+              disabled={!editable || !editor.selectedGroup}
+              onSelect={ungroupSelection}
+              ><span>Ungroup</span><span class="ol-menu-keys mono">{formatCombo('Mod+Shift+G')}</span
+              ></ContextMenu.Item
+            >
+            <ContextMenu.Item
+              class="ol-menu-item"
+              disabled={!editor.selectedGroup}
+              onSelect={() => {
+                groupName = editor.project?.groups?.find((g) => g.id === editor.selectedGroup)?.name ?? '';
+                renaming = true;
+              }}>Rename Group</ContextMenu.Item
+            >
+          </ContextMenu.SubContent></ContextMenu.Portal
+        >
+      </ContextMenu.Sub>
+      <ContextMenu.Sub>
+        <ContextMenu.SubTrigger class="ol-menu-item" disabled={!texts.length || !editable}
+          ><span>Modify Text</span><ChevronRight size={15} /></ContextMenu.SubTrigger
+        >
+        <ContextMenu.Portal
+          ><ContextMenu.SubContent class="ol-menu canvas-menu" data-canvas-menu collisionPadding={8}>
+            {#each [{ label: 'Edit Text', property: 'Text' }, { label: 'Change Font', property: 'Search fonts' }, { label: 'Bold / Italic', property: 'Weight' }, { label: 'Character Spacing', property: 'Letter spacing' }, { label: 'Line Spacing', property: 'Line height' }, { label: 'Text Alignment', property: 'Align left' }] as item (item.label)}
+              <ContextMenu.Item
+                class="ol-menu-item"
+                onSelect={() => textActions.focusTextProperty(item.property)}>{item.label}</ContextMenu.Item
+              >
+            {/each}
+            <ContextMenu.Separator class="ol-menu-sep" />
+            <ContextMenu.Item class="ol-menu-item" onSelect={() => textActions.addTextModifier('curve')}
+              >Curve Text</ContextMenu.Item
+            >
+            <ContextMenu.Item
+              class="ol-menu-item"
+              disabled={!textActions.canAttachTextToPath(selected)}
+              onSelect={textActions.attachTextToPath}>Text Along Path</ContextMenu.Item
+            >
+            <ContextMenu.Item class="ol-menu-item" onSelect={() => textActions.addTextModifier('warp')}
+              >Warp Text</ContextMenu.Item
+            >
+            <ContextMenu.Separator class="ol-menu-sep" />
+            <ContextMenu.Item
+              class="ol-menu-item"
+              disabled={!textGeometryReady}
+              onSelect={textActions.convertSelectedText}>Convert to Path</ContextMenu.Item
+            >
+            <ContextMenu.Item
+              class="ol-menu-item"
+              disabled={!textGeometryReady}
+              onSelect={textActions.weldSelectedText}>Weld Letters</ContextMenu.Item
+            >
+          </ContextMenu.SubContent></ContextMenu.Portal
+        >
+      </ContextMenu.Sub>
       <ContextMenu.Separator class="ol-menu-sep" />
       <ContextMenu.Item class="ol-menu-item" disabled={!editable} onSelect={actions.deleteSelection}>
         <Trash2 size={15} /><span>Delete</span><span class="ol-menu-keys mono">{formatCombo('Delete')}</span>
@@ -97,6 +294,23 @@
     </ContextMenu.Content>
   </ContextMenu.Portal>
 </ContextMenu.Root>
+
+{#if arrangement.open}<ArrangeDialog />{/if}
+{#if renaming}
+  <Dialog open={renaming} title="Rename Group" onclose={() => (renaming = false)}>
+    <form
+      onsubmit={(event) => {
+        event.preventDefault();
+        renameGroup(groupName);
+        renaming = false;
+      }}
+    >
+      <label>Group name<input class="input" aria-label="Group name" bind:value={groupName} /></label>
+      <button type="button" class="btn" onclick={() => (renaming = false)}>Cancel</button>
+      <button type="submit" class="btn start" disabled={!groupName.trim()}>Rename</button>
+    </form>
+  </Dialog>
+{/if}
 
 <style>
   :global(.canvas-menu) {

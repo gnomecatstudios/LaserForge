@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onDestroy } from 'svelte';
   import NumberField from '$lib/ui/NumberField.svelte';
-  import { addObjects, makeId, setObjectTransforms } from 'libopenlaser/project';
+  import { addObjects, makeId, setObjectTransforms, cloneGroupMetadata } from 'libopenlaser/project';
   import { editor } from '../state/editor.svelte';
   import { textOutlines } from '../state/text.svelte';
   import { canvas } from '../state/canvas.svelte';
@@ -9,6 +9,7 @@
   import { flipsX, yGrowsDown } from '../canvas/viewport';
   import { boundsOf } from '../lib/selection';
   import {
+    rigidLayout,
     alignObjects,
     distributeObjects,
     arrayCopies,
@@ -83,21 +84,43 @@
             : yGrowsDown(bed) && value === 'bottom'
               ? 'top'
               : value;
-    const transforms = alignObjects(
-      target === 'last' ? movable.filter((o) => o.id !== last?.id) : movable,
-      reference,
-      actual,
+    const transforms = rigidLayout(editor.project!, movable, editor.groupScope, (units) =>
+      alignObjects(
+        target === 'last' ? units.filter((o) => o.id !== (last ? editor.scopeUnit(last.id) : null)) : units,
+        reference,
+        actual,
+      ),
     );
     editor.commit((p) => setObjectTransforms(p, transforms));
   }
   function distribute(axis: 'x' | 'y', mode: 'centers' | 'gaps') {
-    editor.commit((p) => setObjectTransforms(p, distributeObjects(movable, axis, mode)));
+    editor.commit((p) =>
+      setObjectTransforms(
+        p,
+        rigidLayout(p, movable, editor.groupScope, (units) => distributeObjects(units, axis, mode)),
+      ),
+    );
   }
   function applyArray() {
     if (!copies.length) return;
     const added = copies.map((o) => ({ ...o, id: makeId() }));
     const original = movable.map((o) => o.id);
-    editor.commit((p) => addObjects(p, added));
+    editor.commit((p) => {
+      const groups = [];
+      for (let start = 0; start < added.length; start += movable.length) {
+        const mapping = new Map(movable.map((o, i) => [o.id, added[start + i].id]));
+        groups.push(...cloneGroupMetadata(p, mapping, makeId));
+        for (let i = start; i < start + movable.length; i++) {
+          const object = added[i];
+          if (object.kind === 'text' && object.pathLayout?.guideId && mapping.has(object.pathLayout.guideId))
+            added[i] = {
+              ...object,
+              pathLayout: { ...object.pathLayout, guideId: mapping.get(object.pathLayout.guideId) },
+            };
+        }
+      }
+      return addObjects({ ...p, groups: [...(p.groups ?? []), ...groups] }, added);
+    });
     array = 'none';
     editor.select([...original, ...added.map((o) => o.id)]);
   }

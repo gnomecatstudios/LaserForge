@@ -6,6 +6,7 @@ import {
   type VectorObject,
 } from 'libopenlaser/project';
 import { toast } from '$lib/ui/toasts.svelte';
+import { textOutlines } from './state/text.svelte';
 import { editor } from './state/editor.svelte';
 
 export function unitePaths(objects: VectorObject[]) {
@@ -14,8 +15,12 @@ export function unitePaths(objects: VectorObject[]) {
 
 export function booleanSelectionIssue(): string | null {
   const project = editor.project;
-  if (!project || editor.selection.size < 2) return 'Select at least two closed vector objects.';
+  if (!project || editor.selection.size < 2) return 'Select at least two closed vector or text objects.';
   try {
+    if (editor.selectedUnits.some((id) => project.groups?.some((g) => g.id === id)))
+      return 'Enter a group to use Boolean operations on its individual objects.';
+    if ([...editor.selection].some((id) => textOutlines.pending.has(id)))
+      return 'Wait for complete font outlines before using Boolean operations.';
     booleanPaths(
       [...editor.selection].map((id) => project.objects.find((o) => o.id === id)!),
       'union',
@@ -36,6 +41,8 @@ export function booleanSelectionIssue(): string | null {
 export function booleanSelection(operation: BooleanOperation): boolean {
   if (!editor.project) return false;
   try {
+    const issue = booleanSelectionIssue();
+    if (issue) throw new Error(issue);
     const result = booleanObjects(editor.project, [...editor.selection], operation, makeId());
     editor.commit(() => result.project);
     editor.select(result.object ? [result.object.id] : []);

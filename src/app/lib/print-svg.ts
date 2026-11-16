@@ -27,6 +27,7 @@ export function designPrintSvg(
   const bed = { width: profile.bedWidth, height: profile.bedHeight, originCorner: profile.originCorner };
   const layers = new Map(project.layers.map((l) => [l.id, l]));
   const visible = project.objects.filter((o) => o.visible && layers.get(o.layerId)?.visible !== false);
+  if (visible.some((o) => o.kind === 'text' && o.outlineDirty)) return null;
   let bounds: Rect | null = null;
   for (const o of visible) {
     const m = objectToDisplay(bed, o.transform);

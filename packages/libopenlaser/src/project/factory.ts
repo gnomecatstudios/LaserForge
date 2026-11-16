@@ -1,7 +1,7 @@
 import type { JobSettings, MachineProfile, Project } from './types';
 import { makeId, type MakeId } from './ids';
 
-export const PROJECT_SCHEMA_VERSION = 1;
+export const PROJECT_SCHEMA_VERSION = 2;
 
 export function defaultJobSettings(): JobSettings {
   return {
