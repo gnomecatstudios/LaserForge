@@ -38,11 +38,17 @@
     { id: 'right', label: 'Align right', icon: AlignEnd },
   ];
 
-  function updateModifier(index: number, patch: Partial<TextModifier>) {
+  function updateModifier(index: number, patch: Partial<TextModifier>, live = false) {
     const modifiers = (object.modifiers ?? []).map((m, i) =>
       i === index ? ({ ...m, ...patch } as TextModifier) : m,
     );
-    textOutlines.update(object.id, { modifiers });
+    textOutlines.update(object.id, { modifiers }, { live, field: `modifier-${index}` });
+  }
+  function resetModifier(index: number) {
+    const modifier = object.modifiers?.[index];
+    if (!modifier) return;
+    if (modifier.type === 'curve') updateModifier(index, { type: 'curve', parameters: { intensity: 0.25 } });
+    else updateModifier(index, { type: 'warp', parameters: { preset: 'wave', intensity: 0.2 } });
   }
   function moveModifier(index: number, delta: number) {
     const modifiers = [...(object.modifiers ?? [])];
@@ -170,22 +176,22 @@
               unit="mm"
               min={0}
               value={modifier.parameters.radius ?? 0}
-              onchange={(value) =>
-                updateModifier(index, { parameters: { ...modifier.parameters, radius: value } })}
+              onchange={(value, live) =>
+                updateModifier(index, { parameters: { ...modifier.parameters, radius: value } }, live)}
             />
             <NumberField
               label="Curve starting angle"
               unit="°"
               value={modifier.parameters.startAngle ?? 0}
-              onchange={(value) =>
-                updateModifier(index, { parameters: { ...modifier.parameters, startAngle: value } })}
+              onchange={(value, live) =>
+                updateModifier(index, { parameters: { ...modifier.parameters, startAngle: value } }, live)}
             />
             <NumberField
               label="Curve angular offset"
               unit="°"
               value={modifier.parameters.angularOffset ?? 0}
-              onchange={(value) =>
-                updateModifier(index, { parameters: { ...modifier.parameters, angularOffset: value } })}
+              onchange={(value, live) =>
+                updateModifier(index, { parameters: { ...modifier.parameters, angularOffset: value } }, live)}
             />
             <label
               ><input
@@ -215,8 +221,8 @@
             max={1}
             step={0.05}
             decimals={2}
-            onchange={(value) =>
-              updateModifier(index, { parameters: { ...modifier.parameters, intensity: value } })}
+            onchange={(value, live) =>
+              updateModifier(index, { parameters: { ...modifier.parameters, intensity: value } }, live)}
           />
           <div class="row">
             <button
@@ -233,14 +239,7 @@
               disabled={index === (object.modifiers?.length ?? 0) - 1}
               onclick={() => moveModifier(index, 1)}>↓</button
             >
-            <button
-              type="button"
-              class="btn ghost"
-              onclick={() =>
-                updateModifier(index, {
-                  parameters: { ...modifier.parameters, intensity: modifier.type === 'curve' ? 0.25 : 0.2 },
-                })}>Reset</button
-            >
+            <button type="button" class="btn ghost" onclick={() => resetModifier(index)}>Reset</button>
             <button
               type="button"
               class="btn ghost"

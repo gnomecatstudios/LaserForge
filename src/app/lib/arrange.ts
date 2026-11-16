@@ -68,7 +68,7 @@ const overlaps = (a: Rect, b: Rect) =>
   a.minX <= b.maxX && b.minX <= a.maxX && a.minY <= b.maxY && b.minY <= a.maxY;
 const area = (rings: Vec2[][]) => Math.abs(rings.reduce((sum, ring) => sum + signedArea(ring), 0));
 
-export function arrangeObjects(
+function arrangePass(
   project: Project,
   ids: string[],
   settings: ArrangeSettings,
@@ -412,4 +412,40 @@ export function arrangeObjects(
   result.remainingArea = Math.max(0, result.materialArea - result.occupiedArea);
   result.warnings = [...warnings];
   return result;
+}
+
+/** Compare bounded trials and keep the best valid result found, without claiming optimality. */
+export function arrangeObjects(
+  project: Project,
+  ids: string[],
+  settings: ArrangeSettings,
+  scope: string | null = null,
+  progress: (value: number) => void = () => {},
+): ArrangeResult {
+  const first = arrangePass(project, ids, settings, scope, progress);
+  const trials: ArrangeResult[] = [first];
+  if (settings.mode === 'automatic' && first.mode === 'staggered')
+    trials.push(arrangePass(project, ids, { ...settings, mode: 'grid' }, scope, progress));
+  if (first.mode === 'contour' && settings.rotate && settings.grain !== 'fixed') {
+    const angles =
+      settings.grain === 'custom'
+        ? settings.angles
+        : settings.grain === 'horizontal'
+          ? [0, 180]
+          : settings.grain === 'vertical'
+            ? [90, 270]
+            : Array.from({ length: Math.ceil(360 / settings.increment) }, (_, i) => i * settings.increment);
+    trials.push(
+      arrangePass(
+        project,
+        ids,
+        { ...settings, mode: 'contour', grain: 'custom', angles: [...angles].reverse() },
+        scope,
+        progress,
+      ),
+    );
+  }
+  trials.sort((a, b) => b.placed.length - a.placed.length || b.occupiedArea - a.occupiedArea);
+  progress(1);
+  return trials[0];
 }

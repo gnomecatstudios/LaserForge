@@ -11,6 +11,7 @@ import { makeId } from 'libopenlaser/project';
 import { updateObject } from 'libopenlaser/project';
 import { textPlaceholderSize } from 'libopenlaser/project';
 import type { Id, Project, TextObject } from 'libopenlaser/project';
+import { toast } from '$lib/ui/toasts.svelte';
 import { reportError } from '$lib/ui/errors';
 import type { BedFrame } from '../canvas/viewport';
 import { uprightTextAt } from '../lib/placement';
@@ -108,12 +109,32 @@ class TextOutlines {
 
   /** Applies a style or text edit and refreshes the outlines. */
   update(id: Id, patch: Partial<TextStyle>, options: { live?: boolean; field?: string } = {}): void {
+    if (editor.project?.objects.find((o) => o.id === id)?.locked) return;
     const named = patch.text !== undefined ? { name: patch.text.split('\n')[0].slice(0, 40) || 'Text' } : {};
     editor.commit((p) => updateObject(p, id, { ...patch, ...named, paths: [], outlineVersion: undefined }), {
       coalesce: `text-${id}-${options.field ?? 'style'}`,
     });
     if (!options.live) editor.sealHistory();
     this.schedule(id, patch.text !== undefined ? 150 : 60);
+  }
+
+  /** Apply one modifier action to multiple sources as one undo transaction. */
+  updateMany(changes: ReadonlyMap<Id, Partial<TextStyle>>): void {
+    const project = editor.project;
+    if (!project) return;
+    const ids = project.objects
+      .filter((o) => o.kind === 'text' && !o.locked && changes.has(o.id))
+      .map((o) => o.id);
+    if (!ids.length) return;
+    editor.sealHistory();
+    editor.commit((p) => ({
+      ...p,
+      objects: p.objects.map((o) =>
+        ids.includes(o.id) ? { ...o, ...changes.get(o.id), paths: [], outlineVersion: undefined } : o,
+      ),
+    }));
+    editor.sealHistory();
+    for (const id of ids) this.schedule(id, 60);
   }
 
   /**
@@ -173,6 +194,10 @@ class TextOutlines {
       // Drop results for text that changed again while the font was loading.
       if (!latest || styleKey(latest) !== key || this.revisions.get(id) !== revision) return;
       if (!outline) {
+        if (!this.failed.has(key))
+          toast.warning(
+            `Unable to load ${object.fontFamily}. Reconnect or choose an available font; this text cannot be exported until its outlines are ready.`,
+          );
         this.failed.add(key);
         return;
       }

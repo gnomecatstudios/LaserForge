@@ -1,7 +1,7 @@
 /** Text conversion and baseline attachment, each as one undoable operation. */
 import { IDENTITY, apply, invert, multiply } from 'libopenlaser/geometry';
 import type { PathData } from 'libopenlaser/geometry';
-import type { SceneObject, TextObject, VectorObject } from 'libopenlaser/project';
+import type { SceneObject, TextObject, VectorObject, TextModifier } from 'libopenlaser/project';
 import { booleanPaths, makeId } from 'libopenlaser/project';
 import { sections } from './state/sections.svelte';
 import { toast } from '$lib/ui/toasts.svelte';
@@ -134,9 +134,9 @@ export function addTextModifier(type: 'curve' | 'warp'): void {
       (o): o is TextObject => editor.selection.has(o.id) && o.kind === 'text' && !o.locked,
     ) ?? [];
   if (!texts.length) return;
-  // Each source remains editable and each edit uses the shared async outline cache.
+  const changes = new Map<string, { modifiers: TextModifier[] }>();
   for (const text of texts)
-    textOutlines.update(text.id, {
+    changes.set(text.id, {
       modifiers: [
         ...(text.modifiers ?? []),
         type === 'curve'
@@ -144,4 +144,5 @@ export function addTextModifier(type: 'curve' | 'warp'): void {
           : { id: makeId(), type, enabled: true, parameters: { preset: 'wave', intensity: 0.2 } },
       ],
     });
+  textOutlines.updateMany(changes);
 }
