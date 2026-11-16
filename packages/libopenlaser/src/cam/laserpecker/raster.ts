@@ -3,7 +3,7 @@
  * pipeline at the device's resolution; line and fill layers are drawn from their toolpaths. The
  * device burns the whole bitmap at one power, so layer powers do not carry over.
  */
-import { isRotated } from '../../geometry/mat2d';
+import { apply, invert, isRotated } from '../../geometry/mat2d';
 import type { ImageObject, ImageSettings, MachineProfile } from '../../project/types';
 import { compileJob } from '../compile';
 import { layerJobObjects, outputLayers } from '../objects';
@@ -84,7 +84,7 @@ export function rasterizeJob(input: CompileInput, dpi: number): RasterizeResult 
     imageLayers.add(layer.id);
     for (const object of layerJobObjects(project, layer)) {
       const source = object.kind === 'image' ? input.assets.get(object.assetId) : undefined;
-      if (object.kind !== 'image' || !source || isRotated(object.transform)) continue;
+      if (object.kind !== 'image' || !source) continue;
       paintImage(object, source, layer.image ?? DEFAULT_IMAGE_SETTINGS, { scale, map, set });
     }
   }
@@ -119,6 +119,10 @@ function paintImage(
   settings: ImageSettings,
   { scale, map, set }: Painter,
 ): void {
+  if (isRotated(object.transform)) {
+    paintRotatedImage(object, source, settings, { scale, map, set });
+    return;
+  }
   const [a, , , d, e, f] = object.transform;
   // Object space is Y-up: the image's top-left is (0, height).
   const topLeft = map(e, d * object.height + f);
@@ -140,6 +144,45 @@ function paintImage(
       set(x0 + (mirrorX ? cols - 1 - c : c), y0 + (mirrorY ? rows - 1 - r : r));
     }
   }
+}
+
+/** Inverse-map device pixel centers so rotated raster cells leave no gaps or burned background. */
+function paintRotatedImage(
+  object: ImageObject,
+  source: RasterSource,
+  settings: ImageSettings,
+  { scale, map, set }: Painter,
+): void {
+  const inverse = invert(object.transform);
+  if (!inverse || object.width <= 0 || object.height <= 0 || source.width <= 0 || source.height <= 0) return;
+  const [a, b, c, d] = object.transform;
+  const cols = Math.max(1, Math.round(object.width * Math.hypot(a, b) * scale));
+  const rows = Math.max(1, Math.round(object.height * Math.hypot(c, d) * scale));
+  const algorithm = settings.algorithm === 'grayscale' ? 'floyd-steinberg' : settings.algorithm;
+  const levels = processRaster(source, cols, rows, { ...settings, algorithm });
+  const corners = [
+    [0, 0],
+    [object.width, 0],
+    [0, object.height],
+    [object.width, object.height],
+  ].map(([x, y]) => {
+    const p = apply(object.transform, { x, y });
+    return map(p.x, p.y);
+  });
+  const x0 = Math.floor(Math.min(...corners.map((p) => p.x)) * scale);
+  const x1 = Math.ceil(Math.max(...corners.map((p) => p.x)) * scale);
+  const y0 = Math.floor(Math.min(...corners.map((p) => p.y)) * scale);
+  const y1 = Math.ceil(Math.max(...corners.map((p) => p.y)) * scale);
+  for (let y = y0; y < y1; y++)
+    for (let x = x0; x < x1; x++) {
+      // toDeviceFrame is its own inverse (axis reflection about the bed center).
+      const bed = map((x + 0.5) / scale, (y + 0.5) / scale);
+      const local = apply(inverse, bed);
+      if (local.x < 0 || local.y < 0 || local.x >= object.width || local.y >= object.height) continue;
+      const col = Math.min(cols - 1, Math.floor((local.x / object.width) * cols));
+      const row = Math.min(rows - 1, Math.floor((1 - local.y / object.height) * rows));
+      if (levels[row * cols + col] > 0) set(x, y);
+    }
 }
 
 /** Marks every pixel the segment passes through, sampling at most half a pixel apart. */

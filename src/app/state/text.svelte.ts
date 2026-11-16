@@ -29,6 +29,7 @@ type TextStyle = Pick<
   | 'lineHeight'
   | 'letterSpacing'
   | 'pathLayout'
+  | 'arcAngle'
 >;
 
 const styleKey = (t: TextStyle) =>
@@ -42,6 +43,7 @@ const styleKey = (t: TextStyle) =>
     t.lineHeight,
     t.letterSpacing,
     t.pathLayout,
+    t.arcAngle,
   ]);
 
 /**
@@ -191,7 +193,7 @@ class TextOutlines {
     inPlace = false,
     missing?: string[],
   ): void {
-    const shift = inPlace || object.pathLayout ? 0 : blockHeight(object) - height;
+    const shift = inPlace || object.pathLayout || object.arcAngle ? 0 : blockHeight(object) - height;
     const transform =
       Math.abs(shift) > 1e-9 ? multiply(object.transform, translation(0, shift)) : object.transform;
     editor.commit(

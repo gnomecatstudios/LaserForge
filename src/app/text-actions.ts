@@ -65,7 +65,9 @@ export function attachTextToPath(): void {
       s.type === 'C' ? { ...s, to: map(s.to), c1: map(s.c1), c2: map(s.c2) } : { ...s, to: map(s.to) },
     ),
   };
-  textOutlines.update(text.id, { pathLayout: { path, offset: 0, normalOffset: 0, reverse: false } });
+  textOutlines.update(text.id, {
+    pathLayout: { path, guideId: vector.id, offset: 0, normalOffset: 0, reverse: false },
+  });
   canvas.editingTextId = null;
   editor.select([text.id]);
   editor.tool = 'select';
@@ -73,5 +75,5 @@ export function attachTextToPath(): void {
 
 export function detachTextFromPath(text: TextObject): void {
   // Keep the object's frame; its editable straight outlines refresh asynchronously.
-  textOutlines.update(text.id, { pathLayout: undefined });
+  textOutlines.update(text.id, { pathLayout: undefined, arcAngle: 0 });
 }

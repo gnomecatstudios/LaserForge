@@ -5,6 +5,7 @@ import { serializeProject, deserializeProject, createProject } from '../../../sr
 import type { TextPathLayout } from '../../../src/project';
 
 const layout: TextPathLayout = {
+  guideId: 'guide',
   path: { start: { x: 10, y: 20 }, closed: false, segments: [{ type: 'L', to: { x: 10, y: 120 } }] },
   offset: 0,
   normalOffset: 0,
@@ -64,8 +65,9 @@ it('preserves the editable path snapshot through a project round trip', async ()
       letterSpacing: 0,
       paths: [],
       pathLayout: layout,
+      arcAngle: 45,
     },
   ];
   const restored = await deserializeProject(await serializeProject(p));
-  expect(restored.objects[0]).toMatchObject({ kind: 'text', pathLayout: layout });
+  expect(restored.objects[0]).toMatchObject({ kind: 'text', pathLayout: layout, arcAngle: 45 });
 });

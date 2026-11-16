@@ -139,8 +139,9 @@ export interface ImageObject extends BaseObject {
 
 export type TextAlign = 'left' | 'center' | 'right';
 
-/** A baseline snapshot in text-local coordinates, independent of the original vector. */
+/** Baseline in text-local coordinates, optionally linked to a guide vector. */
 export interface TextPathLayout {
+  guideId?: Id;
   path: PathData;
   offset: number;
   normalOffset: number;
@@ -181,6 +182,8 @@ export interface TextObject extends BaseObject {
    */
   missingGlyphs?: string[];
   pathLayout?: TextPathLayout;
+  /** Signed circular bend in degrees; positive bends upward in local Y-up space. */
+  arcAngle?: number;
 }
 
 export interface Asset {

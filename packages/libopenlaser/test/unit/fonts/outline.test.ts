@@ -245,3 +245,20 @@ describe('text on a path', () => {
     expect(out.paths).toHaveLength(2);
   });
 });
+
+it('bends editable glyphs upward and downward and restores straight outlines at zero', () => {
+  const plain = textToPaths(spec('HHHHH', { letterSpacing: 600 }), font);
+  const up = textToPaths(spec('HHHHH', { letterSpacing: 600, arcAngle: 90 }), font);
+  const down = textToPaths(spec('HHHHH', { letterSpacing: 600, arcAngle: -90 }), font);
+  expect(up.paths).toHaveLength(plain.paths.length);
+  expect(down.paths).toHaveLength(plain.paths.length);
+  expect(bounds([up.paths[2]]).y0).toBeGreaterThan(bounds([up.paths[0]]).y0);
+  expect(bounds([down.paths[2]]).y0).toBeLessThan(bounds([down.paths[0]]).y0);
+  expect(textToPaths(spec('HHHHH', { letterSpacing: 600, arcAngle: 0 }), font)).toEqual(plain);
+  for (const angle of [-180, 180, NaN, Infinity]) {
+    const result = textToPaths(spec('Hi\nThere', { letterSpacing: 600, arcAngle: angle }), font);
+    expect(result.paths.flatMap(points).every((p) => Number.isFinite(p.x) && Number.isFinite(p.y))).toBe(
+      true,
+    );
+  }
+});

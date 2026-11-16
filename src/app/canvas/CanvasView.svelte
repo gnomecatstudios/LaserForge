@@ -123,7 +123,7 @@
     else if (event.key === 'Enter') { event.preventDefault(); input.blur(); }
   }
 
-  const rotatable = $derived(selection.length > 0 && selection.every((o) => o.kind !== 'image'));
+  const rotatable = $derived(selection.length > 0);
   /** Objects that glow because their row in the Layers panel is hovered. */
   const highlighted = $derived.by((): ReadonlySet<string> => {
     if (ui.hoverObjectId) return new Set([ui.hoverObjectId]);

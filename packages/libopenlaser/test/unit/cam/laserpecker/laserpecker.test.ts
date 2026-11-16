@@ -1,3 +1,4 @@
+import { apply, invert, multiply, rotation } from 'libopenlaser/geometry';
 import { describe, expect, it } from 'vitest';
 import {
   encodePayload,
@@ -138,6 +139,30 @@ describe('rasterizeJob', () => {
     const input = compileInput(project([images], [img]), { profile: lp, assets: new Map([['a', checker]]) });
     expect(picture(rasterizeJob(input, 25.4).bitmap!)).toEqual(['..##', '..##', '##..', '##..']);
   });
+
+  it.each([30, 90, -45])(
+    'rasterizes a rotated image at %s degrees without burning outside its footprint',
+    (angle) => {
+      const transform = multiply([1, 0, 0, 1, 20, 20], rotation(angle));
+      const img = imageObject('i', 'img', 'a', 4, 4, transform);
+      const black = {
+        ...checker,
+        data: Uint8ClampedArray.from(checker.data, (_, i) => (i % 4 === 3 ? 255 : 0)),
+      };
+      const input = compileInput(project([images], [img]), { profile: lp, assets: new Map([['a', black]]) });
+      const result = rasterizeJob(input, 254);
+      expect(result.warnings.some((w) => w.blocking)).toBe(false);
+      const bitmap = result.bitmap!;
+      expect(bitmap).not.toBeNull();
+      const inverse = invert(transform)!;
+      for (let y = 0; y < bitmap.height; y++)
+        for (let x = 0; x < bitmap.width; x++) {
+          const local = apply(inverse, { x: (bitmap.left + x + 0.5) / 10, y: (bitmap.top + y + 0.5) / 10 });
+          const inside = local.x >= 0 && local.x < 4 && local.y >= 0 && local.y < 4;
+          expect(bitmap.burn[y * bitmap.width + x]).toBe(inside ? 1 : 0);
+        }
+    },
+  );
 
   it('has no bitmap for an empty job', () => {
     const { bitmap: b, warnings } = rasterizeJob(compileInput(project([fill], []), { profile: lp }), 254);
