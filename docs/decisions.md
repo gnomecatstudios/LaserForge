@@ -378,7 +378,9 @@ Ordered curve and warp modifiers evaluate after existing typography and baseline
 layout. Nonlinear deformations subdivide both straight and curved outlines;
 transformed control points alone would not describe a nonlinear warp. Source text
 and parameters remain separate from cached evaluated paths. Typography changes
-invalidate the cache immediately. Multi-object modifier additions are one history
+mark the cache stale immediately. The last valid display geometry retains stable
+selection bounds while fonts load, but stale caches are blocked from Boolean
+operations, conversion, arrangement, print SVG and CAM. Multi-object modifier additions are one history
 transaction; numeric previews coalesce. Existing path-layout references still
 synchronize through the existing linked-text mechanism.
 
