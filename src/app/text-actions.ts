@@ -1,7 +1,9 @@
 /** Text conversion and baseline attachment, each as one undoable operation. */
-import { apply, invert, multiply } from 'libopenlaser/geometry';
+import { IDENTITY, apply, invert, multiply } from 'libopenlaser/geometry';
 import type { PathData } from 'libopenlaser/geometry';
 import type { SceneObject, TextObject, VectorObject } from 'libopenlaser/project';
+import { booleanPaths, makeId } from 'libopenlaser/project';
+import { sections } from './state/sections.svelte';
 import { toast } from '$lib/ui/toasts.svelte';
 import { editor } from './state/editor.svelte';
 import { canvas } from './state/canvas.svelte';
@@ -76,4 +78,70 @@ export function attachTextToPath(): void {
 export function detachTextFromPath(text: TextObject): void {
   // Keep the object's frame; its editable straight outlines refresh asynchronously.
   textOutlines.update(text.id, { pathLayout: undefined, arcAngle: 0 });
+}
+
+/** The outliner has already merged overlapping glyphs; normalize evaluated contours once more. */
+export function weldSelectedText(): void {
+  const texts =
+    editor.project?.objects.filter(
+      (o): o is TextObject => editor.selection.has(o.id) && o.kind === 'text' && !o.locked && o.visible,
+    ) ?? [];
+  if (!texts.length) return;
+  try {
+    if (texts.some((o) => textOutlines.pending.has(o.id) || !o.paths.length || o.missingGlyphs?.length))
+      throw new Error('Wait for complete font outlines before welding text.');
+    const vectors = new Map(
+      texts.map((text) => {
+        const vector = textAsVector(text);
+        const local = { ...vector, transform: IDENTITY };
+        return [text.id, { ...vector, paths: booleanPaths([local, local], 'union') }] as const;
+      }),
+    );
+    editor.sealHistory();
+    editor.commit((p) => ({ ...p, objects: p.objects.map((o) => vectors.get(o.id) ?? o) }));
+    canvas.editingTextId = null;
+    editor.tool = 'node';
+  } catch (error) {
+    toast.warning(error instanceof Error ? error.message : 'Unable to weld text geometry.');
+  }
+}
+
+export function focusTextProperty(label: string): void {
+  const text = editor.project?.objects.find((o) => editor.selection.has(o.id) && o.kind === 'text');
+  if (!text || text.locked) return;
+  editor.select([text.id]);
+  editor.tool = 'select';
+  sections.set('inspector', true);
+  // Menu dismissal restores canvas focus first, then the requested existing property takes focus.
+  setTimeout(() => {
+    const panel = document.querySelector('[data-testid="text-inspector"]');
+    const control = Array.from(
+      panel?.querySelectorAll<HTMLElement>('input, textarea, select, button') ?? [],
+    ).find((element) =>
+      label === 'Search fonts'
+        ? element.getAttribute('data-testid') === 'font-picker'
+        : element.getAttribute('aria-label') === label,
+    );
+    if (label === 'Search fonts') control?.click();
+    control?.scrollIntoView({ block: 'nearest' });
+    control?.focus();
+  }, 100);
+}
+
+export function addTextModifier(type: 'curve' | 'warp'): void {
+  const texts =
+    editor.project?.objects.filter(
+      (o): o is TextObject => editor.selection.has(o.id) && o.kind === 'text' && !o.locked,
+    ) ?? [];
+  if (!texts.length) return;
+  // Each source remains editable and each edit uses the shared async outline cache.
+  for (const text of texts)
+    textOutlines.update(text.id, {
+      modifiers: [
+        ...(text.modifiers ?? []),
+        type === 'curve'
+          ? { id: makeId(), type, enabled: true, parameters: { intensity: 0.25 } }
+          : { id: makeId(), type, enabled: true, parameters: { preset: 'wave', intensity: 0.2 } },
+      ],
+    });
 }

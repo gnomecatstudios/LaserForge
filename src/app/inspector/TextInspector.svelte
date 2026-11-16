@@ -1,5 +1,10 @@
 <script lang="ts">
-  import { convertSelectedText, detachTextFromPath } from '../text-actions';
+  import {
+    convertSelectedText,
+    detachTextFromPath,
+    weldSelectedText,
+    addTextModifier,
+  } from '../text-actions';
   import SectionToggle from '../workspace/SectionToggle.svelte';
   import { sections } from '../state/sections.svelte';
   import AlignStart from '@lucide/svelte/icons/text-align-start';
@@ -11,7 +16,7 @@
   import NumberField from '$lib/ui/NumberField.svelte';
   import { findFont, nearestWeight, styleLabel, type CatalogFont } from 'libopenlaser/fonts';
   import { fonts } from '../state/fonts.svelte';
-  import type { TextAlign, TextObject } from 'libopenlaser/project';
+  import type { TextAlign, TextObject, TextModifier, WarpPreset } from 'libopenlaser/project';
   import { editor } from '../state/editor.svelte';
   import { textOutlines } from '../state/text.svelte';
   import FontPicker from './FontPicker.svelte';
@@ -33,6 +38,19 @@
     { id: 'right', label: 'Align right', icon: AlignEnd },
   ];
 
+  function updateModifier(index: number, patch: Partial<TextModifier>) {
+    const modifiers = (object.modifiers ?? []).map((m, i) =>
+      i === index ? ({ ...m, ...patch } as TextModifier) : m,
+    );
+    textOutlines.update(object.id, { modifiers });
+  }
+  function moveModifier(index: number, delta: number) {
+    const modifiers = [...(object.modifiers ?? [])];
+    const next = index + delta;
+    if (next < 0 || next >= modifiers.length) return;
+    [modifiers[index], modifiers[next]] = [modifiers[next], modifiers[index]];
+    textOutlines.update(object.id, { modifiers });
+  }
   function pickFont(next: CatalogFont) {
     textOutlines.update(object.id, {
       fontFamily: next.family,
@@ -111,6 +129,137 @@
         !!object.missingGlyphs?.length}
       onclick={convertSelectedText}>Convert text to paths</button
     >
+    <button
+      type="button"
+      class="btn"
+      disabled={object.locked ||
+        textOutlines.pending.has(object.id) ||
+        !object.paths.length ||
+        !!object.missingGlyphs?.length}
+      onclick={weldSelectedText}>Weld Letters</button
+    >
+    <fieldset disabled={object.locked}>
+      <legend>Text modifiers</legend>
+      {#each object.modifiers ?? [] as modifier, index (modifier.id)}
+        <div class="modifier">
+          <label
+            ><input
+              type="checkbox"
+              checked={modifier.enabled}
+              onchange={(e) => updateModifier(index, { enabled: e.currentTarget.checked })}
+            />
+            {modifier.type === 'curve' ? 'Curve' : 'Warp'}</label
+          >
+          {#if modifier.type === 'warp'}
+            <select
+              class="input"
+              aria-label="Warp preset"
+              value={modifier.parameters.preset}
+              onchange={(e) =>
+                updateModifier(index, {
+                  parameters: { ...modifier.parameters, preset: e.currentTarget.value as WarpPreset },
+                })}
+            >
+              {#each ['arch', 'inverted-arch', 'wave', 'bulge', 'squeeze', 'perspective', 'slant'] as preset (preset)}<option
+                  value={preset}>{preset}</option
+                >{/each}
+            </select>
+          {:else}
+            <NumberField
+              label="Curve radius (0 = automatic)"
+              unit="mm"
+              min={0}
+              value={modifier.parameters.radius ?? 0}
+              onchange={(value) =>
+                updateModifier(index, { parameters: { ...modifier.parameters, radius: value } })}
+            />
+            <NumberField
+              label="Curve starting angle"
+              unit="°"
+              value={modifier.parameters.startAngle ?? 0}
+              onchange={(value) =>
+                updateModifier(index, { parameters: { ...modifier.parameters, startAngle: value } })}
+            />
+            <NumberField
+              label="Curve angular offset"
+              unit="°"
+              value={modifier.parameters.angularOffset ?? 0}
+              onchange={(value) =>
+                updateModifier(index, { parameters: { ...modifier.parameters, angularOffset: value } })}
+            />
+            <label
+              ><input
+                type="checkbox"
+                checked={modifier.parameters.reverse ?? false}
+                onchange={(e) =>
+                  updateModifier(index, {
+                    parameters: { ...modifier.parameters, reverse: e.currentTarget.checked },
+                  })}
+              /> Reverse curve direction</label
+            >
+            <label
+              ><input
+                type="checkbox"
+                checked={modifier.parameters.inside ?? false}
+                onchange={(e) =>
+                  updateModifier(index, {
+                    parameters: { ...modifier.parameters, inside: e.currentTarget.checked },
+                  })}
+              /> Inside orientation</label
+            >
+          {/if}
+          <NumberField
+            label="Modifier intensity"
+            value={modifier.parameters.intensity}
+            min={-1}
+            max={1}
+            step={0.05}
+            decimals={2}
+            onchange={(value) =>
+              updateModifier(index, { parameters: { ...modifier.parameters, intensity: value } })}
+          />
+          <div class="row">
+            <button
+              type="button"
+              class="btn ghost"
+              aria-label="Move modifier up"
+              disabled={index === 0}
+              onclick={() => moveModifier(index, -1)}>↑</button
+            >
+            <button
+              type="button"
+              class="btn ghost"
+              aria-label="Move modifier down"
+              disabled={index === (object.modifiers?.length ?? 0) - 1}
+              onclick={() => moveModifier(index, 1)}>↓</button
+            >
+            <button
+              type="button"
+              class="btn ghost"
+              onclick={() =>
+                updateModifier(index, {
+                  parameters: { ...modifier.parameters, intensity: modifier.type === 'curve' ? 0.25 : 0.2 },
+                })}>Reset</button
+            >
+            <button
+              type="button"
+              class="btn ghost"
+              onclick={() =>
+                textOutlines.update(object.id, {
+                  modifiers: object.modifiers?.filter((_, i) => i !== index),
+                })}>Remove</button
+            >
+          </div>
+        </div>
+      {/each}
+      <div class="row">
+        <button type="button" class="btn" onclick={() => addTextModifier('curve')}>Add Curve</button><button
+          type="button"
+          class="btn"
+          onclick={() => addTextModifier('warp')}>Add Warp</button
+        >
+      </div>
+    </fieldset>
     <p class="hint">Conversion enables node editing. Undo restores editable text.</p>
     <label class="hint" for="arc-angle">Arc text: {object.arcAngle ?? 0}°</label>
     <input
@@ -216,6 +365,16 @@
 </section>
 
 <style>
+  fieldset {
+    border: 1px solid var(--ol-border);
+    padding: 10px;
+    min-width: 0;
+  }
+  .modifier {
+    display: grid;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
   .hint {
     margin: 0;
     font-size: var(--ol-fs-sm);
