@@ -5,7 +5,7 @@ export const APP_URL = 'https://gnomecatstudios.github.io/laserforge.app/';
 export const APP_TAGLINE = 'Laser control in your browser. Free, open source, and it works offline.';
 export const APP_VERSION: string = typeof __APP_VERSION__ === 'string' ? __APP_VERSION__ : '0.0.0';
 
-export const REPO_URL = 'https://github.com/gnomecatstudios/LaserForge.dev';
+export const REPO_URL = 'https://github.com/gnomecatstudios/LaserForge';
 export const ISSUES_URL = `${REPO_URL}/issues`;
 
 /** Project files: a zip with `project.json` and `assets/`. */

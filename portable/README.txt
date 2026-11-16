@@ -6,7 +6,7 @@ To create a branded desktop shortcut that launches through the updater, run
 Start-LaserForge.cmd --shortcut from Command Prompt in the extracted folder.
 Run it again to refresh an existing Laser Forge shortcut.
 
-Source: https://github.com/gnomecatstudios/LaserForge.dev
+Source: https://github.com/gnomecatstudios/LaserForge
 Source snapshot: see VERSION.txt (or dist/portable-version.txt in the source ZIP).
 App license: MIT; see LICENSE-LaserForge.txt.
 
@@ -27,7 +27,7 @@ It starts the app, checks for updates in the background, and installs a staged
 update before the next launch. Opening update.py without arguments does the same.
 On Windows you can also open Start-LaserForge.cmd. Manual update commands: --check, --download, --apply.
 
-Public downloads: https://github.com/gnomecatstudios/LaserForgeDownloads/releases/latest
+Public downloads: https://github.com/gnomecatstudios/LaserForge/releases/latest
 Version 0.2.1 and later check on startup. About and the project menu also offer
 Check for updates. The popup waits until the laser is disconnected. Download
 the update or choose Later. The popup does not install or restart automatically.

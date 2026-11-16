@@ -8,11 +8,11 @@ test('help links to the fork issue tracker', async ({ page }) => {
   await expect(page.getByTestId('page-help')).toBeVisible();
   await expect(page.getByRole('link', { name: /Report a problem/ })).toHaveAttribute(
     'href',
-    'https://github.com/gnomecatstudios/LaserForge.dev/issues',
+    'https://github.com/gnomecatstudios/LaserForge/issues',
   );
   await expect(page.getByRole('link', { name: /Everything else/ })).toHaveAttribute(
     'href',
-    'https://github.com/gnomecatstudios/LaserForge.dev/issues',
+    'https://github.com/gnomecatstudios/LaserForge/issues',
   );
   await page.getByRole('button', { name: 'Back' }).click();
   await expect(page.getByTestId('start-screen')).toBeVisible();
@@ -25,7 +25,7 @@ test('about shows the version and GitHub link', async ({ page }) => {
   await expect(page.getByTestId('page-about')).toContainText('openlaser by Anam Ahmed');
   await expect(page.getByRole('link', { name: 'Source code' })).toHaveAttribute(
     'href',
-    'https://github.com/gnomecatstudios/LaserForge.dev',
+    'https://github.com/gnomecatstudios/LaserForge',
   );
 });
 
