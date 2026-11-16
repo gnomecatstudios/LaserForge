@@ -69,6 +69,8 @@ Portable builds from version 0.2.1 check for updates on startup. The popup waits
 
 ## What it does
 
+See the [current feature inventory and proposed future work](docs/features.md) for shipped capabilities, limitations and remaining updates.
+
 Laser Forge designs, previews and runs jobs on GRBL laser engravers and cutters. Open the app in Chrome or Edge, plug in your laser over USB, and go. No account is needed. The portable version includes the app for offline use.
 
 - **Connect over Web Serial** to GRBL 1.1, grblHAL and FluidNC machines, or practise on the built-in virtual machine.
@@ -80,6 +82,7 @@ Laser Forge designs, previews and runs jobs on GRBL laser engravers and cutters.
 - **Text in any Google Font**, an installed system font or your own TTF, OTF or WOFF files, picked from a searchable list with live previews and burned as clean vector outlines. Bangla, Devanagari, Arabic and other scripts are shaped with HarfBuzz.
 - **Outline tool** that draws one cut line around a selection at any offset: a logo and its key-ring hole get a single outline.
 - **Node editor**: draw paths node by node (B), click the first node to close a shape, double-click a vector or use N to adjust endpoints and Bézier handles, and unite selected closed shapes. In node mode, click a segment to insert a node; Bézier curves split without changing shape. Enter finishes an open path; Esc cancels.
+- **Canvas context menu and Boolean operations**: right-click for Cut, Copy, Paste, Duplicate, Boolean and Delete. Union, Subtract, Intersect and Exclude (XOR) support transformed closed vectors, compound holes and one-step undo. Subtract uses the first-selected object as its base. [Shortcuts and details](#canvas-context-menu-and-boolean-operations).
 - **Path simplification** reduces nodes in selected open or closed polylines with a tolerance in millimetres, an original/result preview and one-step undo. Sharp corners are retained; paths containing Bézier curves stay unchanged. For raster images, Simplify opens image tracing with smoothness and corner controls, a live outline preview, and the original image kept by default.
 - **Text to paths** converts complete text outlines into node-editable vectors, preserving curves, holes, layers and placement. Undo restores editable text.
 - **Layout** aligns objects to selection bounds, the last-selected object or the bed; distributes centres or edge gaps; and previews rectangular and circular arrays before applying them.

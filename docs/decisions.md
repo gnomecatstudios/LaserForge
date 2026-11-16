@@ -318,6 +318,8 @@ Every step has a small illustration of what to look for, because many users of t
 - **Double-click a vector** selects it and opens Nodes; double-clicking text keeps in-place text editing. Locked vectors do not enter node editing.
 - **Portable setup:** Linux ZIPs include a Python installer that checks ELF architecture, installs for the current user, and adds menu/desktop shortcuts. Debian installers add a system menu entry for x64, ARM64 and ARM32. `scripts/build-portable.py` embeds the latest production build and regenerates packages and checksums.
 
+- **Boolean operations (v0.2.7)** add Subtract, Intersect and Exclude (XOR) alongside Union. The first-selected object supplies the base layer/properties; Subtract removes all later selections from it. Each edit is one undo step, and an empty result removes operands with an explanatory notification. The canvas context menu reuses editor actions and central shortcuts (Ctrl+Shift+U/D/I/X). See [current features and follow-ups](features.md).
+
 ## Portable update downloads
 
 - The source repository stays private. `gnomecatstudios/LaserForgeDownloads` hosts public binary releases, documentation, logo and licenses. No source ZIP is published. The browser checks GitHub’s latest stable release API without credentials or project/machine data.

@@ -179,7 +179,7 @@ export const TOUR_STEPS: TourStep[] = [
       { icon: Upload, text: 'Upload TTF, OTF or WOFF files, or use installed fonts' },
       { icon: Languages, text: 'Bangla, Devanagari, Arabic and more, shaped as they should be' },
       { icon: Shapes, text: 'Stars, gears, arrows, hearts and 20 more, all adjustable' },
-      { icon: Spline, text: 'Text and shapes burn as clean vector outlines' },
+      { icon: Spline, text: 'Convert text to editable paths, or place editable text on a path' },
       { icon: SquircleDashed, text: 'Outline a selection at any offset, for key rings and stickers' },
     ],
     features: [
@@ -189,6 +189,8 @@ export const TOUR_STEPS: TourStep[] = [
       'complex-scripts',
       'shape-library',
       'outline-tool',
+      'text-to-paths',
+      'text-on-path',
     ],
   },
   {
@@ -197,7 +199,12 @@ export const TOUR_STEPS: TourStep[] = [
     body: 'Draw shapes, then move, scale and rotate by hand or by number.',
     art: 'design',
     points: [
-      { icon: Spline, text: 'Draw paths node by node, edit curve handles and unite shapes' },
+      { icon: Spline, text: 'Draw and edit paths and curve handles; simplify polyline nodes' },
+      {
+        icon: MousePointerClick,
+        text: 'Right-click for clipboard actions and Union, Subtract, Intersect or XOR',
+      },
+      { icon: AlignCenterVertical, text: 'Align, distribute and create rectangular or circular arrays' },
       { icon: Square, text: 'Rectangle and ellipse tools' },
       { icon: Ruler, text: 'Measure any distance on the bed' },
       { icon: AlignCenterVertical, text: 'Guides snap edges and centres to other objects; Alt moves freely' },
@@ -208,6 +215,10 @@ export const TOUR_STEPS: TourStep[] = [
     features: [
       'shape-tools',
       'node-editor',
+      'canvas-context-menu',
+      'boolean-operations',
+      'path-simplification',
+      'layout-tools',
       'measure-tool',
       'transform-fields',
       'label-scrubbing',

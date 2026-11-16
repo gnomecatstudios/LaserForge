@@ -1,5 +1,7 @@
 # Progress
 
+[Current features, remaining updates and proposed future work](features.md).
+
 ## v0.2.7 — Canvas menu and Boolean geometry
 
 - [x] Accessible canvas context menu: Cut, Copy, Paste, Duplicate, Boolean, Delete; selection-aware, themed, viewport constrained, keyboard navigable.
