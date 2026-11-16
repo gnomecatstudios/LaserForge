@@ -363,3 +363,45 @@ Bézier simplification merges adjacent compatible cubics by reversing de Castelj
 The maximum transformed control-point discrepancy bounds deviation over both pieces. Accumulated
 error is carried through merges, so it stays within the requested tolerance in bed millimetres.
 Cusps and line/curve transitions remain unchanged; the existing preview and undo workflow applies.
+
+## Advanced design tools: evaluated outlines and logical group frames
+
+The Canvas2D browser renderer, PWA, worker CAM, controller encoders, and portable
+browser launcher remain the application architecture. No native renderer is added.
+
+Text Boolean operations consume the same shaped, cached glyph paths used by the
+workspace and CAM. Pending or incomplete font outlines cannot be converted or
+clipped. Boolean replacement is atomic and retains the first-selected operand's
+laser layer. Results explicitly become vectors, without retaining text properties.
+
+Ordered curve and warp modifiers evaluate after existing typography and baseline
+layout. Nonlinear deformations subdivide both straight and curved outlines;
+transformed control points alone would not describe a nonlinear warp. Source text
+and parameters remain separate from cached evaluated paths. Typography changes
+invalidate the cache immediately. Multi-object modifier additions are one history
+transaction; numeric previews coalesce. Existing path-layout references still
+synchronize through the existing linked-text mechanism.
+
+Groups are logical ID containers over existing objects, with optional bed-space
+frames in memory. A rigid edit composes the same affine change onto every leaf and
+its group frames. The renderer and CAM continue using evaluated bed-space leaf
+transforms, preserving individual layer settings. Schema 2 archives store group
+frames relative to their parents and leaf transforms relative to their owning
+groups; load composes them back into the existing runtime cache. Schema 1 files
+migrate without changing geometry. Group validation rejects cycles, duplicate
+ownership, duplicate IDs, missing children and nonfinite group matrices.
+
+Arrangement uses the existing bounds, affine transforms, alignment, distribution,
+polygon union, offset and intersection helpers. Complete groups are rigid units by
+default. Workers return proposals rather than editing the document. Apply checks
+that both the project and settings still match the preview and records one history
+step. Cancellation terminates the worker. Spatial hashing provides broad-phase
+filtering; final placement checks use inflated contours and polygon intersection.
+Open geometry and images use explicit conservative rectangular footprints.
+
+The contour placer compares bounded deterministic trials; it is a heuristic, not
+an optimal nesting solver. The current limit is 1,000 selected objects and 100,000
+candidate evaluations per trial. Spacing inflation includes layer kerf allowances
+and a small flattening/rounding guard. Unplaced originals remain identifiable;
+placements colliding with them are withheld before partial application. Optional
+cutout nesting requires one line layer and optimized inner-before-outer ordering.

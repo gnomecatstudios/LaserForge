@@ -69,3 +69,10 @@ checks passed. Portable Python tests ran 23 tests with one platform-specific ski
 All four public platform ZIPs and the source archive passed SHA-256 verification.
 See the [release](https://github.com/gnomecatstudios/LaserForge/releases/tag/v0.2.7)
 and [implementation commit](https://github.com/gnomecatstudios/LaserForge/commit/9206a40).
+
+## Advanced design tools (feature branch, pending complete acceptance)
+
+See [implementation and validation report](advanced-design-implementation.md) for
+text Boolean support, editable text modifiers, scoped groups, arrangement previews,
+contour placement, test evidence and the explicit remaining acceptance checklist.
+This work preserves browser rendering and does not yet represent a public release.
