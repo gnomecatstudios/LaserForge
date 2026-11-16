@@ -1,6 +1,7 @@
 /** Pure layout geometry. All coordinates are bed millimetres; originals are never mutated. */
 import { multiply, rotationAbout, translation } from 'libopenlaser/geometry';
 import type { Mat2D, Rect, Vec2 } from 'libopenlaser/geometry';
+import { groupLeaves } from 'libopenlaser/project';
 import type { SceneObject } from 'libopenlaser/project';
 import { boundsOf } from './selection';
 
@@ -137,4 +138,53 @@ export function arrayCopies(objects: SceneObject[], spec: ArraySpec): SceneObjec
         }) as SceneObject,
     ),
   );
+}
+
+/** Reuse alignment/distribution geometry with complete groups represented by rigid proxies. */
+export function rigidLayout(
+  project: import('libopenlaser/project').Project,
+  objects: SceneObject[],
+  scope: string | null,
+  run: (units: SceneObject[]) => Map<string, Mat2D>,
+): Map<string, Mat2D> {
+  const selected = new Set(objects.map((o) => o.id));
+  const groups = project.groups ?? [];
+  const members = new Map<string, SceneObject[]>();
+  for (const object of objects) {
+    let id = object.id;
+    let parent = groups.find((g) => g.children.includes(id));
+    while (parent && parent.id !== scope) {
+      const leaves = groupLeaves(project, parent.id);
+      if (!leaves.every((leaf) => selected.has(leaf))) break;
+      id = parent.id;
+      parent = groups.find((g) => g.children.includes(id));
+    }
+    members.set(id, [...(members.get(id) ?? []), object]);
+  }
+  const proxies: SceneObject[] = [];
+  for (const [id, children] of members) {
+    const bounds = boundsOf(children);
+    if (!bounds) continue;
+    proxies.push({
+      id,
+      name: id,
+      kind: 'image',
+      assetId: '',
+      layerId: children[0].layerId,
+      visible: true,
+      locked: children.some((o) => o.locked),
+      width: bounds.maxX - bounds.minX,
+      height: bounds.maxY - bounds.minY,
+      transform: translation(bounds.minX, bounds.minY),
+    });
+  }
+  const changed = run(proxies);
+  const result = new Map<string, Mat2D>();
+  for (const proxy of proxies) {
+    const transform = changed.get(proxy.id);
+    if (!transform || proxy.locked) continue;
+    const delta = translation(transform[4] - proxy.transform[4], transform[5] - proxy.transform[5]);
+    for (const object of members.get(proxy.id)!) result.set(object.id, multiply(delta, object.transform));
+  }
+  return result;
 }

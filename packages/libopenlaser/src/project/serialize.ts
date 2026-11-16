@@ -3,6 +3,7 @@
  * base64 assets is also accepted on open, for hand-written or debug files.
  */
 import { strFromU8, strToU8, unzipSync, zipSync, type Zippable } from 'fflate';
+import { validateGroups, localGroupCoordinates, worldGroupCoordinates } from './groups';
 import { PROJECT_SCHEMA_VERSION } from './factory';
 import { migrateProject } from './migrations';
 import type { Asset, Project } from './types';
@@ -24,6 +25,7 @@ interface ProjectFile {
   version: number;
   project: Omit<Project, 'assets'>;
   assets: AssetEntry[];
+  groupCoordinates?: 'local';
 }
 
 export class ProjectFileError extends Error {
@@ -51,7 +53,8 @@ function describeAsset(asset: Asset): Omit<AssetEntry, 'path' | 'base64'> {
 }
 
 export async function serializeProject(project: Project): Promise<Uint8Array> {
-  const { assets, ...rest } = project;
+  validateGroups(project);
+  const { assets, ...rest } = localGroupCoordinates(project);
   const files: Zippable = {};
   const entries: AssetEntry[] = [];
   for (const asset of Object.values(assets)) {
@@ -61,6 +64,7 @@ export async function serializeProject(project: Project): Promise<Uint8Array> {
   }
   const manifest: ProjectFile = {
     format: PROJECT_FORMAT,
+    groupCoordinates: 'local',
     version: project.version,
     project: rest,
     assets: entries,
@@ -132,5 +136,7 @@ export async function deserializeProject(bytes: Uint8Array): Promise<Project> {
       `This project was saved by a newer version of openlaser (schema ${version}). Update the app to open it.`,
     );
   }
-  return migrateProject({ ...manifest.project, version, assets } as Project);
+  const project = migrateProject({ ...manifest.project, version, assets } as Project);
+  validateGroups(project);
+  return manifest.groupCoordinates === 'local' ? worldGroupCoordinates(project) : project;
 }

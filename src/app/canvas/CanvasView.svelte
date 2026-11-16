@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { groupLeaves } from 'libopenlaser/project';
   import { currentBed } from '../state/work-area';
   import { onMount } from 'svelte';
   import Minus from '@lucide/svelte/icons/minus';
@@ -97,7 +98,9 @@
     editor.project && designing ? selectedObjects(editor.project, editor.selection) : [],
   );
   const selectionBounds = $derived(boundsOf(selection));
-  const sizeBox = $derived(selectionBounds ? selectionBox(bedRectToScreen(canvas.view, bed, selectionBounds)) : null);
+  const sizeBox = $derived(
+    selectionBounds ? selectionBox(bedRectToScreen(canvas.view, bed, selectionBounds)) : null,
+  );
   const canResize = $derived(selection.length > 0 && selection.every((o) => !o.locked));
 
   function editSize(event: Event, axis: 'width' | 'height') {
@@ -119,8 +122,13 @@
   function sizeKey(event: KeyboardEvent, current: number) {
     event.stopPropagation();
     const input = event.currentTarget as HTMLInputElement;
-    if (event.key === 'Escape') { input.value = current.toFixed(3); input.blur(); }
-    else if (event.key === 'Enter') { event.preventDefault(); input.blur(); }
+    if (event.key === 'Escape') {
+      input.value = current.toFixed(3);
+      input.blur();
+    } else if (event.key === 'Enter') {
+      event.preventDefault();
+      input.blur();
+    }
   }
 
   const rotatable = $derived(selection.length > 0);
@@ -264,7 +272,14 @@
   }
 
   function hitAt(screen: Vec2): SceneObject | null {
-    return editor.project && ctx ? hitObject(ctx, editor.project, canvas.view, bed, screen) : null;
+    if (!editor.project || !ctx) return null;
+    const scoped = editor.groupScope
+      ? { ...editor.project, objects: editor.project.objects.filter((o) => editor.inScope(o.id)) }
+      : editor.project;
+    return (
+      hitObject(ctx, scoped, canvas.view, bed, screen) ??
+      (editor.groupScope ? hitObject(ctx, editor.project, canvas.view, bed, screen) : null)
+    );
   }
 
   /** Boxes a moved selection lines up with: the other visible objects and the bed. */
@@ -365,6 +380,24 @@
       return;
     }
     const hit = hitAt(screen);
+    if (hit && !editor.inScope(hit.id)) {
+      editor.exitGroup();
+      return;
+    }
+    if (!hit && editor.groupScope && editor.project) {
+      const ids = new Set(groupLeaves(editor.project, editor.groupScope));
+      const bounds = boundsOf(editor.project.objects.filter((o) => ids.has(o.id)));
+      if (
+        !bounds ||
+        bedPoint.x < bounds.minX ||
+        bedPoint.x > bounds.maxX ||
+        bedPoint.y < bounds.minY ||
+        bedPoint.y > bounds.maxY
+      ) {
+        editor.exitGroup();
+        return;
+      }
+    }
     if (hit) {
       if (event.shiftKey) editor.select([hit.id], 'toggle');
       else if (!editor.selection.has(hit.id)) editor.select([hit.id]);
@@ -469,9 +502,31 @@
     if (d.kind === 'shape') createShape(d.shape, normalizeRect(d.start, d.current));
   }
 
+  function groupBreadcrumbs() {
+    const groups = editor.project?.groups ?? [];
+    const chain = [];
+    let group = groups.find((g) => g.id === editor.groupScope);
+    while (group) {
+      chain.unshift(group);
+      const id = group.id;
+      group = groups.find((g) => g.children.includes(id));
+    }
+    return chain;
+  }
   function ondblclick(event: MouseEvent) {
     if (!designing) return;
     const hit = hitAt(local(event));
+    if (hit && !editor.inScope(hit.id)) {
+      editor.exitGroup();
+      return;
+    }
+    if (hit) {
+      const unit = editor.scopeUnit(hit.id);
+      if (editor.project?.groups?.some((g) => g.id === unit)) {
+        editor.enterGroup(unit);
+        return;
+      }
+    }
     if (hit?.kind === 'vector' && !hit.locked) {
       editor.select([hit.id]);
       editor.tool = 'node';
@@ -581,40 +636,78 @@
 </script>
 
 <div class="canvas-host" bind:this={host}>
-  <CanvasContextMenu disabled={!designing} oncontextmenu={(event) => {
-    const hit = hitAt(local(event));
-    if (hit && !editor.selection.has(hit.id)) editor.select([hit.id]);
-    else if (!hit) editor.clearSelection();
-  }}>
-  <canvas
-    bind:this={el}
-    tabindex="0"
-    aria-label="Machine bed"
-    style:cursor
-    data-testid="bed-canvas"
-    {onpointerdown}
-    {onpointermove}
-    {onpointerup}
-    onpointercancel={onpointerup}
-    onpointerleave={() => (canvas.cursor = null)}
-    {onwheel}
-    {ondblclick}
-  ></canvas>
+  {#if editor.groupScope}
+    <nav class="group-breadcrumb" aria-label="Group breadcrumbs">
+      <button
+        type="button"
+        class="btn ghost"
+        onclick={() => {
+          editor.groupScope = null;
+          editor.clearSelection();
+        }}>Workspace</button
+      >
+      {#each groupBreadcrumbs() as group (group.id)}
+        <span>›</span><button type="button" class="btn ghost" onclick={() => editor.enterGroup(group.id)}
+          >{group.name}</button
+        >
+      {/each}
+    </nav>
+  {/if}
+  <CanvasContextMenu
+    disabled={!designing}
+    oncontextmenu={(event) => {
+      const hit = hitAt(local(event));
+      if (hit && !editor.selection.has(hit.id)) editor.select([hit.id]);
+      else if (!hit) editor.clearSelection();
+    }}
+  >
+    <canvas
+      bind:this={el}
+      tabindex="0"
+      aria-label="Machine bed"
+      style:cursor
+      data-testid="bed-canvas"
+      {onpointerdown}
+      {onpointermove}
+      {onpointerup}
+      onpointercancel={onpointerup}
+      onpointerleave={() => (canvas.cursor = null)}
+      {onwheel}
+      {ondblclick}
+    ></canvas>
   </CanvasContextMenu>
 
   {#if designing && selectionBounds && sizeBox && editor.tool === 'select' && !canvas.editingTextId}
-    <div class="size-pill" role="group" aria-label="Selection dimensions in millimeters"
+    <div
+      class="size-pill"
+      role="group"
+      aria-label="Selection dimensions in millimeters"
       style:left={`${Math.max(90, Math.min(canvas.size.width - 90, (sizeBox.minX + sizeBox.maxX) / 2))}px`}
-      style:top={`${Math.max(0, Math.min(canvas.size.height - 26, sizeBox.maxY + 8))}px`}>
-      <input aria-label="Selection width in millimeters" data-testid="canvas-size-width" type="text" inputmode="decimal"
-        value={(selectionBounds.maxX - selectionBounds.minX).toFixed(3)} disabled={!canResize || selectionBounds.maxX === selectionBounds.minX}
-        onfocus={(e) => e.currentTarget.select()} onchange={(e) => editSize(e, 'width')}
-        onkeydown={(e) => sizeKey(e, selectionBounds!.maxX - selectionBounds!.minX)} />
+      style:top={`${Math.max(0, Math.min(canvas.size.height - 26, sizeBox.maxY + 8))}px`}
+    >
+      <input
+        aria-label="Selection width in millimeters"
+        data-testid="canvas-size-width"
+        type="text"
+        inputmode="decimal"
+        value={(selectionBounds.maxX - selectionBounds.minX).toFixed(3)}
+        disabled={!canResize || selectionBounds.maxX === selectionBounds.minX}
+        onfocus={(e) => e.currentTarget.select()}
+        onchange={(e) => editSize(e, 'width')}
+        onkeydown={(e) => sizeKey(e, selectionBounds!.maxX - selectionBounds!.minX)}
+      />
       <span>×</span>
-      <input aria-label="Selection height in millimeters" data-testid="canvas-size-height" type="text" inputmode="decimal"
-        value={(selectionBounds.maxY - selectionBounds.minY).toFixed(3)} disabled={!canResize || selectionBounds.maxY === selectionBounds.minY}
-        onfocus={(e) => e.currentTarget.select()} onchange={(e) => editSize(e, 'height')}
-        onkeydown={(e) => sizeKey(e, selectionBounds!.maxY - selectionBounds!.minY)} />
+      <input
+        aria-label="Selection height in millimeters"
+        data-testid="canvas-size-height"
+        type="text"
+        inputmode="decimal"
+        value={(selectionBounds.maxY - selectionBounds.minY).toFixed(3)}
+        disabled={!canResize || selectionBounds.maxY === selectionBounds.minY}
+        onfocus={(e) => e.currentTarget.select()}
+        onchange={(e) => editSize(e, 'height')}
+        onkeydown={(e) => sizeKey(e, selectionBounds!.maxY - selectionBounds!.minY)}
+      />
       <span>mm</span>
     </div>
   {/if}
@@ -642,6 +735,16 @@
 </div>
 
 <style>
+  .group-breadcrumb {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    z-index: 3;
+    display: flex;
+    align-items: center;
+    background: var(--ol-bg);
+    border: 1px solid var(--ol-border);
+  }
   .canvas-host {
     position: relative;
     flex-grow: 1;
@@ -680,8 +783,14 @@
     text-align: center;
     cursor: text;
   }
-  .size-pill input:focus { background: var(--ol-bg); color: var(--ol-text); outline: 1px solid var(--ol-text); }
-  .size-pill input:disabled { cursor: default; }
+  .size-pill input:focus {
+    background: var(--ol-bg);
+    color: var(--ol-text);
+    outline: 1px solid var(--ol-text);
+  }
+  .size-pill input:disabled {
+    cursor: default;
+  }
 
   .empty {
     position: absolute;

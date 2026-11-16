@@ -2,6 +2,7 @@
  * Pure project mutations. Each returns a new Project and leaves the input untouched, which is what
  * makes undo snapshots safe to share.
  */
+import { cloneGroupMetadata, pruneGroups } from './groups';
 import { multiply, translation } from '../geometry/mat2d';
 import type { MakeId } from './ids';
 import type {
@@ -58,7 +59,9 @@ export function addObjects(project: Project, objects: SceneObject[], assets: Ass
 }
 
 export function removeObjects(project: Project, ids: ReadonlySet<Id>): Project {
-  return removeUnusedAssets({ ...project, objects: project.objects.filter((o) => !ids.has(o.id)) });
+  return removeUnusedAssets(
+    pruneGroups({ ...project, objects: project.objects.filter((o) => !ids.has(o.id)) }),
+  );
 }
 
 /** Fields any object kind may carry; callers pass the ones that fit the object they update. */
@@ -104,15 +107,27 @@ export function duplicateObjects(
   makeId: MakeId,
   offset = { x: 5, y: -5 },
 ): { project: Project; ids: Id[] } {
+  const mapping = new Map(project.objects.filter((o) => ids.has(o.id)).map((o) => [o.id, makeId()]));
+  const groups = cloneGroupMetadata(project, mapping, makeId);
   const copies = project.objects
     .filter((o) => ids.has(o.id))
     .map((o) => ({
       ...o,
-      id: makeId(),
+      id: mapping.get(o.id)!,
+      ...(o.kind === 'text' && o.pathLayout?.guideId && mapping.has(o.pathLayout.guideId)
+        ? { pathLayout: { ...o.pathLayout, guideId: mapping.get(o.pathLayout.guideId) } }
+        : {}),
       name: `${o.name} copy`,
       transform: multiply(translation(offset.x, offset.y), o.transform),
     }));
-  return { project: { ...project, objects: [...project.objects, ...copies] }, ids: copies.map((c) => c.id) };
+  return {
+    project: {
+      ...project,
+      groups: [...(project.groups ?? []), ...groups],
+      objects: [...project.objects, ...copies],
+    },
+    ids: copies.map((c) => c.id),
+  };
 }
 
 /** Moves objects to the end (front) or start (back) of the z-order. */

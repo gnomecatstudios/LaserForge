@@ -5,7 +5,11 @@ import type { Project } from './types';
  * Migrations keyed by the version they upgrade from. `migrations[n]` turns a version-n project
  * into version n+1. Version 1 is the first schema, so the table starts empty.
  */
-export const migrations: Record<number, (project: Project) => Project> = {};
+export const migrations: Record<number, (project: Project) => Project> = {
+  // Schema 2 adds optional group frames and ordered text modifiers. Existing world-space
+  // objects, cached outlines and guide snapshots already have the correct interpretation.
+  1: (project) => project,
+};
 
 export function migrateProject(project: Project): Project {
   let current = project;
