@@ -30,6 +30,7 @@ type TextStyle = Pick<
   | 'letterSpacing'
   | 'pathLayout'
   | 'arcAngle'
+  | 'modifiers'
 >;
 
 const styleKey = (t: TextStyle) =>
@@ -44,6 +45,7 @@ const styleKey = (t: TextStyle) =>
     t.letterSpacing,
     t.pathLayout,
     t.arcAngle,
+    t.modifiers,
   ]);
 
 /**
@@ -107,7 +109,7 @@ class TextOutlines {
   /** Applies a style or text edit and refreshes the outlines. */
   update(id: Id, patch: Partial<TextStyle>, options: { live?: boolean; field?: string } = {}): void {
     const named = patch.text !== undefined ? { name: patch.text.split('\n')[0].slice(0, 40) || 'Text' } : {};
-    editor.commit((p) => updateObject(p, id, { ...patch, ...named }), {
+    editor.commit((p) => updateObject(p, id, { ...patch, ...named, paths: [], outlineVersion: undefined }), {
       coalesce: `text-${id}-${options.field ?? 'style'}`,
     });
     if (!options.live) editor.sealHistory();
@@ -193,7 +195,10 @@ class TextOutlines {
     inPlace = false,
     missing?: string[],
   ): void {
-    const shift = inPlace || object.pathLayout || object.arcAngle ? 0 : blockHeight(object) - height;
+    const shift =
+      inPlace || object.pathLayout || object.arcAngle || object.modifiers?.length
+        ? 0
+        : blockHeight(object) - height;
     const transform =
       Math.abs(shift) > 1e-9 ? multiply(object.transform, translation(0, shift)) : object.transform;
     editor.commit(

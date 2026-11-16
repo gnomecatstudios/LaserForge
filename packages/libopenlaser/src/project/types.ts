@@ -20,6 +20,8 @@ export interface Project {
   layers: Layer[];
   /** z-order = array order. */
   objects: SceneObject[];
+  /** Logical containers; leaves retain their existing bed-space transforms and laser layers. */
+  groups?: ObjectGroup[];
   assets: Record<Id, Asset>;
   jobSettings: JobSettings;
   /**
@@ -97,6 +99,14 @@ export interface ImageSettings {
   passThrough: boolean;
 }
 
+export interface ObjectGroup {
+  /** Bed-space frame at runtime; stored relative to the parent in project archives. */
+  transform?: Mat2D;
+  id: Id;
+  name: string;
+  children: Id[];
+}
+
 export type SceneObject = VectorObject | ImageObject | TextObject;
 
 export interface BaseObject {
@@ -149,6 +159,25 @@ export interface TextPathLayout {
 }
 
 /** Text set in a Google Font. CAM burns `paths`, the outlines cached from the font. */
+export type WarpPreset = 'arch' | 'inverted-arch' | 'wave' | 'bulge' | 'squeeze' | 'perspective' | 'slant';
+export type TextModifier = {
+  id: Id;
+  enabled: boolean;
+} & (
+  | {
+      type: 'curve';
+      parameters: {
+        intensity: number;
+        radius?: number;
+        startAngle?: number;
+        angularOffset?: number;
+        reverse?: boolean;
+        inside?: boolean;
+      };
+    }
+  | { type: 'warp'; parameters: { preset: WarpPreset; intensity: number } }
+);
+
 export interface TextObject extends BaseObject {
   kind: 'text';
   /** Lines separated by \n. */
@@ -184,6 +213,8 @@ export interface TextObject extends BaseObject {
   pathLayout?: TextPathLayout;
   /** Signed circular bend in degrees; positive bends upward in local Y-up space. */
   arcAngle?: number;
+  /** Ordered deformations of the shaped source; paths caches the complete evaluation. */
+  modifiers?: TextModifier[];
 }
 
 export interface Asset {

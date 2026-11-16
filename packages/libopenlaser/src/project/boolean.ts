@@ -1,6 +1,7 @@
 /** Closed vector regions in bed space, using the same tolerance and even-odd holes as CAM. */
 import { difference, intersection, union, xor } from '../geometry/clipper';
 import { flattenPaths } from '../geometry/path';
+import { isOutlined } from './outline';
 import { IDENTITY } from '../geometry/mat2d';
 import type { PathData, Vec2 } from '../geometry/types';
 import type { Project, SceneObject, VectorObject } from './types';
@@ -8,14 +9,14 @@ import type { Project, SceneObject, VectorObject } from './types';
 export type BooleanOperation = 'union' | 'subtract' | 'intersect' | 'exclude';
 
 export function booleanPaths(objects: readonly SceneObject[], operation: BooleanOperation): PathData[] {
-  if (objects.length < 2) throw new Error('Select at least two closed vector objects.');
+  if (objects.length < 2) throw new Error('Select at least two closed vector or text objects.');
   const regions = objects.map((object) => {
     if (object.locked)
       throw new Error(`${object.name} is locked. Unlock it before using Boolean operations.`);
-    if (object.kind !== 'vector' || !object.visible)
-      throw new Error(
-        'Boolean operations require visible vector objects. Convert text or images to paths first.',
-      );
+    if (!isOutlined(object) || !object.visible)
+      throw new Error('Boolean operations require visible vector or text objects. Trace images first.');
+    if (object.kind === 'text' && object.missingGlyphs?.length)
+      throw new Error(`${object.name} has missing glyphs. Load the complete font first.`);
     if (!object.paths.length || object.paths.some((p) => !p.closed))
       throw new Error(`${object.name} contains empty or open paths. Close every path first.`);
     const finite = (p: Vec2) => Number.isFinite(p.x) && Number.isFinite(p.y);
@@ -71,7 +72,11 @@ export function booleanObjects(
   const paths = booleanPaths(objects, operation);
   const object: VectorObject | null = paths.length
     ? {
-        ...(objects[0] as VectorObject),
+        layerId: objects[0].layerId,
+        locked: objects[0].locked,
+        visible: objects[0].visible,
+        ...(objects[0].kind === 'vector' ? { drawn: objects[0].drawn } : {}),
+        kind: 'vector',
         id,
         name: `${objects[0].name} (${operation})`,
         paths,
@@ -84,5 +89,11 @@ export function booleanObjects(
   const remaining = project.objects.flatMap((o) =>
     o.id === ids[0] ? (object ? [object] : []) : selected.has(o.id) ? [] : [o],
   );
-  return { project: { ...project, objects: remaining }, object };
+  const groups = project.groups?.map((g) => ({
+    ...g,
+    children: g.children.flatMap((key) =>
+      key === ids[0] ? (object ? [object.id] : []) : selected.has(key) ? [] : [key],
+    ),
+  }));
+  return { project: { ...project, ...(groups ? { groups } : {}), objects: remaining }, object };
 }

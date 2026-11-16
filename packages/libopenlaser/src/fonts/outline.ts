@@ -1,5 +1,6 @@
 /* Text to outlines: the paths CAM burns for a TextObject.
    textToPaths is pure (font in, PathData out); outlineText fetches and parses the face. */
+import { applyTextModifiers } from './modifiers';
 import { baselineSampler, placeGlyphOnPath } from './path-layout';
 import { union } from '../geometry';
 import { flattenPath } from '../geometry';
@@ -49,7 +50,7 @@ export type OtFont = {
 
 export type TextLayoutSpec = Pick<
   TextObject,
-  'text' | 'fontSize' | 'align' | 'lineHeight' | 'letterSpacing' | 'pathLayout' | 'arcAngle'
+  'text' | 'fontSize' | 'align' | 'lineHeight' | 'letterSpacing' | 'pathLayout' | 'arcAngle' | 'modifiers'
 >;
 export type TextOutline = {
   paths: PathData[];
@@ -70,6 +71,7 @@ export type OutlineTextInput = Pick<
   | 'letterSpacing'
   | 'pathLayout'
   | 'arcAngle'
+  | 'modifiers'
 >;
 
 const same = (a: Vec2, b: Vec2) => Math.abs(a.x - b.x) < 1e-9 && Math.abs(a.y - b.y) < 1e-9;
@@ -301,7 +303,8 @@ export function textToPaths(
     } else paths.push(...mergeTouching(linePaths));
   });
   const missing = missingChars(spec.text, shapers, has);
-  return missing.length ? { paths, width, height, missing } : { paths, width, height };
+  const evaluated = applyTextModifiers(paths, spec.modifiers);
+  return missing.length ? { paths: evaluated, width, height, missing } : { paths: evaluated, width, height };
 }
 
 const parsed = new Map<string, Promise<OtFont | null>>();
