@@ -41,6 +41,8 @@ export const NOTABLE_FEATURES = [
   'text-to-paths',
   'layout-tools',
   'text-on-path',
+  'arc-text',
+  'rotated-images',
   'shape-library',
   'outline-tool',
   'text-tool',

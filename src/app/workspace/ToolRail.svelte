@@ -217,7 +217,8 @@
           </svg>
           <span>Original in gray; simplified in foreground. Preview only until Apply.</span>
           <span
-            >Open and closed straight-segment paths. Sharp corners are kept; Bézier paths stay unchanged.</span
+            >Open and closed paths. Sharp polyline corners are kept; compatible Bézier segments merge within
+            the tolerance.</span
           >
           <button type="button" class="btn" onclick={() => (simplifyOpen = false)}>Cancel</button>
           <button type="button" class="btn start" disabled={after >= before} onclick={applySimplification}

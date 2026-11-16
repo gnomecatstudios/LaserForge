@@ -2,6 +2,7 @@
  * Editor state: the open project, selection, tools and undo history. Every project mutation goes
  * through `commit`, which records an undo step and marks the document dirty.
  */
+import { syncLinkedText } from '../lib/linked-text';
 import type { MoveList } from 'libopenlaser/cam';
 import { defaultLayer, LAYER_PALETTE, MODE_COLORS } from 'libopenlaser/project';
 import { createProject } from 'libopenlaser/project';
@@ -76,7 +77,7 @@ export class Editor {
   commit(change: (project: Project) => Project, options: { coalesce?: string; record?: boolean } = {}): void {
     const current = this.project;
     if (!current) return;
-    const next = change(current);
+    const next = syncLinkedText(change(current));
     if (next === current) return;
     // `record: false` is for derived data (text outlines) that follows an edit already on the stack.
     if (options.record !== false) this.history.record(current, options.coalesce ?? null);

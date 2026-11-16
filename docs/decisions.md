@@ -339,7 +339,27 @@ Converting text to paths replaces its object kind in place and preserves the ID,
 
 Text on a path stores an optional `pathLayout` baseline snapshot in text-local coordinates, plus arc-length offset, normal offset, and direction. Fonts, wording, alignment, and spacing remain editable. The original guide remains separate; changes to it do not change the snapshot. The guide's layer output must be disabled if it should not burn. Glyphs are shaped normally, then individually positioned and rotated by arc length, preserving their outlines and holes. Closed baselines wrap; open ones extend along the end tangent. This is an additive optional field with no migration required for existing schema-1 documents; cached outlines preserve the appearance on load. Double-click/Enter editing of path text uses the inspector rather than the straight-text overlay.
 
-
 ## Supported platforms
 
 Per owner preference, native packages target Windows x64, Linux x64, and Raspberry Pi OS ARM64/ARM32. macOS package targets, application bundles, icon generation, download entries, and platform-specific setup instructions are removed. OS detection remains only to identify macOS as unsupported and avoid presenting Linux driver advice. Historical Mac assets are ignored by the update parser. Existing published releases are not changed by this source update.
+
+## Arc lettering, rotated engraving and live guide curves
+
+The following supersedes the earlier rotation and copied-baseline limits. Image angle fields,
+canvas handles and circular arrays now permit rotation. Raster CAM processes a physical-size
+local grid and transforms complete runs, preserving power, mirrors and laser-off overscan.
+LaserPecker output inverse-maps device pixel centers into the processed image, leaving the
+area outside its rotated rectangle blank.
+
+Editable text stores an optional signed `arcAngle` in degrees. Glyphs retain their outlines and
+rotate rigidly around a circular baseline; zero gives the original straight layout. An explicit
+path layout takes precedence over the arc setting. New attachments store an optional `guideId`.
+Editor commits synchronize the baseline in text coordinates after guide edits or transforms,
+and clear outdated outlines until fonts regenerate them; CAM blocks text with no ready outlines.
+Undo restores the guide, baseline and cached text together. Deleting a guide keeps the last snapshot;
+detaching returns to straight text. Legacy layouts without `guideId` remain independent snapshots.
+
+Bézier simplification merges adjacent compatible cubics by reversing de Casteljau subdivision.
+The maximum transformed control-point discrepancy bounds deviation over both pieces. Accumulated
+error is carried through merges, so it stays within the requested tolerance in bed millimetres.
+Cusps and line/curve transitions remain unchanged; the existing preview and undo workflow applies.

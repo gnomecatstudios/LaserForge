@@ -60,9 +60,6 @@
   $effect(() => {
     canvas.layoutPreview = editor.view === 'design' ? copies : [];
   });
-  $effect(() => {
-    if (movable.some((o) => o.kind === 'image')) rotate = false;
-  });
   onDestroy(() => {
     canvas.layoutPreview = [];
   });
@@ -197,10 +194,7 @@
         {/if}
       </div>
       {#if array === 'circle'}
-        <label
-          ><input type="checkbox" bind:checked={rotate} disabled={movable.some((o) => o.kind === 'image')} /> Rotate
-          copies</label
-        >
+        <label><input type="checkbox" bind:checked={rotate} /> Rotate copies</label>
         {#if movable.some((o) => o.kind === 'image')}<p>Images keep their orientation.</p>{/if}
       {/if}
       <p>

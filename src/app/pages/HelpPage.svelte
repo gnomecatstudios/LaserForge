@@ -79,7 +79,7 @@
         'Images go on an Image layer. Pick a dithering mode and watch the bed preview update.',
         'Line density sets dots per inch. 254 dpi is 0.1 mm per line, a good start for diode lasers.',
         'Grayscale maps brightness to power between Min power and Power.',
-        'Rotated images are not supported yet. Keep image rotation at 0°.',
+        'Rotate images using the angle field or canvas handle. Engraving scanlines follow the image angle.',
       ],
     },
     {

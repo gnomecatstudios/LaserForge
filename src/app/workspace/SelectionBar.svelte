@@ -22,7 +22,7 @@
   const bounds = $derived(boundsOf(objects));
   const anchorPoint = $derived(bounds ? anchorOf(bounds, editor.anchor) : null);
   const rotation = $derived(displayRotation(objects));
-  const canRotate = $derived(objects.length > 0 && objects.every((o) => o.kind !== 'image'));
+  const canRotate = $derived(objects.length > 0);
   const has = $derived(bounds !== null && editor.view === 'design');
 
   function apply(matrix: Mat2D, live: boolean, key: string) {

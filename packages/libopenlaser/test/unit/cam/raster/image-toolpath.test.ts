@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { DEFAULT_IMAGE_SETTINGS, ditherPreview, imageObjectToolpath } from 'libopenlaser/cam/raster';
 import { gridSize, powerTable } from 'libopenlaser/cam/raster/pipeline';
-import { rotation } from 'libopenlaser/geometry/mat2d';
+import { apply, multiply, rotation } from 'libopenlaser/geometry/mat2d';
 import type { ImageObject, ImageSettings, Layer } from 'libopenlaser/project/types';
 import { graySource, makeSource } from './helpers';
 
@@ -53,21 +53,33 @@ describe('gridSize / powerTable', () => {
 });
 
 describe('imageObjectToolpath', () => {
-  it('rejects rotated images with a blocking warning and no runs', () => {
-    const result = imageObjectToolpath(
-      imageObject(10, 10, rotation(30)),
-      layer(),
-      graySource(2, 2, () => 0),
-    );
-    expect(result.runs).toEqual([]);
-    expect(result.warnings).toHaveLength(1);
-    expect(result.warnings[0]).toMatchObject({
-      code: 'rotated-image',
-      blocking: true,
-      objectId: 'O1',
-      layerId: 'L1',
-    });
-  });
+  it.each([30, 90, 180, -45])(
+    'engraves at %s degrees with transformed burn positions and physical overscan',
+    (angle) => {
+      const source = graySource(3, 2, (x, y) => (x === y ? 0 : 255));
+      const settings = layer({ dpi: 25.4, overscan: 2, bidirectional: true });
+      const transform = multiply([1, 0, 0, 1, 20, 30], rotation(angle));
+      const result = imageObjectToolpath(imageObject(3, 2, transform), settings, source);
+      const original = imageObjectToolpath(imageObject(3, 2), settings, source);
+      expect(result.warnings).toEqual([]);
+      expect(result.runs).toHaveLength(original.runs.length);
+      result.runs.forEach((run, i) => {
+        expect(run.power).toEqual(original.runs[i].power);
+        const expected = [];
+        for (let j = 0; j < run.points.length; j += 2) {
+          expected.push(
+            apply(transform, { x: original.runs[i].points[j], y: original.runs[i].points[j + 1] }),
+          );
+        }
+        // Axis-aligned mirrored images scan in increasing bed coordinates on the first row.
+        if (Math.abs(run.points[0] - expected[0].x) > 1e-8) expected.reverse();
+        expected.forEach((point, j) => {
+          expect(run.points[j * 2]).toBeCloseTo(point.x, 9);
+          expect(run.points[j * 2 + 1]).toBeCloseTo(point.y, 9);
+        });
+      });
+    },
+  );
 
   it('places rows top-down in Y-up bed space with translate + scale', () => {
     // 2×2 source: top row black, bottom row white. 2 mm × 2 mm object scaled ×2 and moved to (10, 20).

@@ -1,4 +1,4 @@
-import { isRotated } from '../../geometry/mat2d';
+import { apply, isRotated } from '../../geometry/mat2d';
 import type { ImageObject, ImageSettings, Layer } from '../../project/types';
 import type { CamWarning, RasterSource, ToolpathRun } from '../types';
 import { DEFAULT_IMAGE_SETTINGS } from './defaults';
@@ -13,31 +13,34 @@ const DEFAULT_PREVIEW_PIXELS = 1_500_000;
  * Raster toolpath for one image object (SPEC §6.4). Image object space spans (0,0)–(width,height)
  * mm, Y-up; bitmap row 0 is the top edge (object y = height).
  *
- * Only translate + scale transforms are supported in v1. Rotated or skewed images produce no runs
- * and a blocking `rotated-image` warning, so a job never silently burns something different from
- * what the canvas shows.
+ * Scanlines follow the image axes, including rotation, mirroring and nonuniform scale.
+ * Overscan remains measured in physical mm along each scan direction.
  */
 export function imageObjectToolpath(
   object: ImageObject,
   layer: Layer,
   source: RasterSource,
 ): { runs: ToolpathRun[]; warnings: CamWarning[] } {
+  const settings = layer.image ?? DEFAULT_IMAGE_SETTINGS;
+  const [a, b, c, d, e, f] = object.transform;
   if (isRotated(object.transform)) {
+    const sx = Math.hypot(a, b),
+      sy = Math.hypot(c, d);
+    if (!(sx > 0 && sy > 0) || Math.abs(a * d - b * c) < 1e-12) return { runs: [], warnings: [] };
+    const local = imageObjectToolpath({ ...object, transform: [sx, 0, 0, sy, 0, 0] }, layer, source);
+    const matrix = [a / sx, b / sx, c / sy, d / sy, e, f] as [number, number, number, number, number, number];
     return {
-      runs: [],
-      warnings: [
-        {
-          code: 'rotated-image',
-          message: `"${object.name}" is rotated. Rotated images are not supported yet; reset its rotation to engrave it.`,
-          blocking: true,
-          layerId: layer.id,
-          objectId: object.id,
-        },
-      ],
+      ...local,
+      runs: local.runs.map((run) => {
+        const points: number[] = [];
+        for (let i = 0; i < run.points.length; i += 2) {
+          const p = apply(matrix, { x: run.points[i], y: run.points[i + 1] });
+          points.push(p.x, p.y);
+        }
+        return { ...run, points };
+      }),
     };
   }
-  const settings = layer.image ?? DEFAULT_IMAGE_SETTINGS;
-  const [a, , , d, e, f] = object.transform;
   const bedWidth = Math.abs(a) * object.width;
   const bedHeight = Math.abs(d) * object.height;
   if (!(bedWidth > 0 && bedHeight > 0 && source.width > 0 && source.height > 0 && settings.dpi > 0)) {

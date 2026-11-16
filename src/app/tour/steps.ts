@@ -164,10 +164,10 @@ export const TOUR_STEPS: TourStep[] = [
     points: [
       { icon: Grid3x3, text: 'Floyd–Steinberg, Atkinson, Jarvis, Stucki, Bayer, threshold, grayscale' },
       { icon: SunMedium, text: 'Brightness, contrast, gamma and invert' },
-      { icon: ArrowLeftRight, text: 'Bidirectional scanning with overscan' },
+      { icon: ArrowLeftRight, text: 'Rotate images freely; bidirectional scanning with overscan' },
       { icon: WandSparkles, text: 'Trace logos and photos into clean vectors to cut or engrave' },
     ],
-    features: ['image-mode', 'dithering', 'image-adjustments', 'image-trace'],
+    features: ['image-mode', 'dithering', 'image-adjustments', 'image-trace', 'rotated-images'],
   },
   {
     id: 'text-shapes',
@@ -179,7 +179,10 @@ export const TOUR_STEPS: TourStep[] = [
       { icon: Upload, text: 'Upload TTF, OTF or WOFF files, or use installed fonts' },
       { icon: Languages, text: 'Bangla, Devanagari, Arabic and more, shaped as they should be' },
       { icon: Shapes, text: 'Stars, gears, arrows, hearts and 20 more, all adjustable' },
-      { icon: Spline, text: 'Convert text to editable paths, or place editable text on a path' },
+      {
+        icon: Spline,
+        text: 'Bend editable text with the arc slider, follow a live guide, or convert to paths',
+      },
       { icon: SquircleDashed, text: 'Outline a selection at any offset, for key rings and stickers' },
     ],
     features: [
@@ -191,6 +194,7 @@ export const TOUR_STEPS: TourStep[] = [
       'outline-tool',
       'text-to-paths',
       'text-on-path',
+      'arc-text',
     ],
   },
   {
@@ -199,7 +203,7 @@ export const TOUR_STEPS: TourStep[] = [
     body: 'Draw shapes, then move, scale and rotate by hand or by number.',
     art: 'design',
     points: [
-      { icon: Spline, text: 'Draw and edit paths and curve handles; simplify polyline nodes' },
+      { icon: Spline, text: 'Draw and edit paths and curve handles; simplify polyline and Bézier nodes' },
       {
         icon: MousePointerClick,
         text: 'Right-click for clipboard actions and Union, Subtract, Intersect or XOR',

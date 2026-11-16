@@ -108,7 +108,6 @@ export function arrayCopies(objects: SceneObject[], spec: ArraySpec): SceneObjec
       ![spec.center.x, spec.center.y, spec.sweep].every(Number.isFinite)
     )
       return [];
-    if (spec.rotate && objects.some((o) => o.kind === 'image')) return [];
     const step = spec.sweep / (Math.abs(spec.sweep) === 360 ? spec.count : spec.count - 1);
     const original = center(b);
     for (let i = 1; i < spec.count; i++) {

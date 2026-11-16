@@ -49,7 +49,7 @@ export type OtFont = {
 
 export type TextLayoutSpec = Pick<
   TextObject,
-  'text' | 'fontSize' | 'align' | 'lineHeight' | 'letterSpacing' | 'pathLayout'
+  'text' | 'fontSize' | 'align' | 'lineHeight' | 'letterSpacing' | 'pathLayout' | 'arcAngle'
 >;
 export type TextOutline = {
   paths: PathData[];
@@ -69,6 +69,7 @@ export type OutlineTextInput = Pick<
   | 'lineHeight'
   | 'letterSpacing'
   | 'pathLayout'
+  | 'arcAngle'
 >;
 
 const same = (a: Vec2, b: Vec2) => Math.abs(a.x - b.x) < 1e-9 && Math.abs(a.y - b.y) < 1e-9;
@@ -248,7 +249,27 @@ export function textToPaths(
   const flip = (x: number, y: number): Vec2 => ({ x, y: height - y });
 
   const paths: PathData[] = [];
-  const sample = spec.pathLayout ? baselineSampler(spec.pathLayout) : null;
+  const angle = Number.isFinite(spec.arcAngle) ? Math.max(-180, Math.min(180, spec.arcAngle!)) : 0;
+  const radians = (Math.abs(angle) * Math.PI) / 180;
+  const radius = radians > 1e-9 && width > 0 ? width / radians : 0;
+  const sample = spec.pathLayout
+    ? baselineSampler(spec.pathLayout)
+    : radius
+      ? {
+          length: width,
+          at(distance: number) {
+            const theta = (distance - width / 2) / radius;
+            const sign = Math.sign(angle);
+            return {
+              point: {
+                x: width / 2 + radius * Math.sin(theta),
+                y: height - ascent + sign * radius * (Math.cos(theta) - Math.cos(radians / 2)),
+              },
+              tangent: { x: Math.cos(theta), y: -sign * Math.sin(theta) },
+            };
+          },
+        }
+      : null;
   lines.forEach((line, i) => {
     if (!line.trim()) return;
     const slack = width - widths[i];
@@ -262,12 +283,19 @@ export function textToPaths(
       for (const glyph of glyphs) linePaths.push(solidGlyph(commandsToPaths(glyph.commands, flip)));
       x += advance(run);
     }
-    if (spec.pathLayout && sample) {
+    if (sample) {
       const slack = sample.length - width;
       const shift =
-        spec.pathLayout.offset + (spec.align === 'center' ? slack / 2 : spec.align === 'right' ? slack : 0);
+        (spec.pathLayout?.offset ?? 0) +
+        (spec.align === 'center' ? slack / 2 : spec.align === 'right' ? slack : 0);
       const placed = linePaths.map((g) =>
-        placeGlyphOnPath(g, height - baseline, shift, spec.pathLayout!.normalOffset - i * pitch, sample),
+        placeGlyphOnPath(
+          g,
+          height - baseline,
+          shift,
+          (spec.pathLayout?.normalOffset ?? 0) - i * pitch,
+          sample,
+        ),
       );
       paths.push(...mergeTouching(placed));
     } else paths.push(...mergeTouching(linePaths));

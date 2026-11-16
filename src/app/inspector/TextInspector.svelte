@@ -112,6 +112,26 @@
       onclick={convertSelectedText}>Convert text to paths</button
     >
     <p class="hint">Conversion enables node editing. Undo restores editable text.</p>
+    <label class="hint" for="arc-angle">Arc text: {object.arcAngle ?? 0}°</label>
+    <input
+      id="arc-angle"
+      type="range"
+      min="-180"
+      max="180"
+      step="1"
+      aria-label="Arc text angle"
+      data-testid="text-arc-angle"
+      value={object.arcAngle ?? 0}
+      disabled={object.locked || !!object.pathLayout}
+      oninput={(e) =>
+        textOutlines.update(
+          object.id,
+          { arcAngle: Number(e.currentTarget.value) },
+          { live: true, field: 'arc' },
+        )}
+      onchange={() => editor.sealHistory()}
+    />
+    <p class="hint">Negative bends down; positive bends up. Set 0° for straight text.</p>
     {#if object.pathLayout}
       <div class="grid" aria-label="Text on path">
         <NumberField
@@ -153,8 +173,8 @@
         >Detach text from path</button
       >
       <p class="hint">
-        Text stays editable. Long text wraps around closed paths or extends beyond open endpoints. Hide or
-        disable output for the guide layer if it should not burn.
+        Text stays editable and follows its guide curve. Long text wraps around closed paths or extends beyond
+        open endpoints. Hide or disable output for the guide layer if it should not burn.
       </p>
     {:else}
       <p class="hint">For text on a path, select this text and one vector with a single path.</p>
