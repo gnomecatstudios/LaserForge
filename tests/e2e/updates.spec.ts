@@ -9,12 +9,7 @@ function release(version = '0.3.0') {
     html_url: `${repo}/tag/v${version}`,
     draft: false,
     prerelease: false,
-    assets: [
-      'linux-x64',
-      'windows-x64',
-      'raspberry-pi-arm64',
-      'raspberry-pi-arm32',
-    ].map((p) => ({
+    assets: ['linux-x64', 'windows-x64', 'raspberry-pi-arm64', 'raspberry-pi-arm32'].map((p) => ({
       name: `LaserForge-Portable-${p}.zip`,
       state: 'uploaded',
       size: 100,

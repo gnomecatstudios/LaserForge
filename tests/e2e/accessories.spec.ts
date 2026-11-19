@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { expect, test, type Page } from '@playwright/test';
-import { dragOnCanvas, newProject, openMachine, prepare } from './helpers';
+import { dragOnCanvas, newProject, openMachine, prepare, closeMachineMenu } from './helpers';
 
 test.beforeEach(async ({ page }) => prepare(page));
 
@@ -31,6 +31,7 @@ test('an LP4 picks lasers per layer and switches to its rotary from the machine 
   await expect(page.getByTestId('machine-menu')).toContainText('LaserPecker LP4');
   await expect(page.getByTestId('machine-menu')).toContainText('160 × 157 mm');
 
+  await closeMachineMenu(page);
   const [download] = await Promise.all([
     page.waitForEvent('download'),
     page.getByTestId('export-gcode').click(),
@@ -41,6 +42,7 @@ test('an LP4 picks lasers per layer and switches to its rotary from the machine 
   expect(gcode).not.toContain('M3010');
 
   // Back on the flat bed, the job says so.
+  await openMachine(page);
   await setup.getByRole('button', { name: 'Flat bed' }).click();
   await expect(page.getByTestId('machine-menu')).toContainText('160 × 120 mm');
 });

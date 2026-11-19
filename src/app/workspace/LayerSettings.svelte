@@ -18,6 +18,7 @@
   import { machine } from '../state/machine.svelte';
   import { profiles } from '../state/profiles.svelte';
   import { withMode } from '../lib/layers';
+  import { DITHER_ALGORITHMS } from '../lib/dither-options';
   import LaserSourcePicker from './LaserSourcePicker.svelte';
   import MaterialPicker from './MaterialPicker.svelte';
   import { activeAdapter } from '../machines/registry';
@@ -53,15 +54,7 @@
   /** Common laser power levels; any other value can still be typed. */
   const POWER_PRESETS = [5, 10, 15, 20, 25, 30, 40, 50, 60, 70, 80, 90, 100];
 
-  const ALGORITHMS: Array<{ id: DitherAlgorithm; label: string }> = [
-    { id: 'floyd-steinberg', label: 'Floyd–Steinberg' },
-    { id: 'atkinson', label: 'Atkinson' },
-    { id: 'jarvis', label: 'Jarvis' },
-    { id: 'stucki', label: 'Stucki' },
-    { id: 'ordered', label: 'Bayer 8×8' },
-    { id: 'threshold', label: 'Threshold' },
-    { id: 'grayscale', label: 'Grayscale' },
-  ];
+  const ALGORITHMS = DITHER_ALGORITHMS;
 
   function set(change: Partial<Layer>, live = false, field = 'x') {
     const id = layer.id;

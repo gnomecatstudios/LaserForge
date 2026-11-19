@@ -63,6 +63,10 @@
   import ShapeGlyph from '../inspector/ShapeGlyph.svelte';
   import ShapePicker from '../inspector/ShapePicker.svelte';
   import OutlineTool from './OutlineTool.svelte';
+  import { activeAdapter } from '../machines/registry';
+
+  /** An open G-code file exports as G-code, whatever the machine. */
+  const exportLabel = $derived(editor.gcode ? 'Export G-code' : activeAdapter().exportLabel);
 
   type Entry =
     | { id: Tool; label: string; key: string; icon: Component; design: boolean }
@@ -227,6 +231,32 @@
       </Popover.Portal>
     </Popover.Root>
   {/if}
+  <div class="rule"></div>
+  <button
+    type="button"
+    class="icon-btn tool"
+    aria-label="{exportLabel} ({formatCombo('Mod+E')})"
+    title="{exportLabel} ({formatCombo('Mod+E')})"
+    disabled={!editor.project && !editor.gcode}
+    onclick={() => actions.exportJob()}
+    data-testid="export-gcode"
+  >
+    <svg
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="2"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+      <path d="M14 2v6h6" />
+      <path d="M15 13a3 3 0 1 0 0 4v-2h-2" />
+    </svg>
+  </button>
 </nav>
 
 <style>

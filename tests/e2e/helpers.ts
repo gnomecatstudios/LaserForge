@@ -65,3 +65,9 @@ export async function closeMachine(page: Page): Promise<void> {
   await page.getByTestId('machine-close').click();
   await expect(page.getByTestId('machine-panel')).toHaveCount(0);
 }
+
+/** The machine menu drops over the toolbar; close it before reaching for a toolbar button. */
+export async function closeMachineMenu(page: Page): Promise<void> {
+  const trigger = page.getByTestId('machine-menu');
+  if ((await trigger.getAttribute('aria-expanded')) === 'true') await trigger.click();
+}

@@ -14,7 +14,7 @@ import { keepsAspectByDefault } from '../lib/selection';
 import type { Anchor, Asset, Id, Layer, LayerMode, Project, SceneObject } from 'libopenlaser/project';
 
 export type Tool = 'select' | 'node' | 'pen' | 'pan' | 'rect' | 'ellipse' | 'shape' | 'text' | 'measure';
-export type ViewMode = 'design' | 'preview';
+export type ViewMode = 'design' | 'bitmap' | 'preview';
 
 /** A G-code file opened in sender mode: it bypasses design and CAM. */
 export interface GcodeDocument {

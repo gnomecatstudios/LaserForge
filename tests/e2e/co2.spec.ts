@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { expect, test, type Page } from '@playwright/test';
-import { connectVirtual, dragOnCanvas, newProject, openMachine, prepare } from './helpers';
+import { connectVirtual, dragOnCanvas, newProject, openMachine, prepare, closeMachineMenu } from './helpers';
 
 test.beforeEach(async ({ page }) => prepare(page));
 
@@ -22,7 +22,7 @@ test('a Ruida CO₂ machine exports .rd files to run from a USB stick', async ({
   await expect(page.getByTestId('topbar-connect')).toHaveCount(0);
   await expect(page.getByTestId('connect-virtual')).toHaveCount(0);
   await expect(page.getByTestId('console')).toHaveCount(0);
-  await expect(page.getByTestId('export-gcode')).toHaveText('Export .rd');
+  await expect(page.getByTestId('export-gcode')).toHaveAttribute('aria-label', /^Export \.rd/);
 
   await page.getByTestId('tool-rect').click();
   await dragOnCanvas(page, [0.4, 0.4], [0.5, 0.5]);
@@ -48,6 +48,7 @@ test('a CO₂ machine on GRBL burns at constant power and asks about water cooli
   await page.getByTestId('tool-rect').click();
   await dragOnCanvas(page, [0.4, 0.4], [0.5, 0.5]);
 
+  await closeMachineMenu(page);
   const [download] = await Promise.all([
     page.waitForEvent('download'),
     page.getByTestId('export-gcode').click(),
