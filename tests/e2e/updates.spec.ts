@@ -144,3 +144,15 @@ test('mobile dialog fits and unknown platforms require an explicit selection', a
   expect(box.x).toBeGreaterThanOrEqual(0);
   expect(box.x + box.width).toBeLessThanOrEqual(390);
 });
+
+test('Ctrl+Tab+U checks for updates from anywhere', async ({ page }) => {
+  await portable(page);
+  await page.route(api, (r) => r.fulfill({ json: release('0.2.1') }));
+  await newProject(page);
+  await expect(page.getByTestId('update-dialog')).toBeHidden();
+  await page.keyboard.down('Control');
+  await page.keyboard.press('Tab');
+  await page.keyboard.press('u');
+  await page.keyboard.up('Control');
+  await expect(page.getByTestId('update-dialog')).toContainText('You’re up to date');
+});

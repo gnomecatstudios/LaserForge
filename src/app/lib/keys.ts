@@ -5,6 +5,11 @@ export interface KeyCombo {
   mod: boolean;
   shift: boolean;
   alt: boolean;
+  /**
+   * Tab held as part of the chord (e.g. Ctrl+Tab+U). Shown in labels but not enforced: browsers keep
+   * Ctrl+Tab for switching tabs and never report it to the page, so the chord fires on Ctrl+U.
+   */
+  tab: boolean;
 }
 
 export function isApple(platform = typeof navigator === 'undefined' ? '' : navigator.platform): boolean {
@@ -19,6 +24,7 @@ export function parseCombo(spec: string): KeyCombo {
     mod: parts.includes('Mod'),
     shift: parts.includes('Shift'),
     alt: parts.includes('Alt'),
+    tab: parts.includes('Tab'),
   };
 }
 
@@ -62,8 +68,11 @@ export function formatCombo(spec: string, apple = isApple()): string {
     Enter: '↵',
   };
   const key = names[combo.key] ?? combo.key.toUpperCase();
-  if (apple) return `${combo.mod ? '⌘' : ''}${combo.alt ? '⌥' : ''}${combo.shift ? '⇧' : ''}${key}`;
-  return [combo.mod && 'Ctrl', combo.alt && 'Alt', combo.shift && 'Shift', key].filter(Boolean).join('+');
+  if (apple)
+    return `${combo.mod ? '⌘' : ''}${combo.alt ? '⌥' : ''}${combo.shift ? '⇧' : ''}${combo.tab ? '⇥' : ''}${key}`;
+  return [combo.mod && 'Ctrl', combo.alt && 'Alt', combo.shift && 'Shift', combo.tab && 'Tab', key]
+    .filter(Boolean)
+    .join('+');
 }
 
 /** True when the event comes from a text field, where shortcuts must stay out of the way. */

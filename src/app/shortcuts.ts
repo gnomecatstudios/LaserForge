@@ -14,6 +14,7 @@ import { currentBed } from './state/work-area';
 import { ui } from './state/ui.svelte';
 import { booleanSelection, booleanSelectionIssue } from './unite';
 import * as actions from './actions';
+import { checkForUpdates } from './updates/updates.svelte';
 
 export interface Shortcut {
   keys: string[];
@@ -44,6 +45,9 @@ function selectedText(): string | null {
 function bed() {
   return currentBed();
 }
+
+/** Ctrl+Tab+U (⌘⇥U on Apple). Ctrl+U alone also works, since browsers swallow Ctrl+Tab. */
+export const UPDATE_KEYS = 'Mod+Tab+U';
 
 export const BOOLEAN_COMMANDS = [
   { operation: 'union', label: 'Union', keys: 'Mod+Shift+U' },
@@ -313,6 +317,14 @@ export const SHORTCUTS: Shortcut[] = [
 
   { keys: ['?'], label: 'Keyboard shortcuts', group: 'Help', run: () => (ui.shortcutsOpen = true) },
   { keys: ['F1'], label: 'Help', group: 'Help', run: () => route.go('help') },
+  {
+    keys: [UPDATE_KEYS],
+    label: 'Check for updates',
+    group: 'Help',
+    // Ctrl+Tab may move focus into a field before U arrives, so this works while typing too.
+    global: true,
+    run: () => void checkForUpdates(),
+  },
 ];
 
 /** Shortcuts worth listing (nudge variants collapse into one row). */
