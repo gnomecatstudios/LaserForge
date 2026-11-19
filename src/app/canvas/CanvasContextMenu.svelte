@@ -16,6 +16,9 @@
   import Trash2 from '@lucide/svelte/icons/trash-2';
   import ChevronRight from '@lucide/svelte/icons/chevron-right';
   import Combine from '@lucide/svelte/icons/combine';
+  import Spline from '@lucide/svelte/icons/spline';
+  import SquircleDashed from '@lucide/svelte/icons/squircle-dashed';
+  import { ui } from '../state/ui.svelte';
   import { editor } from '../state/editor.svelte';
   import * as actions from '../edit-actions';
   import { BOOLEAN_COMMANDS } from '../shortcuts';
@@ -48,6 +51,26 @@
       ),
   );
   const issue = $derived(open ? booleanSelectionIssue() : null);
+  /** Simplify works on unlocked vectors; a lone image goes through Trace to simplify its outlines. */
+  const simplifiable = $derived(
+    selected.filter((o) => o.kind === 'vector' && o.visible && !o.locked).length > 0,
+  );
+  const traceable = $derived(
+    !simplifiable ? selected.find((o) => o.kind === 'image' && o.visible && !o.locked) : undefined,
+  );
+  /** Opens a toolbar panel once the menu has handed focus back, so the panel takes focus (and Escape). */
+  function later(run: () => void) {
+    requestAnimationFrame(() => requestAnimationFrame(run));
+  }
+  function simplify() {
+    const image = traceable;
+    later(() => {
+      if (image) {
+        ui.traceForSimplify = true;
+        ui.traceImageId = image.id;
+      } else ui.simplifyOpen = true;
+    });
+  }
   const base = $derived(
     editor.project?.objects.find((o) => o.id === [...editor.selection][0])?.name ?? 'first selected object',
   );
@@ -136,6 +159,36 @@
           >
         </ContextMenu.Item>
       {/each}
+      <ContextMenu.Separator class="ol-menu-sep" />
+      <ContextMenu.Item
+        class="ol-menu-item"
+        disabled={!!issue}
+        title={issue ?? undefined}
+        onSelect={() => booleanSelection('union')}
+        data-testid="menu-union"
+      >
+        <BooleanIcon operation="union" /><span>Union</span><span class="ol-menu-keys mono"
+          >{formatCombo('Mod+Shift+U')}</span
+        >
+      </ContextMenu.Item>
+      <ContextMenu.Item
+        class="ol-menu-item"
+        disabled={!simplifiable && !traceable}
+        onSelect={simplify}
+        data-testid="menu-simplify"
+      >
+        <Spline size={15} /><span>Simplify Path…</span>
+      </ContextMenu.Item>
+      <ContextMenu.Item
+        class="ol-menu-item"
+        disabled={!selected.length}
+        onSelect={() => later(() => (ui.outlineOpen = true))}
+        data-testid="menu-outline"
+      >
+        <SquircleDashed size={15} /><span>Outline…</span><span class="ol-menu-keys mono"
+          >{formatCombo('O')}</span
+        >
+      </ContextMenu.Item>
       <ContextMenu.Separator class="ol-menu-sep" />
       <ContextMenu.Sub>
         <ContextMenu.SubTrigger
