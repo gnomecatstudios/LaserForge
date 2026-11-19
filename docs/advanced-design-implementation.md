@@ -1,6 +1,6 @@
 # Advanced design tools — implementation and validation report
 
-Status: integrated feature branch; not a completed release acceptance checklist.
+Status: merged to main (#8) and prepared for v0.2.9; the acceptance items below remain open.
 The browser rendering architecture and portable launcher are preserved.
 
 ## Implemented surfaces
@@ -101,8 +101,8 @@ These must remain open rather than describing the entire specification as comple
   high-volume performance measurements and exhaustive cross-feature acceptance tests.
 - Native runtime verification on Windows and Raspberry Pi, and physical controller
   validation. Only existing simulated-controller tests have been exercised here.
-- Release version selection, main-branch promotion and public portable publishing.
-  No release or LaserForgeDownloads update is claimed for this feature branch.
+- Public portable publishing. Version v0.2.9 is selected and the work is on main;
+  the release is published by running the portable build workflow with publish enabled.
 
 Nesting remains heuristic. Utilization is placed footprint area divided by total
 material area; overlapping artwork within a group is unioned. Stationary obstacles

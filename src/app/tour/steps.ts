@@ -181,9 +181,10 @@ export const TOUR_STEPS: TourStep[] = [
       { icon: Shapes, text: 'Stars, gears, arrows, hearts and 20 more, all adjustable' },
       {
         icon: Spline,
-        text: 'Bend editable text with the arc slider, follow a live guide, or convert to paths',
+        text: 'Bend text with arc, curve or warp effects, or follow a live guide',
       },
       { icon: SquircleDashed, text: 'Outline a selection at any offset, for key rings and stickers' },
+      { icon: Type, text: 'Weld letters into one cut, or convert text to editable paths' },
     ],
     features: [
       'text-tool',
@@ -195,6 +196,7 @@ export const TOUR_STEPS: TourStep[] = [
       'text-to-paths',
       'text-on-path',
       'arc-text',
+      'text-effects',
     ],
   },
   {
@@ -209,6 +211,8 @@ export const TOUR_STEPS: TourStep[] = [
         text: 'Right-click for clipboard actions and Union, Subtract, Intersect or XOR',
       },
       { icon: AlignCenterVertical, text: 'Align, distribute and create rectangular or circular arrays' },
+      { icon: Layers, text: 'Group with Ctrl+G; double-click a group to edit inside it' },
+      { icon: Grid3x3, text: 'Smart Arrange and Auto Nest pack parts onto your material' },
       { icon: Square, text: 'Rectangle and ellipse tools' },
       { icon: Ruler, text: 'Measure any distance on the bed' },
       { icon: AlignCenterVertical, text: 'Guides snap edges and centres to other objects; Alt moves freely' },
@@ -229,6 +233,8 @@ export const TOUR_STEPS: TourStep[] = [
       'undo-redo',
       'bed-fit',
       'smart-guides',
+      'groups',
+      'arrange-nesting',
     ],
   },
   {
