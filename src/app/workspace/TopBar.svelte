@@ -50,31 +50,38 @@
     }
   }
 
-  const menu: Array<{ label: string; keys?: string; run: () => void; projectOnly?: boolean } | 'separator'> =
-    [
-      { label: 'New project', keys: 'Mod+N', run: () => actions.newProject() },
-      { label: 'Open project or G-code…', keys: 'Mod+O', run: () => actions.openFile() },
-      { label: 'Save as…', keys: 'Mod+Shift+S', run: () => actions.saveProjectAs(), projectOnly: true },
-      { label: 'Send G-code file…', run: () => actions.openGcodeFile() },
-      { label: 'Print template…', keys: 'Mod+P', run: () => actions.printDesign(), projectOnly: true },
-      {
-        label: 'Trace image…',
-        keys: 'Shift+T',
-        run: () => actions.traceSelectedImage(),
-        projectOnly: true,
-      },
-      { label: 'Convert selected text to paths', run: convertSelectedText, projectOnly: true },
-      'separator',
-      { label: 'Machine profiles', run: () => (ui.profilesOpen = true) },
-      { label: 'Device settings ($$)', run: () => (ui.deviceSettingsOpen = true) },
-      { label: 'Preferences', run: () => (ui.preferencesOpen = true) },
-      { label: 'Keyboard shortcuts', keys: '?', run: () => (ui.shortcutsOpen = true) },
-      'separator',
-      { label: 'Take the tour', run: () => (ui.tourOpen = true) },
-      { label: 'Check for updates', run: () => void checkForUpdates() },
-      { label: 'About', run: () => route.go('about') },
-      { label: 'Close project', run: () => actions.closeDocument() },
-    ];
+  type MenuItem = {
+    label: string;
+    keys?: string;
+    run: () => void;
+    projectOnly?: boolean;
+    documentOnly?: boolean;
+  };
+  const menu: Array<MenuItem | 'separator'> = $derived([
+    { label: 'New project', keys: 'Mod+N', run: () => actions.newProject() },
+    { label: 'Open project or G-code…', keys: 'Mod+O', run: () => actions.openFile() },
+    { label: 'Save as…', keys: 'Mod+Shift+S', run: () => actions.saveProjectAs(), projectOnly: true },
+    { label: 'Send G-code file…', run: () => actions.openGcodeFile() },
+    { label: `${exportLabel}…`, keys: 'Mod+E', run: () => void actions.exportJob(), documentOnly: true },
+    { label: 'Print template…', keys: 'Mod+P', run: () => actions.printDesign(), projectOnly: true },
+    {
+      label: 'Trace image…',
+      keys: 'Shift+T',
+      run: () => actions.traceSelectedImage(),
+      projectOnly: true,
+    },
+    { label: 'Convert selected text to paths', run: convertSelectedText, projectOnly: true },
+    'separator',
+    { label: 'Machine profiles', run: () => (ui.profilesOpen = true) },
+    { label: 'Device settings ($$)', run: () => (ui.deviceSettingsOpen = true) },
+    { label: 'Preferences', run: () => (ui.preferencesOpen = true) },
+    { label: 'Keyboard shortcuts', keys: '?', run: () => (ui.shortcutsOpen = true) },
+    'separator',
+    { label: 'Take the tour', run: () => (ui.tourOpen = true) },
+    { label: 'Check for updates', run: () => void checkForUpdates() },
+    { label: 'About', run: () => route.go('about') },
+    { label: 'Close project', run: () => actions.closeDocument() },
+  ]);
 </script>
 
 <header class="topbar">
@@ -99,10 +106,11 @@
           {:else}
             <DropdownMenu.Item
               class="ol-menu-item"
-              disabled={item.projectOnly && !editor.project}
+              disabled={(item.projectOnly && !editor.project) ||
+                (item.documentOnly && !editor.project && !editor.gcode)}
               onSelect={item.run}
             >
-              <span>{item.label}</span>
+              <span data-testid={item.documentOnly ? 'menu-export' : undefined}>{item.label}</span>
               {#if item.keys}<span class="ol-menu-keys mono">{formatCombo(item.keys)}</span>{/if}
             </DropdownMenu.Item>
           {/if}
@@ -205,20 +213,21 @@
     </button>
     <button
       type="button"
+      aria-pressed={editor.view === 'bitmap'}
+      disabled={!editor.project}
+      title="Photo and raster prep for images"
+      onclick={() => (editor.view = 'bitmap')}
+      data-testid="view-bitmap"
+    >
+      Bitmap
+    </button>
+    <button
+      type="button"
       aria-pressed={editor.view === 'preview'}
       onclick={() => (editor.view = 'preview')}
       data-testid="view-preview">Preview</button
     >
   </div>
-  <button
-    type="button"
-    class="btn ghost"
-    onclick={() => actions.exportJob()}
-    title="{exportLabel} ({formatCombo('Mod+E')})"
-    data-testid="export-gcode"
-  >
-    {exportLabel}
-  </button>
   {#if live && !connectedAdapter()}
     <ConnectButton size="small" testid="topbar-connect" />
   {/if}

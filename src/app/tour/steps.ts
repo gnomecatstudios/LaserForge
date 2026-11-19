@@ -245,7 +245,7 @@ export const TOUR_STEPS: TourStep[] = [
     points: [
       { icon: Play, text: 'Burns shaded by power, travel dashed' },
       { icon: Timer, text: 'Time estimate with burn and travel distance' },
-      { icon: Download, text: 'Export G-code for SD cards and other senders' },
+      { icon: Download, text: 'Export G-code from the toolbar or the Menu' },
     ],
     features: ['toolpath-preview', 'time-estimate', 'gcode-export'],
   },

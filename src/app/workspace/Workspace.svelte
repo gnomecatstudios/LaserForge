@@ -11,6 +11,7 @@
   import ToolRail from './ToolRail.svelte';
   import SelectionBar from './SelectionBar.svelte';
   import PreviewBar from './PreviewBar.svelte';
+  import BitmapView from './BitmapView.svelte';
   import LayersPanel from './LayersPanel.svelte';
   import LayoutPanel from './LayoutPanel.svelte';
   import SelectionInspector from '../inspector/SelectionInspector.svelte';
@@ -82,7 +83,11 @@
       {#if editor.project && editor.view === 'design'}
         <ErrorBoundary name="Selection bar" compact><SelectionBar /></ErrorBoundary>
       {/if}
-      <ErrorBoundary name="Canvas"><CanvasView /></ErrorBoundary>
+      {#if editor.project && editor.view === 'bitmap'}
+        <ErrorBoundary name="Bitmap"><BitmapView /></ErrorBoundary>
+      {:else}
+        <ErrorBoundary name="Canvas"><CanvasView /></ErrorBoundary>
+      {/if}
       {#if editor.view === 'preview' || editor.gcode}
         <ErrorBoundary name="Preview" compact><PreviewBar /></ErrorBoundary>
       {/if}

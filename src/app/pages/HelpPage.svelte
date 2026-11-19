@@ -88,7 +88,8 @@
       items: [
         'Preview shows burns shaded by power and travel moves dashed. Press play or drag the slider.',
         'The time is an estimate based on your machine’s acceleration settings.',
-        'Export G-code saves a file for SD cards or other senders.',
+        'Export G-code (the G-code icon at the end of the toolbar, or Menu → Export G-code) saves a file for SD cards or other senders.',
+        'Bitmap mode (next to Design and Preview) shows each photo beside its engraving and holds the dithering, tone and line density settings.',
       ],
     },
     {
