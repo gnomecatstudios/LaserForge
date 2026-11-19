@@ -17,3 +17,4 @@ export {
   type JobEncoder,
 } from './encoders';
 export * from './laserpecker';
+export * from './raster/color-key';

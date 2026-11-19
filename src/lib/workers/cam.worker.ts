@@ -1,12 +1,12 @@
 /// <reference lib="webworker" />
 import { compileJob } from 'libopenlaser/cam';
 import { encodeJob } from 'libopenlaser/cam';
-import { ditherPreview } from 'libopenlaser/cam';
-import type { MoveList, RasterSource } from 'libopenlaser/cam';
+import { ditherPreview, selectionWeights, separateRaster } from 'libopenlaser/cam';
+import type { MoveList, RasterCrop, RasterSource } from 'libopenlaser/cam';
 import { parseGcode, splitGcodeLines, validateGcodeLines } from 'libopenlaser/import';
 import { decodeImage } from 'libopenlaser/import';
 import type { Project } from 'libopenlaser/project';
-import type { WorkerRequest, WorkerResponse } from './protocol';
+import type { SeparatedPart, WorkerRequest, WorkerResponse } from './protocol';
 
 declare const self: DedicatedWorkerGlobalScope;
 
@@ -31,6 +31,15 @@ async function decodeProjectAssets(project: Project): Promise<Map<string, Raster
     if (asset) out.set(id, await decode(id, asset.data));
   }
   return out;
+}
+
+async function toPng(part: RasterCrop): Promise<SeparatedPart> {
+  const canvas = new OffscreenCanvas(part.width, part.height);
+  const context = canvas.getContext('2d');
+  if (!context) throw new Error('Could not create a 2D canvas to save the image.');
+  context.putImageData(new ImageData(part.data, part.width, part.height), 0, 0);
+  const blob = await canvas.convertToBlob({ type: 'image/png' });
+  return { x: part.x, y: part.y, width: part.width, height: part.height, blob };
 }
 
 /** Typed-array buffers in a payload (a few levels deep), so they move to the UI without a copy. */
@@ -101,6 +110,18 @@ async function handle(
         request.heightMm,
       );
       return { response: { id: request.id, ok: true, result: preview }, transfer: [preview.burn.buffer] };
+    }
+    case 'separate': {
+      const source = await decode(request.assetId, request.blob);
+      const weights = selectionWeights(source, request.selection);
+      const split = separateRaster(source, weights, { regions: request.regions });
+      const result = {
+        sourceWidth: source.width,
+        sourceHeight: source.height,
+        pieces: await Promise.all(split.pieces.map(toPng)),
+        rest: split.rest ? await toPng(split.rest) : null,
+      };
+      return { response: { id: request.id, ok: true, result }, transfer: [] };
     }
   }
 }

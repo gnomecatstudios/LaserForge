@@ -9,6 +9,8 @@ import type {
   DitherRequest,
   DitherResult,
   ParseGcodeResult,
+  SeparateRequest,
+  SeparateResult,
   WorkerRequest,
   WorkerResponse,
 } from '$lib/workers/protocol';
@@ -97,4 +99,9 @@ export function parseGcodeInWorker(text: string, maxS: number): Promise<ParseGco
 
 export function ditherInWorker(request: Omit<DitherRequest, 'type' | 'id'>): Promise<DitherResult> {
   return previewChannel.request<DitherResult>({ type: 'dither', ...request });
+}
+
+/** Splits an image by a color selection on the preview worker (see `separateRaster`). */
+export function separateInWorker(request: Omit<SeparateRequest, 'type' | 'id'>): Promise<SeparateResult> {
+  return previewChannel.request<SeparateResult>({ type: 'separate', ...request });
 }
