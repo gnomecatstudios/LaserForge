@@ -88,6 +88,9 @@ Laser Forge designs, previews and runs jobs on GRBL laser engravers and cutters.
 - **Rotated image engraving** follows the image at any angle, with physical DPI and laser-off overscan preserved. Scan direction is relative to the image.
 - **Text to paths** converts complete text outlines into node-editable vectors, preserving curves, holes, layers and placement. Undo restores editable text.
 - **Layout** aligns objects to selection bounds, the last-selected object or the bed; distributes centres or edge gaps; and previews rectangular and circular arrays before applying them.
+- **Text effects**: curve and warp text (arch, inverted arch, wave, bulge, squeeze, perspective and slant) with effects you can toggle, edit, reorder and remove. Weld Letters joins overlapping glyphs into one cut, and text works in Union, Subtract, Intersect and XOR. Right-click text and choose **Modify Text**.
+- **Groups**: Ctrl+G groups a selection and Ctrl+Shift+G ungroups one level. Double-click a group to edit inside it and Esc to step out; groups can be nested and renamed.
+- **Smart Arrange and Auto Nest** lay parts out on a sheet of material with spacing, margin, rotation and grain limits. Preview first, then apply in one undoable step. Nesting checks real outlines, allows for kerf and reports material use.
 - **Text on a path** places editable text on a selected single-path vector, with start/baseline offsets and reverse direction. Text follows edits and transforms to the linked guide; deleting the guide retains its last baseline. Older projects with copied baselines keep their original behavior.
 - **Shape library** with stars, gears, arrows, hearts, callouts and more, each with adjustable parameters, plus rectangle, ellipse and measure tools.
 - **Exact placement** with X, Y, W, H and angle fields, a 9-point anchor, and smart guides that snap dragged art to other objects and the bed.
