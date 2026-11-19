@@ -407,3 +407,24 @@ candidate evaluations per trial. Spacing inflation includes layer kerf allowance
 and a small flattening/rounding guard. Unplaced originals remain identifiable;
 placements colliding with them are withheld before partial application. Optional
 cutout nesting requires one line layer and optimized inner-before-outer ordering.
+
+## Color separation in Bitmap mode
+
+Bitmap mode's Separate tab keys colors out of an image: erase them to transparency, keep only
+them, or move them to a new layer. Repeating it splits a photo into foreground, midground and
+background layers.
+
+- **New pixels, not a stored mask.** A separation writes new PNG assets (cropped to what each
+  part keeps) and updates or adds image objects. The project format, CAM, canvas and archives
+  need no changes, because they already treat alpha 0 as no burn. Undo restores the old asset.
+  The trade-off is that tolerance can't be retuned after applying; you undo and pick again.
+- **Parts stack back into the original.** Each pixel's alpha is split between the selection and
+  the rest in proportion to how strongly it matches, so soft edges add up exactly. Every part is
+  placed through the image's own transform, so rotated and mirrored images separate correctly.
+- **Matching in weighted OKLab.** Lightness counts half as much as hue and chroma, as in chroma
+  keyers, so a shadow across a backdrop still matches it. A drag picks a spectrum: every color
+  near the path through the sampled colors in OKLab, so a gradient sky keys as one range.
+- **Preview small, apply full.** Picking and the highlight run on a copy of at most 1 MP on the
+  main thread. Applying runs at full resolution on the preview worker, which also encodes the PNGs.
+- **Select background** clusters the colors around the image edge and limits the match to areas
+  connected to the edge, so the same color inside the subject stays.

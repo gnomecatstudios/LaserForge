@@ -19,6 +19,9 @@
   import { ditherInWorker } from '../lib/cam-client';
   import { DITHER_ALGORITHMS } from '../lib/dither-options';
   import { withMode } from '../lib/layers';
+  import { Separation } from './separation.svelte';
+  import SeparationCanvas from './SeparationCanvas.svelte';
+  import SeparatePanel from './SeparatePanel.svelte';
 
   type Compare = 'split' | 'original' | 'processed';
 
@@ -56,19 +59,35 @@
   );
 
   let compare = $state<Compare>('split');
+  /** Engrave settings, or color separation. */
+  let tab = $state<'engrave' | 'separate'>('engrave');
+  const separating = $derived(tab === 'separate');
 
-  // Original image URL, released when the asset changes.
-  let originalUrl = $state<string | null>(null);
+  // The original is drawn from a small decoded copy, which also previews color selections.
+  const separation = new Separation();
+  let share = $state(0);
   $effect(() => {
-    const blob = asset?.data;
-    if (!blob) {
-      originalUrl = null;
+    if (!asset) {
+      separation.unload();
       return;
     }
-    const url = URL.createObjectURL(blob);
-    originalUrl = url;
-    return () => URL.revokeObjectURL(url);
+    separation.load(asset.id, asset.data).catch((error: unknown) => reportError(error, 'Bitmap original'));
   });
+  // Picks belong to one image.
+  let pickedFor: string | null = null;
+  $effect(() => {
+    const id = current?.id ?? null;
+    if (id !== pickedFor) {
+      pickedFor = id;
+      separation.clear();
+    }
+  });
+
+  function showTab(next: 'engrave' | 'separate') {
+    tab = next;
+    // Colors are picked on the original, so it has to be in view.
+    if (next === 'separate' && compare === 'processed') compare = 'split';
+  }
 
   // Processed preview: dithered in the worker, debounced while settings are scrubbed.
   let canvas = $state<HTMLCanvasElement | null>(null);
@@ -195,6 +214,7 @@
           {#each [['split', 'Split'], ['original', 'Original'], ['processed', 'Processed']] as const as [id, label] (id)}
             <button
               type="button"
+              disabled={separating && id === 'processed'}
               aria-pressed={compare === id}
               onclick={() => (compare = id)}
               data-testid="bitmap-compare-{id}">{label}</button
@@ -205,8 +225,13 @@
       <div class="panes" class:single={compare !== 'split'}>
         {#if compare !== 'processed'}
           <figure class="pane">
-            {#if originalUrl}<img src={originalUrl} alt="Original {current.name}" />{/if}
-            <figcaption>Original</figcaption>
+            <SeparationCanvas
+              {separation}
+              name={current.name}
+              picking={separating}
+              onshare={(v) => (share = v)}
+            />
+            <figcaption>{separating ? 'Original · click or drag to pick colors' : 'Original'}</figcaption>
           </figure>
         {/if}
         {#if compare !== 'original'}
@@ -225,102 +250,117 @@
     </section>
 
     <aside class="controls" aria-label="Image processing">
-      <h3>Image processing</h3>
-      {#if layer && layer.mode !== 'image'}
-        <p class="note">
-          “{layer.name}” is a {layer.mode} layer, so this image is skipped when the job runs.
-        </p>
-        <button type="button" class="btn start" onclick={useImageMode} data-testid="bitmap-image-mode">
-          Use Image mode on “{layer.name}”
-        </button>
-      {:else if layer}
-        <p class="muted small">Settings apply to every image on “{layer.name}”.</p>
-        <label class="field">
-          Dithering
-          <select
-            class="input"
-            value={settings.algorithm}
-            onchange={(e) =>
-              setImage({ algorithm: e.currentTarget.value as DitherAlgorithm }, false, 'algorithm')}
-            data-testid="bitmap-algorithm"
+      <div class="segmented tabs" role="group" aria-label="Bitmap tools">
+        {#each [['engrave', 'Engrave'], ['separate', 'Separate']] as const as [id, label] (id)}
+          <button
+            type="button"
+            aria-pressed={tab === id}
+            onclick={() => showTab(id)}
+            data-testid="bitmap-tab-{id}">{label}</button
           >
-            {#each DITHER_ALGORITHMS as a (a.id)}<option value={a.id}>{a.label}</option>{/each}
-          </select>
-        </label>
-        <NumberField
-          label="Line density"
-          hint="Scan lines per inch. Higher is finer and slower"
-          unit="dpi"
-          value={settings.dpi}
-          min={10}
-          max={1270}
-          onchange={(v, l) => setImage({ dpi: v }, l, 'dpi')}
-          testid="bitmap-dpi"
-        />
-        {#if sourceDpi !== null && sourceDpi < settings.dpi * 0.5}
-          <p class="note warn" data-testid="bitmap-low-res">
-            The photo is only {sourceDpi} dpi at this size, so it is upscaled. Shrink it or use a larger original
-            for sharper detail.
+        {/each}
+      </div>
+      {#if separating}
+        <h3>Separate colors</h3>
+        <SeparatePanel {separation} image={current} {share} />
+      {:else}
+        <h3>Image processing</h3>
+        {#if layer && layer.mode !== 'image'}
+          <p class="note">
+            “{layer.name}” is a {layer.mode} layer, so this image is skipped when the job runs.
           </p>
-        {/if}
-        {#if settings.algorithm === 'threshold'}
+          <button type="button" class="btn start" onclick={useImageMode} data-testid="bitmap-image-mode">
+            Use Image mode on “{layer.name}”
+          </button>
+        {:else if layer}
+          <p class="muted small">Settings apply to every image on “{layer.name}”.</p>
+          <label class="field">
+            Dithering
+            <select
+              class="input"
+              value={settings.algorithm}
+              onchange={(e) =>
+                setImage({ algorithm: e.currentTarget.value as DitherAlgorithm }, false, 'algorithm')}
+              data-testid="bitmap-algorithm"
+            >
+              {#each DITHER_ALGORITHMS as a (a.id)}<option value={a.id}>{a.label}</option>{/each}
+            </select>
+          </label>
           <NumberField
-            label="Threshold"
-            hint="Gray level that splits burn from no burn, 0 to 255"
-            value={settings.threshold}
-            min={0}
-            max={255}
-            onchange={(v, l) => setImage({ threshold: v }, l, 'threshold')}
+            label="Line density"
+            hint="Scan lines per inch. Higher is finer and slower"
+            unit="dpi"
+            value={settings.dpi}
+            min={10}
+            max={1270}
+            onchange={(v, l) => setImage({ dpi: v }, l, 'dpi')}
+            testid="bitmap-dpi"
           />
+          {#if sourceDpi !== null && sourceDpi < settings.dpi * 0.5}
+            <p class="note warn" data-testid="bitmap-low-res">
+              The photo is only {sourceDpi} dpi at this size, so it is upscaled. Shrink it or use a larger original
+              for sharper detail.
+            </p>
+          {/if}
+          {#if settings.algorithm === 'threshold'}
+            <NumberField
+              label="Threshold"
+              hint="Gray level that splits burn from no burn, 0 to 255"
+              value={settings.threshold}
+              min={0}
+              max={255}
+              onchange={(v, l) => setImage({ threshold: v }, l, 'threshold')}
+            />
+          {/if}
+          <NumberField
+            label="Brightness"
+            hint="Lightens or darkens the whole image before dithering"
+            value={settings.brightness}
+            min={-100}
+            max={100}
+            onchange={(v, l) => setImage({ brightness: v }, l, 'brightness')}
+            testid="bitmap-brightness"
+          />
+          <NumberField
+            label="Contrast"
+            hint="Spreads or squeezes the tones"
+            value={settings.contrast}
+            min={-100}
+            max={100}
+            onchange={(v, l) => setImage({ contrast: v }, l, 'contrast')}
+          />
+          <NumberField
+            label="Gamma"
+            hint="Mid-tone curve. Above 1 lightens mid-tones, below 1 darkens them"
+            decimals={2}
+            value={settings.gamma}
+            min={0.1}
+            max={5}
+            step={0.05}
+            onchange={(v, l) => setImage({ gamma: v }, l, 'gamma')}
+          />
+          <div class="toggles">
+            <Toggle
+              label="Invert"
+              hint="Burns the light areas and leaves the dark ones. For glass, slate and anodized metal"
+              checked={settings.invert}
+              onchange={(c) => setImage({ invert: c }, false, 'invert')}
+            />
+            <Toggle
+              label="Pass-through"
+              hint="Sends the image as it is, with no tone changes or dithering"
+              checked={settings.passThrough}
+              onchange={(c) => setImage({ passThrough: c }, false, 'pass')}
+            />
+          </div>
+          <button type="button" class="btn ghost" onclick={resetTone} data-testid="bitmap-reset">
+            <RotateCcw size={15} />Reset tone
+          </button>
         {/if}
-        <NumberField
-          label="Brightness"
-          hint="Lightens or darkens the whole image before dithering"
-          value={settings.brightness}
-          min={-100}
-          max={100}
-          onchange={(v, l) => setImage({ brightness: v }, l, 'brightness')}
-          testid="bitmap-brightness"
-        />
-        <NumberField
-          label="Contrast"
-          hint="Spreads or squeezes the tones"
-          value={settings.contrast}
-          min={-100}
-          max={100}
-          onchange={(v, l) => setImage({ contrast: v }, l, 'contrast')}
-        />
-        <NumberField
-          label="Gamma"
-          hint="Mid-tone curve. Above 1 lightens mid-tones, below 1 darkens them"
-          decimals={2}
-          value={settings.gamma}
-          min={0.1}
-          max={5}
-          step={0.05}
-          onchange={(v, l) => setImage({ gamma: v }, l, 'gamma')}
-        />
-        <div class="toggles">
-          <Toggle
-            label="Invert"
-            hint="Burns the light areas and leaves the dark ones. For glass, slate and anodized metal"
-            checked={settings.invert}
-            onchange={(c) => setImage({ invert: c }, false, 'invert')}
-          />
-          <Toggle
-            label="Pass-through"
-            hint="Sends the image as it is, with no tone changes or dithering"
-            checked={settings.passThrough}
-            onchange={(c) => setImage({ passThrough: c }, false, 'pass')}
-          />
-        </div>
-        <button type="button" class="btn ghost" onclick={resetTone} data-testid="bitmap-reset">
-          <RotateCcw size={15} />Reset tone
+        <button type="button" class="btn ghost" onclick={() => (ui.traceImageId = current.id)}>
+          <Wand size={15} />Trace to vectors
         </button>
       {/if}
-      <button type="button" class="btn ghost" onclick={() => (ui.traceImageId = current.id)}>
-        <Wand size={15} />Trace to vectors
-      </button>
     </aside>
   {/if}
 </div>
@@ -429,8 +469,7 @@
     background: #fff;
   }
 
-  .pane img,
-  .pane canvas {
+  .pane :global(canvas) {
     max-width: 100%;
     max-height: 100%;
     width: 100%;
@@ -438,8 +477,16 @@
     object-fit: contain;
   }
 
-  .pane canvas {
+  .pane.material canvas {
     image-rendering: pixelated;
+  }
+
+  .tabs {
+    display: flex;
+  }
+
+  .tabs button {
+    flex: 1;
   }
 
   figcaption {

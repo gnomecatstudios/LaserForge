@@ -8,7 +8,7 @@ import type {
   MoveList,
   Rect,
 } from 'libopenlaser/cam';
-import type { EncoderId } from 'libopenlaser/cam';
+import type { ColorSelection, EncoderId } from 'libopenlaser/cam';
 import type { YAxisMapping } from 'libopenlaser/project';
 import type { ImageSettings, Layer, MachineProfile, Project } from 'libopenlaser/project';
 import type { Vec2 } from 'libopenlaser/geometry';
@@ -83,12 +83,42 @@ export interface DitherResult {
   burn: Uint8ClampedArray;
 }
 
-export type WorkerRequest = CompileRequest | EncodeRequest | ParseGcodeRequest | DitherRequest;
+/** Splits an image by a color selection, at full resolution, into PNG parts. */
+export interface SeparateRequest {
+  type: 'separate';
+  id: number;
+  assetId: string;
+  blob: Blob;
+  selection: ColorSelection;
+  /** One part per separate area of the selection. */
+  regions: boolean;
+}
+
+/** A PNG cropped from the source at (x, y), in source pixels. */
+export interface SeparatedPart {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  blob: Blob;
+}
+
+export interface SeparateResult {
+  sourceWidth: number;
+  sourceHeight: number;
+  /** The selection, largest first. */
+  pieces: SeparatedPart[];
+  /** What is left of the image; null when the selection took all of it. */
+  rest: SeparatedPart | null;
+}
+
+export type WorkerRequest =
+  CompileRequest | EncodeRequest | ParseGcodeRequest | DitherRequest | SeparateRequest;
 
 export type WorkerResponse =
   | {
       id: number;
       ok: true;
-      result: CompileResult | EncodeResult | ParseGcodeResult | DitherResult;
+      result: CompileResult | EncodeResult | ParseGcodeResult | DitherResult | SeparateResult;
     }
   | { id: number; ok: false; error: string };
