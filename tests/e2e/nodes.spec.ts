@@ -113,3 +113,64 @@ test('Delete in the node tool never removes the whole object', async ({ page }) 
   await page.keyboard.press('Delete');
   await expect(page.getByTestId('path-node')).toHaveCount(3);
 });
+
+test('picks several nodes with Shift+click, box and Ctrl+A, then deletes or moves them together', async ({
+  page,
+}) => {
+  await newProject(page);
+  await page.getByTestId('tool-ellipse').click();
+  await dragOnCanvas(page, [0.3, 0.3], [0.7, 0.7]);
+  await page.getByTestId('tool-node').click();
+  const nodes = page.getByTestId('path-node');
+  await expect(nodes).toHaveCount(4);
+  const picked = page.locator('[data-testid="path-node"][aria-pressed="true"]');
+
+  // Shift+click adds and removes.
+  await nodes.nth(0).click();
+  await nodes.nth(1).click({ modifiers: ['Shift'] });
+  await nodes.nth(2).click({ modifiers: ['Shift'] });
+  await expect(picked).toHaveCount(3);
+  await nodes.nth(2).click({ modifiers: ['Shift'] });
+  await expect(picked).toHaveCount(2);
+
+  // Dragging one picked node moves both by the same amount.
+  const before = await Promise.all([0, 1, 3].map((i) => nodes.nth(i).boundingBox()));
+  const a = before[0]!;
+  await page.mouse.move(a.x + a.width / 2, a.y + a.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(a.x + a.width / 2 + 40, a.y + a.height / 2 + 30, { steps: 5 });
+  await page.mouse.up();
+  const after = await Promise.all([0, 1, 3].map((i) => nodes.nth(i).boundingBox()));
+  for (const i of [0, 1]) {
+    expect(after[i]!.x - before[i]!.x).toBeCloseTo(40, 0);
+    expect(after[i]!.y - before[i]!.y).toBeCloseTo(30, 0);
+  }
+  expect(after[2]).toEqual(before[2]);
+  await page.keyboard.press('ControlOrMeta+z');
+
+  // Delete removes every picked node in one undo step.
+  await page.keyboard.press('Delete');
+  await expect(nodes).toHaveCount(2);
+  await page.keyboard.press('ControlOrMeta+z');
+  await expect(nodes).toHaveCount(4);
+
+  // A box on empty canvas picks the nodes inside it and keeps the shape selected.
+  const box = (await page.getByTestId('bed-canvas').boundingBox())!;
+  const top = (await nodes.nth(0).boundingBox())!;
+  await dragOnCanvas(page, [0.2, 0.2], [0.8, (top.y + 20 - box.y) / box.height]);
+  await expect(page.getByTestId('status-bar')).toContainText('1 selected');
+  await expect(picked).not.toHaveCount(0);
+  const boxed = await picked.count();
+  expect(boxed).toBeLessThan(4);
+
+  // Ctrl+A picks every node; Delete stops at two.
+  await page.keyboard.press('ControlOrMeta+a');
+  await expect(picked).toHaveCount(4);
+  await page.keyboard.press('Delete');
+  await expect(nodes).toHaveCount(2);
+  await expect(page.getByTestId('status-bar')).toContainText('1 object');
+
+  // A plain click on empty canvas still deselects.
+  await page.mouse.click(box.x + 10, box.y + 10);
+  await expect(nodes).toHaveCount(0);
+});

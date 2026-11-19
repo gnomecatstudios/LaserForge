@@ -6,41 +6,57 @@
   import { canvas } from '../state/canvas.svelte';
   import { bedToScreen, screenToBed, type BedFrame } from './viewport';
   import { insertNode, moveNode, pathNodes, type NodeRef } from './node-edit';
-  import { nodeSelection } from '../state/nodes.svelte';
+  import { editableVectors, nodeSelection } from '../state/nodes.svelte';
   let { bed }: { bed: BedFrame } = $props();
   let host: HTMLDivElement;
-  const objects = $derived(
-    editor.tool === 'node' && editor.view === 'design'
-      ? (editor.project?.objects.filter(
-          (o): o is VectorObject =>
-            o.kind === 'vector' &&
-            !o.locked &&
-            o.visible &&
-            editor.selection.has(o.id) &&
-            editor.project!.layers.some((l) => l.id === o.layerId && l.visible),
-        ) ?? [])
-      : [],
-  );
-  let drag: { object: VectorObject; node: NodeRef; pointer: number } | null = null;
-  // Forget the picked node when leaving the node tool, so Delete never hits a node picked earlier.
+  const objects = $derived(editableVectors());
+  type Drag =
+    | { kind: 'handle'; object: VectorObject; node: NodeRef; pointer: number }
+    | {
+        kind: 'anchors';
+        pointer: number;
+        start: Vec2;
+        picks: ReturnType<typeof nodeSelection.targets>;
+      };
+  let drag: Drag | null = null;
+  // Forget picked nodes when leaving the node tool, so Delete never hits nodes picked earlier.
   $effect(() => {
-    if (editor.tool !== 'node' || editor.view !== 'design') nodeSelection.current = null;
+    if (editor.tool !== 'node' || editor.view !== 'design') nodeSelection.clear();
   });
   function screen(object: VectorObject, point: Vec2) {
     return bedToScreen(canvas.view, bed, apply(object.transform, point));
   }
+  function bedPoint(event: PointerEvent): Vec2 {
+    const r = host.getBoundingClientRect();
+    return screenToBed(canvas.view, bed, { x: event.clientX - r.left, y: event.clientY - r.top });
+  }
   function move(event: PointerEvent) {
     if (!drag || drag.pointer !== event.pointerId) return;
-    const inverse = invert(drag.object.transform);
-    if (!inverse) return;
-    const r = host.getBoundingClientRect();
-    const point = apply(
-      inverse,
-      screenToBed(canvas.view, bed, { x: event.clientX - r.left, y: event.clientY - r.top }),
-    );
-    const { object, node } = drag;
+    const at = bedPoint(event);
+    if (drag.kind === 'handle') {
+      const inverse = invert(drag.object.transform);
+      if (!inverse) return;
+      const { object, node } = drag;
+      const point = apply(inverse, at);
+      editor.commit(
+        (p) => updateObject(p, object.id, { paths: moveNode(object.paths, node, point), shape: undefined }),
+        { coalesce: 'node-drag' },
+      );
+      return;
+    }
+    // Move every picked anchor by the same distance on the bed, whatever its object's transform.
+    const delta = { x: at.x - drag.start.x, y: at.y - drag.start.y };
+    const updates = drag.picks.flatMap(({ object, nodes }) => {
+      const inverse = invert(object.transform);
+      if (!inverse) return [];
+      const paths = nodes.reduce((paths, node) => {
+        const was = apply(object.transform, node.point);
+        return moveNode(paths, node, apply(inverse, { x: was.x + delta.x, y: was.y + delta.y }));
+      }, object.paths);
+      return [{ id: object.id, paths }];
+    });
     editor.commit(
-      (p) => updateObject(p, object.id, { paths: moveNode(object.paths, node, point), shape: undefined }),
+      (p) => updates.reduce((p, u) => updateObject(p, u.id, { paths: u.paths, shape: undefined }), p),
       { coalesce: 'node-drag' },
     );
   }
@@ -148,13 +164,25 @@
           if (event.button !== 0) return;
           event.stopPropagation();
           if (event.altKey && !node.control) {
-            nodeSelection.remove(object, node);
+            nodeSelection.remove([{ object, nodes: [node] }]);
             return;
           }
-          nodeSelection.current = node.control ? null : { objectId: object.id, node };
+          if (!node.control) {
+            if (event.shiftKey || event.ctrlKey || event.metaKey) {
+              // Shift/Ctrl+click adds or removes a node; a node just removed is not dragged.
+              if (!nodeSelection.toggle(object.id, node)) return;
+            } else if (!nodeSelection.is(object.id, node)) nodeSelection.set([{ objectId: object.id, node }]);
+          }
           event.currentTarget.setPointerCapture(event.pointerId);
           editor.sealHistory();
-          drag = { object, node, pointer: event.pointerId };
+          drag = node.control
+            ? { kind: 'handle', object, node, pointer: event.pointerId }
+            : {
+                kind: 'anchors',
+                pointer: event.pointerId,
+                start: bedPoint(event),
+                picks: nodeSelection.targets(),
+              };
         }}
         onpointermove={move}
         onpointerup={end}
@@ -165,8 +193,8 @@
   {/each}
   {#if editor.tool === 'node' && editor.view === 'design'}
     <p>
-      Click a path to add a node; drag nodes or curve handles to edit. Select a node and press Delete (or
-      Alt+click it) to remove it.
+      Click a path to add a node; drag nodes or handles to edit. Shift+click or drag a box to pick several;
+      Delete removes them.
     </p>
   {/if}
 </div>

@@ -5,7 +5,7 @@
   import Minus from '@lucide/svelte/icons/minus';
   import Plus from '@lucide/svelte/icons/plus';
   import Maximize from '@lucide/svelte/icons/maximize';
-  import { IDENTITY, multiply, rotationAbout, translation } from 'libopenlaser/geometry';
+  import { IDENTITY, apply, multiply, rotationAbout, translation } from 'libopenlaser/geometry';
   import type { Mat2D, Rect, Vec2 } from 'libopenlaser/geometry';
   import { setObjectTransforms, transformObjects } from 'libopenlaser/project';
   import { makeId } from 'libopenlaser/project';
@@ -51,6 +51,7 @@
   import NodeEditor from './NodeEditor.svelte';
   import PenOverlay from './PenOverlay.svelte';
   import { pen } from '../state/pen.svelte';
+  import { nodeSelection } from '../state/nodes.svelte';
   import CanvasContextMenu from './CanvasContextMenu.svelte';
   import BedWarning from './BedWarning.svelte';
   import ErrorBoundary from '$lib/ui/ErrorBoundary.svelte';
@@ -86,7 +87,7 @@
         originals: Map<Id, Mat2D>;
       }
     | { kind: 'rotate'; center: Vec2; startAngle: number; originals: Map<Id, Mat2D> }
-    | { kind: 'marquee'; start: Vec2; current: Vec2; additive: boolean }
+    | { kind: 'marquee'; start: Vec2; current: Vec2; additive: boolean; nodes?: boolean }
     | { kind: 'shape'; shape: DrawnShape; start: Vec2; current: Vec2 }
     | { kind: 'measure' };
 
@@ -330,9 +331,13 @@
     }
     if (editor.tool === 'node') {
       const hit = hitAt(screen);
-      if (hit?.kind === 'vector' && !hit.locked)
+      if (hit?.kind === 'vector' && !hit.locked) {
+        nodeSelection.clear();
         editor.select([hit.id], event.shiftKey ? 'toggle' : 'replace');
-      else editor.clearSelection();
+      } else {
+        // Empty space: a drag picks nodes in a box; a plain click deselects as before.
+        drag = { kind: 'marquee', start: screen, current: screen, additive: event.shiftKey, nodes: true };
+      }
       return;
     }
     if (editor.tool === 'measure') {
@@ -493,6 +498,21 @@
     if (el.hasPointerCapture(event.pointerId)) el.releasePointerCapture(event.pointerId);
     if (!d) return;
     if (d.kind === 'move' || d.kind === 'scale' || d.kind === 'rotate') editor.sealHistory();
+    if (d.kind === 'marquee' && d.nodes) {
+      const box = normalizeRect(d.start, d.current);
+      if (box.maxX - box.minX < 3 && box.maxY - box.minY < 3) {
+        if (!d.additive) {
+          nodeSelection.clear();
+          editor.clearSelection();
+        }
+      } else
+        nodeSelection.selectInBox(
+          box,
+          (object, point) => bedToScreen(canvas.view, bed, apply(object.transform, point)),
+          d.additive,
+        );
+      return;
+    }
     if (d.kind === 'marquee') {
       const box = normalizeRect(d.start, d.current);
       if (box.maxX - box.minX < 3 && box.maxY - box.minY < 3) return;

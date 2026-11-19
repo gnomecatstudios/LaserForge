@@ -168,10 +168,17 @@ export const SHORTCUTS: Shortcut[] = [
     when: hasSelection,
     run: () => actions.duplicateSelection(),
   },
+  {
+    keys: ['Mod+A'],
+    label: 'Select all nodes (node tool)',
+    group: 'Edit',
+    when: () => hasSelection() && editor.tool === 'node',
+    run: () => nodeSelection.selectAll(),
+  },
   { keys: ['Mod+A'], label: 'Select all', group: 'Edit', when: designing, run: () => editor.selectAll() },
   {
     keys: ['Delete', 'Backspace'],
-    label: 'Delete node (node tool)',
+    label: 'Delete picked nodes (node tool)',
     group: 'Edit',
     // In the node tool Delete only removes nodes, never the whole object.
     when: () => hasSelection() && editor.tool === 'node',

@@ -1,49 +1,122 @@
-/** The node picked in the node editor, so Delete removes it rather than the whole object. */
-import { updateObject, type VectorObject } from 'libopenlaser/project';
+/** Anchors picked in the node editor: Delete removes them and dragging one moves them all. */
+import type { Vec2 } from 'libopenlaser/geometry';
+import { updateObject, type Project, type VectorObject } from 'libopenlaser/project';
 import { editor } from './editor.svelte';
 import { deleteNode, pathNodes, type NodeRef } from '../canvas/node-edit';
 
+export interface PickedNode {
+  objectId: string;
+  node: NodeRef;
+}
+
+const same = (a: PickedNode, objectId: string, node: NodeRef) =>
+  a.objectId === objectId && a.node.path === node.path && a.node.index === node.index;
+
+/** Vectors the node tool edits: selected, unlocked and visible on a visible layer. */
+export function editableVectors(): VectorObject[] {
+  const project = editor.project;
+  if (!project || editor.tool !== 'node' || editor.view !== 'design') return [];
+  return project.objects.filter(
+    (o): o is VectorObject =>
+      o.kind === 'vector' &&
+      !o.locked &&
+      o.visible &&
+      editor.selection.has(o.id) &&
+      project.layers.some((l) => l.id === o.layerId && l.visible),
+  );
+}
+
 class NodeSelection {
-  current = $state<{ objectId: string; node: NodeRef } | null>(null);
+  picked = $state<PickedNode[]>([]);
 
   is(objectId: string, node: NodeRef): boolean {
-    const c = this.current;
-    return (
-      !!c &&
-      c.objectId === objectId &&
-      c.node.path === node.path &&
-      c.node.index === node.index &&
-      c.node.control === node.control
+    return !node.control && this.picked.some((p) => same(p, objectId, node));
+  }
+
+  set(picked: PickedNode[]): void {
+    this.picked = picked.filter((p) => !p.node.control);
+  }
+
+  clear(): void {
+    if (this.picked.length) this.picked = [];
+  }
+
+  /** Add or remove one anchor; returns whether it is now picked. */
+  toggle(objectId: string, node: NodeRef): boolean {
+    if (node.control) return false;
+    if (this.is(objectId, node)) {
+      this.picked = this.picked.filter((p) => !same(p, objectId, node));
+      return false;
+    }
+    this.picked = [...this.picked, { objectId, node: { path: node.path, index: node.index } }];
+    return true;
+  }
+
+  /** Pick every anchor of the editable vectors. */
+  selectAll(): void {
+    this.set(
+      editableVectors().flatMap((object) =>
+        pathNodes(object.paths)
+          .filter((n) => !n.control)
+          .map((n) => ({ objectId: object.id, node: { path: n.path, index: n.index } })),
+      ),
     );
   }
 
-  /** The selected anchor, if it still exists on an editable, selected vector in the node tool. */
-  target(): { object: VectorObject; node: NodeRef } | null {
-    const c = this.current;
-    if (!c || c.node.control || editor.tool !== 'node' || editor.view !== 'design') return null;
-    if (!editor.selection.has(c.objectId)) return null;
-    const object = editor.project?.objects.find((o) => o.id === c.objectId);
-    if (!object || object.kind !== 'vector' || object.locked) return null;
-    const exists = pathNodes(object.paths).some(
-      (n) => !n.control && n.path === c.node.path && n.index === c.node.index,
+  /** Pick the anchors whose screen position falls inside `box`. */
+  selectInBox(
+    box: { minX: number; minY: number; maxX: number; maxY: number },
+    toScreen: (object: VectorObject, point: Vec2) => Vec2,
+    additive: boolean,
+  ): void {
+    const hits = editableVectors().flatMap((object) =>
+      pathNodes(object.paths)
+        .filter((n) => {
+          if (n.control) return false;
+          const s = toScreen(object, n.point);
+          return s.x >= box.minX && s.x <= box.maxX && s.y >= box.minY && s.y <= box.maxY;
+        })
+        .map((n) => ({ objectId: object.id, node: { path: n.path, index: n.index } })),
     );
-    return exists ? { object, node: c.node } : null;
+    if (!additive) return this.set(hits);
+    this.set([...this.picked, ...hits.filter((h) => !this.is(h.objectId, h.node))]);
   }
 
-  /** Delete one anchor; returns false when the path is too short to lose another node. */
-  remove(object: VectorObject, node: NodeRef): boolean {
-    const paths = deleteNode(object.paths, node);
-    if (paths === object.paths) return false;
+  /** Picked anchors that still exist, grouped by their editable vector. */
+  targets(): { object: VectorObject; nodes: (NodeRef & { point: Vec2 })[] }[] {
+    return editableVectors()
+      .map((object) => ({
+        object,
+        nodes: pathNodes(object.paths).filter((n) => this.is(object.id, n)),
+      }))
+      .filter((t) => t.nodes.length);
+  }
+
+  /**
+   * Delete anchors in one undo step. Each path keeps at least two anchors, so some may be
+   * skipped. Returns whether anything changed.
+   */
+  remove(picks: { object: VectorObject; nodes: NodeRef[] }[]): boolean {
+    const updates = picks
+      .map(({ object, nodes }) => {
+        // Delete the highest anchors first so earlier indices stay valid.
+        const ordered = [...nodes].sort((a, b) => b.path - a.path || b.index - a.index);
+        const paths = ordered.reduce((paths, node) => deleteNode(paths, node), object.paths);
+        return { object, paths };
+      })
+      .filter((u) => u.paths !== u.object.paths);
+    if (!updates.length) return false;
     editor.sealHistory();
-    editor.commit((p) => updateObject(p, object.id, { paths, shape: undefined }));
+    editor.commit((p: Project) =>
+      updates.reduce((p, u) => updateObject(p, u.object.id, { paths: u.paths, shape: undefined }), p),
+    );
     editor.sealHistory();
-    this.current = null;
+    this.picked = [];
     return true;
   }
 
   removeSelected(): boolean {
-    const t = this.target();
-    return t ? this.remove(t.object, t.node) : false;
+    return this.remove(this.targets());
   }
 }
 
