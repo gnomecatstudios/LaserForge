@@ -41,7 +41,7 @@
       icon: Download,
       title: 'Import',
       items: [
-        'Drop SVG, DXF, PNG, JPEG, WebP, AVIF, BMP or GIF files onto the app, or use the Image tool in the tool rail.',
+        'Drop SVG, DXF, PNG, JPEG, WebP, AVIF, BMP or GIF files onto the app, or use the Image tool in the toolbar above the canvas.',
         'SVG sizes come from width, height and viewBox. Files from tools that export at 72 ppi can be adjusted in the import dialog.',
         'Convert text to paths in your editor before exporting SVG.',
         'DXF imports lines, polylines, arcs, circles, ellipses, splines and blocks. Units come from the file and can be changed in the import dialog. Explode text and hatches to outlines in your CAD tool first.',

@@ -217,12 +217,16 @@ test('the Image tool sits with the other tools and takes SVG and images', async 
   const rail = page.getByRole('navigation', { name: 'Tools' });
   const tool = rail.getByTestId('tool-image');
   await expect(tool).toBeVisible();
-  // Between Text and Measure, not pushed to the bottom.
+  // A horizontal toolbar above the canvas, with Image between Text and Measure.
   const text = (await rail.getByTestId('tool-text').boundingBox())!;
   const measure = (await rail.getByTestId('tool-measure').boundingBox())!;
   const image = (await tool.boundingBox())!;
-  expect(image.y).toBeGreaterThan(text.y);
-  expect(image.y).toBeLessThan(measure.y);
+  const canvas = (await page.getByTestId('bed-canvas').boundingBox())!;
+  expect(image.y).toBe(text.y);
+  expect(image.y).toBe(measure.y);
+  expect(image.y + image.height).toBeLessThanOrEqual(canvas.y);
+  expect(image.x).toBeGreaterThan(text.x);
+  expect(image.x).toBeLessThan(measure.x);
   const [chooser] = await Promise.all([page.waitForEvent('filechooser'), tool.click()]);
   const accept = (await chooser.element().getAttribute('accept')) ?? '';
   expect(accept).toContain('.svg');

@@ -107,7 +107,9 @@ await page.getByTestId('tool-select').click();
 await page.getByTestId('connect-virtual').click();
 await page.getByTestId('unlock').click({ timeout: 15_000 });
 await page.getByTestId('machine-state').filter({ hasText: /idle/i }).waitFor({ timeout: 10_000 });
-for (const close of await page.getByRole('button', { name: 'Dismiss' }).all()) await close.click();
+// Dismissing one toast shifts the rest, so always close the first until none remain.
+const dismiss = page.getByRole('button', { name: 'Dismiss' });
+while (await dismiss.count()) await dismiss.first().click();
 // The layers are the story: fold the Machine section, as after connecting from the start screen.
 await page.getByTestId('section-machine').click();
 await page.getByTestId('bed-canvas').focus();
