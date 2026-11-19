@@ -173,7 +173,8 @@ export const SHORTCUTS: Shortcut[] = [
     keys: ['Delete', 'Backspace'],
     label: 'Delete node (node tool)',
     group: 'Edit',
-    when: () => designing() && nodeSelection.target() !== null,
+    // In the node tool Delete only removes nodes, never the whole object.
+    when: () => hasSelection() && editor.tool === 'node',
     run: () => nodeSelection.removeSelected(),
   },
   {

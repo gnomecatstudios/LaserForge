@@ -95,3 +95,21 @@ test('selecting a node and pressing Delete removes only that node', async ({ pag
   await page.keyboard.press('ControlOrMeta+z');
   await expect(page.getByTestId('path-node')).toHaveCount(3);
 });
+
+test('Delete in the node tool never removes the whole object', async ({ page }) => {
+  await newProject(page);
+  await page.getByTestId('tool-rect').click();
+  await dragOnCanvas(page, [0.4, 0.4], [0.6, 0.6]);
+  await page.getByTestId('tool-node').click();
+  await page.getByTestId('path-node').nth(1).click();
+  await page.keyboard.press('Delete');
+  await page.keyboard.press('Delete');
+  await expect(page.getByTestId('path-node')).toHaveCount(3);
+  await expect(page.getByTestId('status-bar')).toContainText('1 object');
+  await page.getByTestId('path-node').nth(1).click();
+  await page.keyboard.press('v');
+  await page.getByTestId('tool-node').click();
+  await expect(page.getByTestId('path-node').nth(1)).toHaveAttribute('aria-pressed', 'false');
+  await page.keyboard.press('Delete');
+  await expect(page.getByTestId('path-node')).toHaveCount(3);
+});

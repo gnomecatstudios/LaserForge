@@ -22,6 +22,10 @@
       : [],
   );
   let drag: { object: VectorObject; node: NodeRef; pointer: number } | null = null;
+  // Forget the picked node when leaving the node tool, so Delete never hits a node picked earlier.
+  $effect(() => {
+    if (editor.tool !== 'node' || editor.view !== 'design') nodeSelection.current = null;
+  });
   function screen(object: VectorObject, point: Vec2) {
     return bedToScreen(canvas.view, bed, apply(object.transform, point));
   }
