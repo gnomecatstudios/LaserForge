@@ -6,6 +6,7 @@
   import { canvas } from '../state/canvas.svelte';
   import { bedToScreen, screenToBed, type BedFrame } from './viewport';
   import { insertNode, moveNode, pathNodes, type NodeRef } from './node-edit';
+  import { nodeSelection } from '../state/nodes.svelte';
   let { bed }: { bed: BedFrame } = $props();
   let host: HTMLDivElement;
   const objects = $derived(
@@ -133,6 +134,8 @@
       <button
         type="button"
         class:control={!!node.control}
+        class:selected={nodeSelection.is(object.id, node)}
+        aria-pressed={node.control ? undefined : nodeSelection.is(object.id, node)}
         style:left="{at.x}px"
         style:top="{at.y}px"
         aria-label="{node.control ? 'Curve handle' : 'Path node'} {node.path + 1}:{node.index + 2}"
@@ -140,6 +143,11 @@
         onpointerdown={(event) => {
           if (event.button !== 0) return;
           event.stopPropagation();
+          if (event.altKey && !node.control) {
+            nodeSelection.remove(object, node);
+            return;
+          }
+          nodeSelection.current = node.control ? null : { objectId: object.id, node };
           event.currentTarget.setPointerCapture(event.pointerId);
           editor.sealHistory();
           drag = { object, node, pointer: event.pointerId };
@@ -152,7 +160,10 @@
     {/each}
   {/each}
   {#if editor.tool === 'node' && editor.view === 'design'}
-    <p>Click a path to add a node; drag nodes or curve handles to edit.</p>
+    <p>
+      Click a path to add a node; drag nodes or curve handles to edit. Select a node and press Delete (or
+      Alt+click it) to remove it.
+    </p>
   {/if}
 </div>
 
@@ -195,6 +206,9 @@
     pointer-events: auto;
     cursor: move;
     touch-action: none;
+  }
+  button.selected {
+    background: var(--ol-signal);
   }
   button.control {
     border-radius: 50%;

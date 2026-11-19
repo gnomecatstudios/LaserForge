@@ -81,3 +81,55 @@ export function insertNode(paths: PathData[], pathIndex: number, index: number, 
       : p,
   );
 }
+
+type Segment = PathData['segments'][number];
+
+/** Join two consecutive segments into one, keeping the outer curve handles. */
+function joinSegments(from: Vec2, a: Segment, b: Segment): Segment {
+  if (a.type === 'L' && b.type === 'L') return { type: 'L', to: b.to };
+  return {
+    type: 'C',
+    c1: a.type === 'C' ? a.c1 : from,
+    c2: b.type === 'C' ? b.c2 : b.to,
+    to: b.to,
+  };
+}
+
+/**
+ * Remove one anchor, joining its two neighbouring segments. Curve handles are not deletable.
+ * Returns `paths` unchanged when the node is invalid or the path would fall below two anchors.
+ */
+export function deleteNode(paths: PathData[], node: NodeRef): PathData[] {
+  const path = paths[node.path];
+  if (!path || node.control) return paths;
+  const last = path.segments.at(-1);
+  const explicitClose = path.closed && last?.to.x === path.start.x && last?.to.y === path.start.y;
+  // Anchors and the segments leaving each one; closed paths wrap around.
+  const anchors = [path.start, ...path.segments.map((s) => s.to)];
+  const segments = [...path.segments];
+  if (explicitClose) anchors.pop();
+  else if (path.closed) segments.push({ type: 'L', to: path.start });
+  const j = node.index + 1;
+  if (j < 0 || j >= anchors.length || anchors.length <= 2) return paths;
+
+  let next: PathData;
+  if (!path.closed) {
+    if (j === 0) next = { ...path, start: anchors[1], segments: segments.slice(1) };
+    else if (j === anchors.length - 1) next = { ...path, segments: segments.slice(0, -1) };
+    else {
+      const joined = joinSegments(anchors[j - 1], segments[j - 1], segments[j]);
+      next = { ...path, segments: [...segments.slice(0, j - 1), joined, ...segments.slice(j + 1)] };
+    }
+  } else {
+    const m = anchors.length;
+    const inIndex = (j - 1 + m) % m;
+    const joined = joinSegments(anchors[inIndex], segments[inIndex], segments[j]);
+    const kept = segments.map((s, i) => (i === inIndex ? joined : s)).filter((_, i) => i !== j);
+    const start = j === 0 ? anchors[1] : path.start;
+    // Keep an implicit closure implicit when the closing segment is still a straight line.
+    const tail = kept.at(-1);
+    const result = !explicitClose && tail?.type === 'L' ? kept.slice(0, -1) : kept;
+    next = { ...path, start, segments: result };
+  }
+  return paths.map((p, i) => (i === node.path ? next : p));
+}

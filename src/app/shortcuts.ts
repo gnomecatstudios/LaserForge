@@ -7,6 +7,7 @@ import { groupSelection, ungroupSelection } from './group-actions';
 import { isTypingTarget, matches, ownsArrowKeys } from './lib/keys';
 import { editor } from './state/editor.svelte';
 import { pen } from './state/pen.svelte';
+import { nodeSelection } from './state/nodes.svelte';
 import { canvas } from './state/canvas.svelte';
 import { connectedSession } from './machines/registry';
 import { route } from './state/route.svelte';
@@ -168,6 +169,13 @@ export const SHORTCUTS: Shortcut[] = [
     run: () => actions.duplicateSelection(),
   },
   { keys: ['Mod+A'], label: 'Select all', group: 'Edit', when: designing, run: () => editor.selectAll() },
+  {
+    keys: ['Delete', 'Backspace'],
+    label: 'Delete node (node tool)',
+    group: 'Edit',
+    when: () => designing() && nodeSelection.target() !== null,
+    run: () => nodeSelection.removeSelected(),
+  },
   {
     keys: ['Delete', 'Backspace'],
     label: 'Delete selection',

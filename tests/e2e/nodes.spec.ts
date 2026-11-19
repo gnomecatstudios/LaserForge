@@ -70,3 +70,28 @@ test('clicking a selected path inserts a movable node and supports undo', async 
   await page.keyboard.press('ControlOrMeta+z');
   await expect(page.getByTestId('path-node')).toHaveCount(4);
 });
+
+test('selecting a node and pressing Delete removes only that node', async ({ page }) => {
+  await newProject(page);
+  await page.getByTestId('tool-rect').click();
+  await dragOnCanvas(page, [0.4, 0.4], [0.6, 0.6]);
+  await page.getByTestId('tool-node').click();
+  await expect(page.getByTestId('path-node')).toHaveCount(4);
+  await page.getByTestId('path-node').nth(1).click();
+  await expect(page.getByTestId('path-node').nth(1)).toHaveAttribute('aria-pressed', 'true');
+  await page.keyboard.press('Delete');
+  await expect(page.getByTestId('path-node')).toHaveCount(3);
+  await expect(page.getByTestId('status-bar')).toContainText('1 object');
+  await page
+    .getByTestId('path-node')
+    .first()
+    .click({ modifiers: ['Alt'] });
+  await expect(page.getByTestId('path-node')).toHaveCount(2);
+  await page
+    .getByTestId('path-node')
+    .first()
+    .click({ modifiers: ['Alt'] });
+  await expect(page.getByTestId('path-node')).toHaveCount(2);
+  await page.keyboard.press('ControlOrMeta+z');
+  await expect(page.getByTestId('path-node')).toHaveCount(3);
+});
