@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { connectVirtual, dragOnCanvas, newProject, prepare } from './helpers';
+import { connectVirtual, dragOnCanvas, newProject, openConsole, openMachine, prepare } from './helpers';
 
 test.beforeEach(async ({ page }) => prepare(page));
 
@@ -49,7 +49,7 @@ test('frames, runs, pauses, resumes and stops a job', async ({ page }) => {
 test('the console sends commands and shows replies', async ({ page }) => {
   await newProject(page);
   await connectVirtual(page);
-  // The console opens by itself on connect.
+  await openConsole(page);
   await expect(page.getByTestId('console-input')).toBeVisible();
   await page.getByTestId('console-input').fill('$I');
   await page.getByTestId('console-input').press('Enter');
@@ -124,6 +124,7 @@ test('the pre-flight shows the job, asks to frame first, and remembers checks', 
 test('Stop is only active while something runs, and never strands the machine in Hold', async ({ page }) => {
   await newProject(page);
   await connectVirtual(page);
+  await openConsole(page);
   const stop = page.getByTestId('stop');
   await expect(stop).toBeDisabled();
 
@@ -150,6 +151,7 @@ test('Stop is only active while something runs, and never strands the machine in
 test('the console follows new lines, and auto-scroll can be turned off', async ({ page }) => {
   await newProject(page);
   await connectVirtual(page);
+  await openConsole(page);
   const input = page.getByTestId('console-input');
   const log = page.getByTestId('console').getByRole('log');
   const gap = () => log.evaluate((el) => el.scrollHeight - el.scrollTop - el.clientHeight);
@@ -172,6 +174,7 @@ test('the console follows new lines, and auto-scroll can be turned off', async (
 test('walks through a laser that is not showing up', async ({ page }) => {
   await page.goto('/');
   await page.getByTestId('new-project').click();
+  await openMachine(page);
   await page.getByTestId('connect-help-open').click();
   const dialog = page.getByTestId('connect-help-dialog');
   await expect(dialog).toContainText('Power on the laser');

@@ -1,10 +1,11 @@
 import { readFileSync } from 'node:fs';
 import { expect, test, type Page } from '@playwright/test';
-import { dragOnCanvas, newProject, prepare } from './helpers';
+import { dragOnCanvas, newProject, openMachine, prepare } from './helpers';
 
 test.beforeEach(async ({ page }) => prepare(page));
 
 async function pickMachine(page: Page, search: string, name: RegExp) {
+  await openMachine(page);
   await page.getByTestId('change-machine').click();
   await page.getByTestId('preset-search').fill(search);
   await page.getByRole('radio', { name }).click();
@@ -27,7 +28,8 @@ test('an LP4 picks lasers per layer and switches to its rotary from the machine 
   await diameter.press('Enter');
   await expect(page.getByTestId('object-around')).toHaveText('157.1 mm around');
   // The bed becomes the unrolled surface.
-  await expect(page.getByText('LaserPecker LP4 · 160 × 157 mm')).toBeVisible();
+  await expect(page.getByTestId('machine-menu')).toContainText('LaserPecker LP4');
+  await expect(page.getByTestId('machine-menu')).toContainText('160 × 157 mm');
 
   const [download] = await Promise.all([
     page.waitForEvent('download'),
@@ -40,7 +42,7 @@ test('an LP4 picks lasers per layer and switches to its rotary from the machine 
 
   // Back on the flat bed, the job says so.
   await setup.getByRole('button', { name: 'Flat bed' }).click();
-  await expect(page.getByText('LaserPecker LP4 · 160 × 120 mm')).toBeVisible();
+  await expect(page.getByTestId('machine-menu')).toContainText('160 × 120 mm');
 });
 
 test('an LP2 runs a rotary job on the virtual LaserPecker', async ({ page }) => {
@@ -64,6 +66,7 @@ test('an LP2 runs a rotary job on the virtual LaserPecker', async ({ page }) => 
 
 test('machine profiles edit lasers and accessories', async ({ page }) => {
   await newProject(page);
+  await openMachine(page);
   await page.getByTestId('change-machine').click();
   await page.getByRole('button', { name: 'Edit machine profiles' }).click();
   const hardware = page.getByTestId('profile-hardware');

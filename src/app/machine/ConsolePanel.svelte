@@ -5,6 +5,7 @@
   import Trash2 from '@lucide/svelte/icons/trash-2';
   import Filter from '@lucide/svelte/icons/filter';
   import ChevronsDown from '@lucide/svelte/icons/chevrons-down';
+  import ChevronRight from '@lucide/svelte/icons/chevron-right';
   import { tick } from 'svelte';
   import { formatConsoleReport, formatConsoleText, type ConsoleEntry } from 'libopenlaser/machine';
   import { APP_NAME, APP_VERSION } from '$lib/config/app';
@@ -13,7 +14,27 @@
   import { machine } from '../state/machine.svelte';
   import { preferences } from '../state/preferences.svelte';
 
-  /** Always on screen at the bottom of the side panel: every line to and from the machine. */
+  /** At the bottom of the side panel: every line to and from the machine. Folded until opened. */
+  const OPEN_KEY = 'openlaser.console.open';
+  let open = $state(readOpen());
+
+  function readOpen(): boolean {
+    try {
+      return localStorage.getItem(OPEN_KEY) === '1';
+    } catch {
+      return false;
+    }
+  }
+
+  function toggle() {
+    open = !open;
+    try {
+      localStorage.setItem(OPEN_KEY, open ? '1' : '0');
+    } catch {
+      // Storage unavailable: the choice holds for this visit.
+    }
+  }
+
   let command = $state('');
   let history: string[] = [];
   let historyIndex = -1;
@@ -48,7 +69,7 @@
   // Follow the newest line. Keyed on the last entry: the count stops changing once the log is full.
   $effect(() => {
     void visible.at(-1)?.id;
-    if (!autoScroll || !list) return;
+    if (!open || !autoScroll || !list) return;
     void tick().then(() => list && (list.scrollTop = list.scrollHeight));
   });
 
@@ -108,17 +129,22 @@
 </script>
 
 <section class="console" aria-label="Console" data-testid="console">
-  <div
-    class="resize"
-    role="separator"
-    aria-orientation="horizontal"
-    aria-label="Resize console"
-    tabindex="-1"
-    onpointerdown={startResize}
-  ></div>
+  {#if open}
+    <div
+      class="resize"
+      role="separator"
+      aria-orientation="horizontal"
+      aria-label="Resize console"
+      tabindex="-1"
+      onpointerdown={startResize}
+    ></div>
+  {/if}
   <div class="head">
-    <Terminal size={14} />
-    <h2>Console</h2>
+    <button type="button" class="toggle" aria-expanded={open} onclick={toggle} data-testid="console-toggle">
+      <ChevronRight size={15} class="chevron" />
+      <Terminal size={14} />
+      <h2>Console</h2>
+    </button>
     <span class="spacer"></span>
     <button
       type="button"
@@ -146,27 +172,29 @@
       onclick={() => machine.clearConsole()}><Trash2 size={14} /></button
     >
   </div>
-  <div class="log mono" bind:this={list} role="log" aria-live="off" style="height: {height}px">
-    {#each visible as e (e.id)}
-      <div class="entry {tone(e)}">{arrow(e)} {e.text}</div>
-    {:else}
-      <div class="empty">
-        {machine.connected ? 'Waiting for messages…' : 'Connect a machine to see what it says.'}
-      </div>
-    {/each}
-  </div>
-  <div class="input-row">
-    <span class="mono prompt">&gt;</span>
-    <input
-      class="cmd mono"
-      placeholder={machine.connected ? 'G-code or $ command' : 'Not connected'}
-      aria-label="Console command"
-      bind:value={command}
-      disabled={!machine.connected || machine.jobActive}
-      {onkeydown}
-      data-testid="console-input"
-    />
-  </div>
+  {#if open}
+    <div class="log mono" bind:this={list} role="log" aria-live="off" style="height: {height}px">
+      {#each visible as e (e.id)}
+        <div class="entry {tone(e)}">{arrow(e)} {e.text}</div>
+      {:else}
+        <div class="empty">
+          {machine.connected ? 'Waiting for messages…' : 'Connect a machine to see what it says.'}
+        </div>
+      {/each}
+    </div>
+    <div class="input-row">
+      <span class="mono prompt">&gt;</span>
+      <input
+        class="cmd mono"
+        placeholder={machine.connected ? 'G-code or $ command' : 'Not connected'}
+        aria-label="Console command"
+        bind:value={command}
+        disabled={!machine.connected || machine.jobActive}
+        {onkeydown}
+        data-testid="console-input"
+      />
+    </div>
+  {/if}
 </section>
 
 <style>
@@ -201,6 +229,31 @@
     height: 36px;
     padding: 0 8px 0 16px;
     color: var(--ol-text-muted);
+  }
+
+  .toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-left: -6px;
+    padding: 2px 6px 2px 4px;
+    border: 0;
+    border-radius: var(--ol-radius-sm);
+    background: none;
+    color: var(--ol-text-muted);
+    cursor: pointer;
+  }
+
+  .toggle:hover {
+    background: var(--ol-surface-2);
+  }
+
+  .toggle :global(.chevron) {
+    transition: transform 0.15s ease;
+  }
+
+  .toggle[aria-expanded='true'] :global(.chevron) {
+    transform: rotate(90deg);
   }
 
   h2 {

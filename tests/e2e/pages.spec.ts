@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { prepare } from './helpers';
+import { openMachine, prepare } from './helpers';
 
 test.beforeEach(async ({ page }) => prepare(page));
 
@@ -84,6 +84,7 @@ test('the top bar has the menu after the logo and a connect button until a laser
 
   const connect = page.getByTestId('topbar-connect');
   await expect(connect).toBeVisible();
+  await openMachine(page);
   await page.getByTestId('connect-virtual').click();
   await expect(connect).toHaveCount(0);
 });

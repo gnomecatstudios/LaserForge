@@ -1,7 +1,7 @@
 /**
  * Which side-panel sections are open. Remembered in this browser; everything opens by default.
  */
-export type SectionId = 'machine' | 'layers' | 'inspector';
+export type SectionId = 'layers' | 'inspector';
 
 const KEY = 'openlaser.sections.closed';
 

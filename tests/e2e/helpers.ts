@@ -37,10 +37,31 @@ export async function dragOnCanvas(page: Page, from: [number, number], to: [numb
 }
 
 export async function connectVirtual(page: Page): Promise<void> {
+  await openMachine(page);
   await page.getByTestId('connect-virtual').click();
   await expect(page.getByTestId('machine-state')).toHaveText(/ALARM|IDLE/i, { timeout: 15_000 });
   if (/alarm/i.test((await page.getByTestId('machine-state').textContent()) ?? '')) {
     await page.getByTestId('unlock').click();
   }
   await expect(page.getByTestId('machine-state')).toHaveText(/IDLE/i, { timeout: 10_000 });
+}
+
+/** Opens the Machine dropdown in the top bar, if it is not open already. */
+export async function openMachine(page: Page): Promise<void> {
+  const trigger = page.getByTestId('machine-menu');
+  if ((await trigger.getAttribute('data-state')) !== 'open') await trigger.click();
+  await expect(page.getByTestId('machine-panel')).toBeVisible();
+}
+
+/** Unfolds the console at the bottom of the side panel, if it is folded. */
+export async function openConsole(page: Page): Promise<void> {
+  const toggle = page.getByTestId('console-toggle');
+  if ((await toggle.getAttribute('aria-expanded')) !== 'true') await toggle.click();
+  await expect(page.getByTestId('console-input')).toBeVisible();
+}
+
+/** Closes the Machine dropdown so it no longer covers the bed. */
+export async function closeMachine(page: Page): Promise<void> {
+  await page.getByTestId('machine-close').click();
+  await expect(page.getByTestId('machine-panel')).toHaveCount(0);
 }

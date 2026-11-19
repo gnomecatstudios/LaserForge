@@ -20,6 +20,7 @@
   import { ui } from '../state/ui.svelte';
   import * as actions from '../actions';
   import ConnectButton from '../connect/ConnectButton.svelte';
+  import MachineMenu from '../machine/MachineMenu.svelte';
 
   const saveState = $derived(
     editor.gcode
@@ -187,6 +188,8 @@
       <Redo2 size={18} />
     </button>
   </div>
+  <div class="divider-v"></div>
+  <MachineMenu />
 
   <div class="spacer"></div>
 
@@ -280,6 +283,7 @@
     align-items: center;
     gap: 8px;
     min-width: 0;
+    flex-shrink: 0;
   }
 
   .name {
