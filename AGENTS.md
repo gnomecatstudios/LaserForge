@@ -8,3 +8,10 @@ Unless the user explicitly requests a platform-specific change, apply app featur
 fixes, and branding across Windows, Linux, and Raspberry Pi. Rebuild all four
 supported portable targets when refreshing packaged downloads; do not ship only
 the Linux update. Run the portable parity and branding checks before publishing.
+
+After every push to `main`, refresh the portable builds: run the parity and branding checks
+on all four targets (`scripts/build-portable.py`, then `scripts/verify-portable-parity.py` and
+`scripts/verify-portable-branding.py`), then dispatch the "Build portable packages" workflow
+(`.github/workflows/portable-build.yml`) on `main` with `publish: true`. That run bumps the
+version, commits the verified ZIPs to `portable/downloads`, and creates the GitHub release.
+A plain push to `main` only builds the packages; it does not publish them.

@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { newProject, prepare } from './helpers';
+import { dragOnCanvas, newProject, prepare } from './helpers';
 
 test('previews closed-path simplification, cancels, applies and undoes', async ({ page }) => {
   const errors: string[] = [];
@@ -56,4 +56,24 @@ test('simplifies image outlines through tracing and keeps the original for undo'
   await expect(page.getByTestId('status-bar')).toContainText('2 objects');
   await page.keyboard.press('ControlOrMeta+z');
   await expect(page.getByTestId('status-bar')).toContainText('1 object');
+});
+
+test('Escape closes the Simplify Path popover', async ({ page }) => {
+  await prepare(page);
+  await newProject(page);
+  await page.getByTestId('tool-rect').click();
+  await dragOnCanvas(page, [0.4, 0.4], [0.55, 0.55]);
+  await page.getByTestId('tool-simplify').click();
+  await expect(page.getByTestId('simplify-count')).toBeVisible();
+  await page.locator('#simplify-tolerance').focus();
+  await page.keyboard.press('Escape');
+  await expect(page.getByTestId('simplify-count')).toHaveCount(0);
+
+  // Also from the toolbar button, and the first Escape only closes the panel.
+  await page.getByTestId('tool-simplify').click();
+  await expect(page.getByTestId('simplify-count')).toBeVisible();
+  await page.getByTestId('tool-simplify').focus();
+  await page.keyboard.press('Escape');
+  await expect(page.getByTestId('simplify-count')).toHaveCount(0);
+  await expect(page.getByTestId('tool-simplify')).toBeEnabled();
 });
