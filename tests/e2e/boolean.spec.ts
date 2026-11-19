@@ -38,7 +38,10 @@ test('right click preserves a selected group, selects an unselected object and c
     'data-disabled',
   );
   await page.keyboard.press('Escape');
+  // The first Escape closes the menu; wait for it so the second one reaches the canvas.
+  await expect(menu(page)).toHaveCount(0);
   await page.keyboard.press('Escape');
+  await expect(page.getByTestId('status-bar')).not.toContainText('selected');
   await rightClick(page, 0.3, 0.35);
   await expect(page.getByRole('menuitem', { name: 'Copy', exact: false })).not.toHaveAttribute(
     'data-disabled',
