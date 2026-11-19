@@ -25,11 +25,9 @@
   import { ui } from '../state/ui.svelte';
   import ConnectHelpButton from '../connect/ConnectHelpButton.svelte';
   import * as actions from '../actions';
-  import { sections } from '../state/sections.svelte';
 
-  /** Connected from here: the work comes first, so the Machine section starts closed. */
+  /** Connected from here: the work comes first, so the design opens straight away. */
   function startConnected() {
-    sections.set('machine', false);
     actions.ensureDocument();
   }
 
@@ -102,10 +100,12 @@
           </button>
           <button type="button" class="link" onclick={() => actions.importArt()}>Import art</button>
           <button type="button" class="link" onclick={() => actions.openGcodeFile()}>Send G-code</button>
-          <button type="button" class="link" data-testid="try-virtual" onclick={() => {
-            sections.set('machine', false);
-            void actions.startWithVirtualMachine();
-          }}><Cpu size={16} />Virtual machine</button>
+          <button
+            type="button"
+            class="link"
+            data-testid="try-virtual"
+            onclick={() => void actions.startWithVirtualMachine()}><Cpu size={16} />Virtual machine</button
+          >
           <ConnectHelpButton />
         </div>
       </div>
@@ -153,7 +153,6 @@
           {/if}
         </div>
       </ErrorBoundary>
-
     </aside>
     <div class="safety"><SafetyStrip /></div>
   </main>
@@ -406,7 +405,9 @@
     align-items: center;
     gap: 12px;
   }
-  .safety { width: 100%; }
+  .safety {
+    width: 100%;
+  }
   .foot {
     display: flex;
     justify-content: space-between;

@@ -1,9 +1,10 @@
 import { expect, test, type Page } from '@playwright/test';
-import { dragOnCanvas, newProject, prepare } from './helpers';
+import { dragOnCanvas, newProject, openMachine, prepare } from './helpers';
 
 test.beforeEach(async ({ page }) => prepare(page));
 
 async function pick(page: Page, search: string, name: RegExp) {
+  await openMachine(page);
   await page.getByTestId('change-machine').click();
   await page.getByTestId('preset-search').fill(search);
   await page.getByRole('radio', { name }).click();

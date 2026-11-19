@@ -3,7 +3,7 @@ import { dragOnCanvas, newProject, prepare } from './helpers';
 
 test.beforeEach(async ({ page }) => prepare(page));
 
-test('the side panel runs machine, layers, then the selection, and sections fold', async ({ page }) => {
+test('the side panel runs layers, then the selection, and sections fold', async ({ page }) => {
   await newProject(page);
   await page.getByTestId('tool-text').click();
   await dragOnCanvas(page, [0.4, 0.4], [0.5, 0.5]);
@@ -13,7 +13,7 @@ test('the side panel runs machine, layers, then the selection, and sections fold
   const order = await side
     .locator('[data-testid^="section-"]')
     .evaluateAll((els) => els.map((e) => e.getAttribute('data-testid')));
-  expect(order).toEqual(['section-machine', 'section-layers', 'section-inspector']);
+  expect(order).toEqual(['section-layers', 'section-inspector']);
 
   // Folding keeps the head, hides the rest, and is remembered after a reload.
   await page.getByTestId('section-layers').click();
@@ -27,12 +27,20 @@ test('the side panel runs machine, layers, then the selection, and sections fold
   await expect(page.getByTestId('layer-settings')).toBeVisible();
 });
 
-test('starting a machine from the welcome page folds the Machine section', async ({ page }) => {
+test('the machine lives in a top-bar dropdown that stays open while you work', async ({ page }) => {
   await page.goto('/');
   await page.getByTestId('try-virtual').click();
   await expect(page.getByTestId('workspace')).toBeVisible();
-  await expect(page.getByTestId('section-machine')).toHaveAttribute('aria-expanded', 'false');
-  await expect(page.getByTestId('change-machine')).toHaveCount(0);
+  await expect(page.getByTestId('machine-panel')).toHaveCount(0);
+  await expect(page.getByTestId('machine-menu')).toContainText('mm');
+
+  await page.getByTestId('machine-menu').click();
+  await expect(page.getByTestId('change-machine')).toBeVisible();
+  // Working on the bed leaves it open; × closes it.
+  await page.getByTestId('bed-canvas').click();
+  await expect(page.getByTestId('machine-panel')).toBeVisible();
+  await page.getByTestId('machine-close').click();
+  await expect(page.getByTestId('machine-panel')).toHaveCount(0);
 });
 
 test('a reload carries on in the project; a new visit starts on the welcome page', async ({

@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { connectVirtual, newProject, prepare } from './helpers';
+import { connectVirtual, newProject, openConsole, prepare } from './helpers';
 
 const repo = 'https://github.com/gnomecatstudios/LaserForge/releases';
 const api = 'https://api.github.com/repos/gnomecatstudios/LaserForge/releases/latest';
@@ -115,6 +115,7 @@ test('pending automatic notification never covers connected machine controls', a
   });
   await newProject(page);
   await connectVirtual(page);
+  await openConsole(page);
   deliver!();
   await page.getByTestId('console-input').fill('$J=G91 G21 X300 F600');
   await page.getByTestId('console-input').press('Enter');
@@ -148,4 +149,3 @@ test('mobile dialog fits and unknown platforms require an explicit selection', a
   expect(box.x).toBeGreaterThanOrEqual(0);
   expect(box.x + box.width).toBeLessThanOrEqual(390);
 });
-

@@ -15,7 +15,6 @@
   import LayoutPanel from './LayoutPanel.svelte';
   import SelectionInspector from '../inspector/SelectionInspector.svelte';
   import { textOutlines } from '../state/text.svelte';
-  import MachinePanel from '../machine/MachinePanel.svelte';
   import ConsolePanel from '../machine/ConsolePanel.svelte';
   import { connectedAdapter, shownAdapter } from '../machines/registry';
   import StatusBar from './StatusBar.svelte';
@@ -90,7 +89,6 @@
     </main>
     <aside class="side">
       <div class="side-scroll">
-        <ErrorBoundary name="Machine"><MachinePanel /></ErrorBoundary>
         {#if editor.project}
           <ErrorBoundary name="Layers"><LayersPanel /></ErrorBoundary>
           <ErrorBoundary name="Inspector"><SelectionInspector /></ErrorBoundary>

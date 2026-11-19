@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { currentBed } from '../state/work-area';
   import Link from '@lucide/svelte/icons/link';
   import Unlink from '@lucide/svelte/icons/unlink';
   import NumberField from '$lib/ui/NumberField.svelte';
@@ -15,7 +14,6 @@
     selectedObjects,
   } from '../lib/selection';
   import { editor } from '../state/editor.svelte';
-  import { profiles } from '../state/profiles.svelte';
   import AnchorPicker from './AnchorPicker.svelte';
 
   const objects = $derived(editor.project ? selectedObjects(editor.project, editor.selection) : []);
@@ -30,7 +28,6 @@
     editor.commit((p) => transformObjects(p, ids, matrix), { coalesce: `field-${key}` });
     if (!live) editor.sealHistory();
   }
-  const area = $derived(currentBed());
 </script>
 
 <div class="bar mono" data-testid="selection-bar">
@@ -102,9 +99,6 @@
       onchange={(v, live) => bounds && apply(rotateAbout(bounds, editor.anchor, v - rotation), live, 'r')}
     />
   </div>
-  <span class="spacer"></span>
-  <span class="machine">{profiles.active.name} · {Math.round(area.width)} × {Math.round(area.height)} mm</span
-  >
 </div>
 
 <style>
@@ -150,15 +144,5 @@
 
   .lock {
     margin: 0 -2px;
-  }
-
-  .spacer {
-    flex-grow: 1;
-  }
-
-  .machine {
-    color: var(--ol-text-muted);
-    font-family: var(--ol-font);
-    white-space: nowrap;
   }
 </style>

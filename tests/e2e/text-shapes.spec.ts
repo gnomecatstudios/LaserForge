@@ -70,14 +70,19 @@ test('the shapes tool draws a library shape with editable parameters', async ({ 
   await expect(page.getByTestId('status-bar')).toContainText('2 objects');
 });
 
-test('the console sits in the side panel and is always visible', async ({ page }) => {
+test('the console sits folded at the foot of the side panel and unfolds, remembered', async ({ page }) => {
   await newProject(page);
   const console = page.getByTestId('console');
   await expect(console).toBeVisible();
-  const panel = (await page.getByTestId('machine-panel').boundingBox())!;
+  await expect(page.getByTestId('console-toggle')).toHaveAttribute('aria-expanded', 'false');
+  await expect(page.getByTestId('console-input')).toHaveCount(0);
+  const side = (await page.locator('.side').boundingBox())!;
   const consoleBox = (await console.boundingBox())!;
-  expect(consoleBox.x).toBeGreaterThanOrEqual(panel.x - 1);
-  expect(consoleBox.y).toBeGreaterThan(panel.y);
+  expect(consoleBox.x).toBeGreaterThanOrEqual(side.x - 1);
+
+  await page.getByTestId('console-toggle').click();
+  await expect(page.getByTestId('console-input')).toBeVisible();
+  expect(await page.evaluate(() => localStorage.getItem('openlaser.console.open'))).toBe('1');
 });
 
 async function addText(page: import('@playwright/test').Page) {
