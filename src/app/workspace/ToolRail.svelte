@@ -9,7 +9,6 @@
   import { simplifyPath, flattenPaths, polylinesBounds } from 'libopenlaser/geometry';
   import type { VectorObject } from 'libopenlaser/project';
 
-  let simplifyOpen = $state(false);
   let tolerance = $state(0.1);
   const vectors = $derived(
     editor.project?.objects.filter(
@@ -48,7 +47,7 @@
         .map((o) => [o.id, { ...o, shape: undefined }]),
     );
     editor.commit((p) => ({ ...p, objects: p.objects.map((o) => replacements.get(o.id) ?? o) }));
-    simplifyOpen = false;
+    ui.simplifyOpen = false;
   }
   import Hand from '@lucide/svelte/icons/hand';
   import Square from '@lucide/svelte/icons/square';
@@ -169,7 +168,7 @@
       }}><Spline size={18} /></button
     >
   {:else}
-    <Popover.Root bind:open={simplifyOpen}>
+    <Popover.Root bind:open={ui.simplifyOpen}>
       <Popover.Trigger
         class="icon-btn tool"
         aria-label="Simplify path"
@@ -220,7 +219,7 @@
             >Open and closed paths. Sharp polyline corners are kept; compatible Bézier segments merge within
             the tolerance.</span
           >
-          <button type="button" class="btn" onclick={() => (simplifyOpen = false)}>Cancel</button>
+          <button type="button" class="btn" onclick={() => (ui.simplifyOpen = false)}>Cancel</button>
           <button type="button" class="btn start" disabled={after >= before} onclick={applySimplification}
             >Apply simplification</button
           >

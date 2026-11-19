@@ -56,7 +56,12 @@ for (const operation of ['Union', 'Subtract', 'Intersect', 'Exclude (XOR)']) {
     await shapes(page);
     await rightClick(page);
     await page.getByRole('menuitem', { name: 'Boolean', exact: true }).hover();
-    await page.getByRole('menuitem', { name: operation, exact: false }).click();
+    // Union also sits at the top of the menu; pick the submenu's copy.
+    await page
+      .locator('[data-canvas-menu]')
+      .last()
+      .getByRole('menuitem', { name: operation, exact: false })
+      .click();
     await expect(page.getByTestId('status-bar')).toContainText('1 object');
     await expect(menu(page)).toHaveCount(0);
     await page.keyboard.press('ControlOrMeta+z');
@@ -82,7 +87,12 @@ test('keyboard navigation opens Boolean and returns focus without clearing selec
   }
   await expect(page.getByRole('menuitem', { name: 'Boolean', exact: true })).toBeFocused();
   await page.keyboard.press('ArrowRight');
-  await expect(page.getByRole('menuitem', { name: /^Union/ })).toBeFocused();
+  await expect(
+    page
+      .locator('[data-canvas-menu]')
+      .last()
+      .getByRole('menuitem', { name: /^Union/ }),
+  ).toBeFocused();
   await page.keyboard.press('Enter');
   await expect(page.getByTestId('status-bar')).toContainText('1 object');
 });
@@ -113,4 +123,29 @@ test('copied canvas content can be pasted on empty space and menu stays within v
   expect(box.y + box.height).toBeLessThanOrEqual(viewport.height);
   await page.getByRole('menuitem', { name: /^Paste/ }).click();
   await expect(page.getByTestId('status-bar')).toContainText('4 objects');
+});
+
+test('Union, Simplify Path and Outline sit at the top of the right-click menu', async ({ page }) => {
+  await shapes(page);
+  await rightClick(page);
+  await page.getByTestId('menu-union').click();
+  await expect(page.getByTestId('status-bar')).toContainText('1 object');
+
+  await rightClick(page);
+  await page.getByTestId('menu-simplify').click();
+  await expect(page.getByTestId('simplify-count')).toBeVisible();
+  await page.getByRole('button', { name: 'Cancel' }).click();
+  await expect(page.getByTestId('simplify-count')).toHaveCount(0);
+
+  await rightClick(page);
+  await page.getByTestId('menu-outline').click();
+  await expect(page.getByTestId('outline-menu')).toBeVisible();
+  await page.getByTestId('outline-apply').click();
+  await expect(page.getByTestId('status-bar')).toContainText('2 objects');
+});
+
+test('the shortcut items are disabled with nothing selected', async ({ page }) => {
+  await rightClick(page, 0.8, 0.8);
+  for (const id of ['menu-union', 'menu-simplify', 'menu-outline'])
+    await expect(page.getByTestId(id)).toHaveAttribute('data-disabled');
 });
