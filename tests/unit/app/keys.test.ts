@@ -14,7 +14,7 @@ const ev = (
 
 describe('keyboard shortcuts', () => {
   it('parses combos', () => {
-    expect(parseCombo('Mod+Shift+S')).toEqual({ key: 's', mod: true, shift: true, alt: false });
+    expect(parseCombo('Mod+Shift+S')).toEqual({ key: 's', mod: true, shift: true, alt: false, tab: false });
   });
 
   it('maps Mod to Cmd on Apple and Ctrl elsewhere', () => {
@@ -42,6 +42,17 @@ describe('keyboard shortcuts', () => {
     expect(formatCombo('Mod+Shift+S', true)).toBe('⌘⇧S');
     expect(formatCombo('Mod+Shift+S', false)).toBe('Ctrl+Shift+S');
     expect(formatCombo('Escape', true)).toBe('Esc');
+  });
+});
+
+describe('Tab chords', () => {
+  it('label Tab but fire on Mod+U, since browsers keep Ctrl+Tab', () => {
+    expect(parseCombo('Mod+Tab+U')).toEqual({ key: 'u', mod: true, shift: false, alt: false, tab: true });
+    expect(formatCombo('Mod+Tab+U', false)).toBe('Ctrl+Tab+U');
+    expect(formatCombo('Mod+Tab+U', true)).toBe('⌘⇥U');
+    expect(matches(ev('u', { ctrl: true }), 'Mod+Tab+U', false)).toBe(true);
+    expect(matches(ev('u'), 'Mod+Tab+U', false)).toBe(false);
+    expect(matches(ev('U', { ctrl: true, shift: true }), 'Mod+Tab+U', false)).toBe(false);
   });
 });
 

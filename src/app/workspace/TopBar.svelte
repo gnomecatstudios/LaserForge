@@ -13,6 +13,7 @@
   import GithubMark from '$lib/ui/GithubMark.svelte';
   import { REPO_URL } from '$lib/config/app';
   import { formatCombo } from '../lib/keys';
+  import { UPDATE_KEYS } from '../shortcuts';
   import { editor } from '../state/editor.svelte';
   import { activeAdapter, connectedAdapter, DEFAULT_ADAPTER } from '../machines/registry';
   import { session } from '../state/session.svelte';
@@ -78,7 +79,7 @@
     { label: 'Keyboard shortcuts', keys: '?', run: () => (ui.shortcutsOpen = true) },
     'separator',
     { label: 'Take the tour', run: () => (ui.tourOpen = true) },
-    { label: 'Check for updates', run: () => void checkForUpdates() },
+    { label: 'Check for updates', keys: UPDATE_KEYS, run: () => void checkForUpdates() },
     { label: 'About', run: () => route.go('about') },
     { label: 'Close project', run: () => actions.closeDocument() },
   ]);
