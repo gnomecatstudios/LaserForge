@@ -1,5 +1,5 @@
-db7f0057b418ebafb4e573308c84afaf0bedac178b30bd0d224a1a8495708f9e  LaserForge-Portable-RPi-ARM32-v0.2.9.zip
-52d0088a40ff21eec42fd44c78fff002b4d71febaf9f5b9ca10963c751db2090  LaserForge-Portable-RPi-ARM64-v0.2.9.zip
-6c53fbe9ec1493bdc0a0006f1f67806de00f93507bc45e0b3b6925503b396fea  LaserForge-Portable-linux-x64-v0.2.9.zip
-e475c470f6bbbdc6b8f89ecea1b852aa01d813d920550054c3c72872506bd057  LaserForge-Portable-source-v0.2.9.zip
-f3b210e2aa752950e93d3bce87315d7e40d5c22c3179bea0628848e025280049  LaserForge-Portable-windows-x64-v0.2.9.zip
+48670572962e2e679989f2572cc5d7e5eaf26e035dd7dfcb9b64b596157d1d33  LaserForge-Portable-RPi-ARM32-v0.2.10.zip
+fa884ea4f9ebffad65dee9a2a14ee9b0b737a892137966c1f3942a1a665e62f4  LaserForge-Portable-RPi-ARM64-v0.2.10.zip
+8ba09a081a6d758ce19c00613580faff54ad324f0d53b45d16ed28cfd852bd32  LaserForge-Portable-linux-x64-v0.2.10.zip
+7147b3748ea78e60116fa4e37da30df61909824477ff40ffdb56f8ef38cdf7de  LaserForge-Portable-source-v0.2.10.zip
+839d075a7397d1b4a74f3689707e80e425c1443e7d2f9c7d20d51bdeaba38d57  LaserForge-Portable-windows-x64-v0.2.10.zip
