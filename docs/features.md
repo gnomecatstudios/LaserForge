@@ -1,6 +1,7 @@
 # Current features and future work
 
-Baseline: **Laser Forge v0.2.7**, published November 15, 2026 (Pacific time).
+Baseline: **Laser Forge v0.2.8**, published November 16, 2026 (Pacific time).
+v0.2.8 ships the v0.2.7 feature set with corrected app and portable documentation links.
 This inventory describes current source. Arc text, rotated engraving, Bézier simplification
 and linked guide updates are source additions; portable downloads remain at the baseline
 until the next verified four-platform release.
@@ -44,7 +45,7 @@ These are follow-ups, not missing Boolean features.
 
 | Follow-up                          | Status / next action                                                                                                                                                                                                                                             |
 | ---------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| npm library publication            | libopenlaser 0.1.3 publication failed with registry E404/permissions. An npm package owner must configure publishing access/trusted publishing for this repository, then rerun the existing publish workflow. Portable v0.2.7 already embeds the updated source. |
+| npm library publication            | libopenlaser 0.1.3 publication failed with registry E404/permissions. An npm package owner must configure publishing access/trusted publishing for this repository, then rerun the existing publish workflow. Portable v0.2.8 already embeds the updated source. |
 | Real-machine and target validation | Run the [manual hardware checklist](progress.md#manual-test-checklist-real-grbl-laser) and native launch/update checks on all four supported platforms. Automated packaging checks do not establish physical-machine behavior.                                   |
 | Tour and feature inventory         | This source update registers six previously omitted capabilities and refreshes the tour. The tour copy will reach portable users in the next verified four-platform release.                                                                                     |
 | Documentation maintenance          | Keep this inventory, the README, feature registry and tour aligned when features ship. Older packaging decisions are historical; use the current README for downloads and platform support.                                                                      |
