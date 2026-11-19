@@ -322,12 +322,22 @@ function dialogOpen(): boolean {
   return document.querySelector('[role="dialog"], [role="alertdialog"]') !== null;
 }
 
+/** Open bits-ui popovers. They carry no dialog role, but own Escape and the keys typed inside them. */
+const OPEN_POPOVER = '[data-popover-content][data-state="open"]';
+
+function popoverOwns(event: KeyboardEvent): boolean {
+  if (event.target instanceof Element && event.target.closest(OPEN_POPOVER)) return true;
+  // Escape dismisses the open popover first, wherever focus is (e.g. still on its trigger).
+  return event.key === 'Escape' && document.querySelector(OPEN_POPOVER) !== null;
+}
+
 export function handleKeydown(event: KeyboardEvent): boolean {
   const typing = isTypingTarget(event.target);
   const arrowWidget = event.key.startsWith('Arrow') && ownsArrowKeys(event.target);
+  const inPopover = popoverOwns(event);
   for (const shortcut of SHORTCUTS) {
     if (!shortcut.keys.some((k) => matches(event, k))) continue;
-    if ((typing || arrowWidget) && !shortcut.global) continue;
+    if ((typing || arrowWidget || inPopover) && !shortcut.global) continue;
     if (!shortcut.global && (dialogOpen() || document.querySelector('[data-canvas-menu]'))) continue;
     if (shortcut.when && !shortcut.when()) continue;
     event.preventDefault();
