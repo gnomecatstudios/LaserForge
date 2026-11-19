@@ -110,3 +110,57 @@ test('Separate keys colors out of an image onto stacked layers', async ({ page }
   await page.keyboard.press('ControlOrMeta+z');
   await expect(page.getByTestId('layer-row')).toHaveCount(1);
 });
+
+test('Subtract picks carve colors out of the selection and undo with the picks', async ({ page }) => {
+  await newProject(page);
+  await importFile(page, 'layered.png');
+  await page.getByTestId('view-bitmap').click();
+  await page.getByTestId('bitmap-tab-separate').click();
+  await expect.poll(() => pixelAt(page, 0.02, 0.02)).toEqual([0, 200, 0, 255]);
+  const share = page.getByTestId('separate-share');
+  const percent = async () => Number((await share.textContent())!.match(/([\d.]+)%/)?.[1] ?? NaN);
+
+  // The backdrop: green plus its shadow along the bottom.
+  await page.getByTestId('separate-background').click();
+  await expect(share).toContainText('% of the image selected');
+  const all = await percent();
+
+  // Alt-click the shadow: a subtract pick, shown with the minus cursor while Alt is held.
+  const canvas = page.getByTestId('bitmap-original');
+  await expect(canvas).toHaveAttribute('data-pick-mode', 'add');
+  await page.keyboard.down('Alt');
+  await clickImage(page, 0.5, 0.92);
+  await expect(canvas).toHaveAttribute('data-pick-mode', 'subtract');
+  await page.keyboard.up('Alt');
+  await expect(page.locator('[data-testid="separate-keys"] li[data-mode="subtract"]')).toHaveCount(1);
+  await expect.poll(percent).toBeLessThan(all);
+  const minusShadow = await percent();
+  // The shadow's pixels now show unselected.
+  await expect.poll(() => pixelAt(page, 0.5, 0.92)).toEqual([0, 160, 0, 255]);
+
+  // Undo and redo step through the picks before the project.
+  await page.keyboard.press('ControlOrMeta+z');
+  await expect.poll(percent).toBe(all);
+  await page.keyboard.press('ControlOrMeta+Shift+z');
+  await expect.poll(percent).toBe(minusShadow);
+
+  // A pick can switch mode; with the switch on Subtract, a plain click subtracts and Shift adds.
+  await page.getByTestId('separate-toggle-2').click();
+  await expect.poll(percent).toBe(all);
+  await page.getByTestId('separate-mode-subtract').click();
+  await expect(canvas).toHaveAttribute('data-pick-mode', 'subtract');
+  await expect(page.getByTestId('separate-matching-mode')).toContainText('subtract');
+  await clickImage(page, 0.02, 0.02);
+  await expect(page.locator('[data-testid="separate-keys"] li[data-mode="subtract"]')).toHaveCount(1);
+  await page.keyboard.down('Shift');
+  await clickImage(page, 0.5, 0.5);
+  await page.keyboard.up('Shift');
+  await expect(page.locator('[data-testid="separate-keys"] li[data-mode="add"]')).toHaveCount(4);
+
+  // Clear removes both kinds, in one undoable step.
+  await page.getByTestId('separate-clear').click();
+  await expect(page.getByTestId('separate-keys')).toBeHidden();
+  await expect(share).toHaveText('Nothing selected');
+  await page.keyboard.press('ControlOrMeta+z');
+  await expect(page.getByTestId('separate-keys').getByRole('listitem')).toHaveCount(5);
+});

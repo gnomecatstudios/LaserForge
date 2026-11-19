@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import {
   colorAt,
+  combineWeights,
+  type ColorKey,
+  type KeyMaskCache,
+  keyWeights,
   downscaleRaster,
   edgeSelection,
   type Rgb,
@@ -88,7 +92,12 @@ describe('selectionWeights', () => {
     const split = image(['RGGR', 'RRRR', 'RGGR']);
     const keys = [{ stops: [[0, 200, 0]] as Rgb[] }];
     const all = selectionWeights(split, { keys, tolerance: 5, softness: 0 });
-    const top = selectionWeights(split, { keys, tolerance: 5, softness: 0, seeds: [{ x: 0.4, y: 0.1 }] });
+    const top = selectionWeights(split, {
+      keys: [{ ...keys[0], seeds: [{ x: 0.4, y: 0.1 }] }],
+      tolerance: 5,
+      softness: 0,
+      connected: true,
+    });
     expect(selected(all).filter(Boolean)).toHaveLength(4);
     expect(selected(top)).toEqual([0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
   });
@@ -177,9 +186,9 @@ describe('separateRaster', () => {
 describe('helpers', () => {
   it('finds the background from the edges, connected to them only', () => {
     const scene = image(['GGGGG', 'GRRRG', 'GRGRG', 'GRRRG', 'GGGGG']);
-    const auto = edgeSelection(scene);
-    expect(auto.keys).toHaveLength(1);
-    const weights = selectionWeights(scene, { ...auto, tolerance: 5, softness: 0 });
+    const keys = edgeSelection(scene);
+    expect(keys).toHaveLength(1);
+    const weights = selectionWeights(scene, { keys, tolerance: 5, softness: 0, connected: true });
     // The green inside the red ring is not connected to the edge, so it stays.
     expect(weights[12]).toBe(0);
     expect(weights[0]).toBe(255);
@@ -201,5 +210,109 @@ describe('helpers', () => {
     expect(small.width).toBe(2);
     expect(colorAt(small, { x: 0.9, y: 0.1 })).toEqual([220, 30, 30]);
     expect(colorAt(image(['.']), { x: 0, y: 0 })).toBeNull();
+  });
+});
+
+describe('add and subtract keys', () => {
+  // Green backdrop, a red subject and a blue one; the right column is a darker red.
+  const scene = image(['GGGG', 'GRRG', 'GBBG', 'GGGG']);
+  const green: ColorKey = { stops: [[0, 200, 0]] };
+  const red: ColorKey = { stops: [[220, 30, 30]] };
+  const tight = { tolerance: 5, softness: 0 };
+  const sel = (keys: ColorKey[], extra = {}) =>
+    selected(selectionWeights(scene, { keys, ...tight, ...extra }));
+
+  it('selects the union of add keys', () => {
+    expect(sel([green, red])).toEqual([1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1]);
+  });
+
+  it('selects nothing with only subtract keys', () => {
+    expect(sel([{ ...red, mode: 'subtract' }])).not.toContain(1);
+    expect(
+      sel([
+        { ...red, mode: 'subtract' },
+        { ...green, mode: 'subtract' },
+      ]),
+    ).not.toContain(1);
+  });
+
+  it('takes subtract matches out of add matches where they overlap', () => {
+    // A wide add key catches the red and the blue; subtracting red leaves the blue.
+    const wide: ColorKey = {
+      stops: [
+        [220, 30, 30],
+        [30, 30, 220],
+      ],
+    };
+    expect(sel([wide])).toEqual([0, 0, 0, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 0, 0, 0]);
+    expect(sel([wide, { ...red, mode: 'subtract' }])).toEqual([
+      0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0,
+    ]);
+    // Order does not matter.
+    expect(sel([{ ...red, mode: 'subtract' }, wide])).toEqual(sel([wide, { ...red, mode: 'subtract' }]));
+  });
+
+  it("keeps each key's own tolerance", () => {
+    const shades = image(['GgR']);
+    const subtractShadow: ColorKey = { stops: [[0, 150, 0]], mode: 'subtract', tolerance: 2 };
+    const wideGreen: ColorKey = { ...green, tolerance: 40 };
+    const weights = selectionWeights(shades, { keys: [wideGreen, subtractShadow], ...tight });
+    expect(selected(weights)).toEqual([1, 0, 0]);
+  });
+
+  it('floods subtract keys from their own seeds when connected', () => {
+    // Two red areas on green; subtracting red picked on the left one only removes that one.
+    const split = image(['RGGR', 'RGGR']);
+    const addAll: ColorKey = {
+      stops: [
+        [220, 30, 30],
+        [0, 200, 0],
+      ],
+      seeds: [{ x: 0.5, y: 0.5 }],
+    };
+    const minusLeft: ColorKey = { ...red, mode: 'subtract', seeds: [{ x: 0.1, y: 0.5 }] };
+    const connected = selectionWeights(split, { keys: [addAll, minusLeft], ...tight, connected: true });
+    expect(selected(connected)).toEqual([0, 1, 1, 1, 0, 1, 1, 1]);
+    const everywhere = selectionWeights(split, { keys: [addAll, minusLeft], ...tight });
+    expect(selected(everywhere)).toEqual([0, 1, 1, 0, 0, 1, 1, 0]);
+  });
+
+  it('inverts after subtracting', () => {
+    const weights = selectionWeights(scene, {
+      keys: [green, { stops: [[0, 200, 0]], mode: 'subtract' }, red],
+      ...tight,
+      invert: true,
+    });
+    // green − green = nothing, so only red is selected; inverted, everything but red.
+    expect(selected(weights)).toEqual([1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1]);
+    const onlySubtract = selectionWeights(scene, {
+      keys: [{ ...red, mode: 'subtract' }],
+      ...tight,
+      invert: true,
+    });
+    expect(selected(onlySubtract)).not.toContain(0);
+  });
+
+  it('subtracts soft edges proportionally', () => {
+    const add = new Uint8ClampedArray([255, 255, 200]);
+    const minus = new Uint8ClampedArray([0, 255, 128]);
+    const row = image(['GGG']);
+    const out = combineWeights(row, [
+      { mode: 'add', weights: add },
+      { mode: 'subtract', weights: minus },
+    ]);
+    expect([...out]).toEqual([255, 0, 100]);
+  });
+
+  it('reuses cached masks for keys that did not change', () => {
+    const cache: KeyMaskCache = new Map();
+    selectionWeights(scene, { keys: [green, red], ...tight }, undefined, cache);
+    expect(cache.size).toBe(2);
+    const greenMask = [...cache.values()][0];
+    // Switching a key to subtract reuses its mask; removing one drops it.
+    selectionWeights(scene, { keys: [{ ...green, mode: 'subtract' }], ...tight }, undefined, cache);
+    expect(cache.size).toBe(1);
+    expect([...cache.values()][0]).toBe(greenMask);
+    expect(greenMask).toEqual(keyWeights(scene, green, 5, 0));
   });
 });

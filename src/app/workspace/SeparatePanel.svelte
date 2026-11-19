@@ -9,6 +9,8 @@
   import Crop from '@lucide/svelte/icons/crop';
   import ScanSearch from '@lucide/svelte/icons/scan-search';
   import X from '@lucide/svelte/icons/x';
+  import Plus from '@lucide/svelte/icons/plus';
+  import Minus from '@lucide/svelte/icons/minus';
   import NumberField from '$lib/ui/NumberField.svelte';
   import Toggle from '$lib/ui/Toggle.svelte';
   import { toast } from '$lib/ui/toasts.svelte';
@@ -18,6 +20,7 @@
   import { editor } from '../state/editor.svelte';
   import { separateInWorker } from '../lib/cam-client';
   import { placeSeparation, type SeparateMode } from '../lib/separate-place';
+  import type { KeyMode } from 'libopenlaser/cam';
   import { keySwatch, type Separation, type SeparationShow } from './separation.svelte';
 
   let { separation, image, share }: { separation: Separation; image: ImageObject; share: number } = $props();
@@ -25,6 +28,14 @@
   const asset = $derived(editor.project?.assets[image.assetId]);
   const ready = $derived(!separation.empty && share > 0 && !separation.busy && !image.locked);
   const percent = $derived(share > 0 && share < 0.001 ? '<0.1' : (share * 100).toFixed(share < 0.1 ? 1 : 0));
+
+  const MODES: Array<[KeyMode, string]> = [
+    ['add', 'Add'],
+    ['subtract', 'Subtract'],
+  ];
+  /** The tolerance and softness shown are those of the switch's mode. */
+  const matching = $derived(separation.matching[separation.mode]);
+  const modeWord = $derived(separation.mode === 'add' ? 'add' : 'subtract');
 
   const SHOW: Array<[SeparationShow, string]> = [
     ['highlight', 'Highlight'],
@@ -69,7 +80,8 @@
         return outcome.project;
       });
       editor.sealHistory();
-      separation.clear();
+      // The picks are spent; undo now steps back through the project.
+      separation.reset();
       const done = outcome as ReturnType<typeof placeSeparation> | null;
       if (!done) return;
       if (mode === 'layer') {
@@ -96,8 +108,21 @@
 
 <div class="separate" data-testid="separate-panel">
   <p class="muted small">
-    Click the image to pick a color. Drag across a gradient to pick its whole range. Pick as many as you need.
+    Click the image to pick a color. Drag across a gradient to pick its whole range. Hold Alt to subtract a
+    pick, Shift to add it.
   </p>
+
+  <div class="segmented small mode" role="group" aria-label="Pick mode">
+    {#each MODES as [id, label] (id)}
+      <button
+        type="button"
+        aria-pressed={separation.mode === id}
+        onclick={() => (separation.mode = id)}
+        data-testid="separate-mode-{id}"
+        >{#if id === 'add'}<Plus size={14} />{:else}<Minus size={14} />{/if}{label}</button
+      >
+    {/each}
+  </div>
 
   <div class="row">
     <button
@@ -109,26 +134,42 @@
     >
       <ScanSearch size={15} />Select background
     </button>
-    {#if separation.keys.length > 0}
+    {#if separation.picks.length > 0 || separation.invert}
       <button type="button" class="btn ghost" onclick={() => separation.clear()} data-testid="separate-clear">
         Clear
       </button>
     {/if}
   </div>
 
-  {#if separation.keys.length > 0}
+  {#if separation.picks.length > 0}
     <ul class="keys" aria-label="Picked colors" data-testid="separate-keys">
-      {#each separation.keys as key, i (i)}
-        <li>
-          <span class="swatch" class:range={key.stops.length > 1} style:background={keySwatch(key)}></span>
+      {#each separation.picks as pick, i (i)}
+        {@const subtract = pick.mode === 'subtract'}
+        <li class:subtract data-mode={pick.mode}>
+          <span class="swatch" class:range={pick.stops.length > 1} style:background={keySwatch(pick)}>
+            {#if subtract}<span class="badge" aria-hidden="true">−</span>{/if}
+          </span>
           <span class="small muted"
-            >{key.stops.length > 1 ? `Range · ${key.stops.length} colors` : 'Color'}</span
+            >{subtract ? 'Subtract' : 'Add'} · {pick.stops.length > 1
+              ? `range of ${pick.stops.length}`
+              : 'color'}</span
+          >
+          <button
+            type="button"
+            class="icon-btn sm"
+            aria-label={subtract
+              ? `Add picked color ${i + 1} instead`
+              : `Subtract picked color ${i + 1} instead`}
+            title={subtract ? 'Switch to add' : 'Switch to subtract'}
+            onclick={() => separation.togglePick(i)}
+            data-testid="separate-toggle-{i}"
+            >{#if subtract}<Plus size={14} />{:else}<Minus size={14} />{/if}</button
           >
           <button
             type="button"
             class="icon-btn sm"
             aria-label="Remove picked color {i + 1}"
-            onclick={() => separation.removeKey(i)}><X size={14} /></button
+            onclick={() => separation.removePick(i)}><X size={14} /></button
           >
         </li>
       {/each}
@@ -137,21 +178,23 @@
 
   <NumberField
     label="Tolerance"
-    hint="How different a color can be from a pick and still be selected"
-    value={separation.tolerance}
+    hint="How different a color can be from a pick and still be selected. Add and subtract picks each have their own"
+    value={matching.tolerance}
     min={0}
     max={100}
-    onchange={(v) => (separation.tolerance = v)}
+    onchange={(v) => separation.setMatching(separation.mode, { tolerance: v })}
     testid="separate-tolerance"
   />
   <NumberField
     label="Edge softness"
-    hint="Blends the border of the selection, so cut-out edges stay smooth"
-    value={separation.softness}
+    hint="Blends the border of the selection, so cut-out edges stay smooth. Add and subtract picks each have their own"
+    value={matching.softness}
     min={0}
     max={100}
-    onchange={(v) => (separation.softness = v)}
+    onchange={(v) => separation.setMatching(separation.mode, { softness: v })}
+    testid="separate-softness"
   />
+  <p class="small muted" data-testid="separate-matching-mode">Tolerance and softness for {modeWord} picks.</p>
   <div class="toggles">
     <Toggle
       label="Connected areas only"
@@ -161,9 +204,9 @@
     />
     <Toggle
       label="Invert"
-      hint="Select everything except the picked colors"
+      hint="Select everything except the picked colors. Applied after subtracting"
       checked={separation.invert}
-      onchange={(c) => (separation.invert = c)}
+      onchange={(c) => separation.setInvert(c)}
     />
     <Toggle
       label="One object per area"
@@ -253,7 +296,19 @@
   .keys li {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 6px;
+  }
+
+  .mode {
+    display: flex;
+  }
+
+  .mode button {
+    flex: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
   }
 
   .keys .small {
@@ -261,6 +316,7 @@
   }
 
   .swatch {
+    position: relative;
     width: 22px;
     height: 16px;
     flex-shrink: 0;
@@ -270,6 +326,26 @@
 
   .swatch.range {
     width: 44px;
+  }
+
+  .subtract .swatch {
+    border: 2px solid var(--ol-stop);
+  }
+
+  .badge {
+    position: absolute;
+    right: -6px;
+    top: -7px;
+    width: 13px;
+    height: 13px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 1;
+    color: #fff;
+    background: var(--ol-stop);
   }
 
   .toggles {
