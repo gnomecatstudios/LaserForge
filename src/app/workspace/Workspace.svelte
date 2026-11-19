@@ -78,8 +78,8 @@
 <div class="workspace" data-testid="workspace">
   <ErrorBoundary name="Top bar" compact><TopBar /></ErrorBoundary>
   <div class="body">
-    <ErrorBoundary name="Tools" compact><ToolRail /></ErrorBoundary>
     <main class="center">
+      <ErrorBoundary name="Tools" compact><ToolRail /></ErrorBoundary>
       {#if editor.project && editor.view === 'design'}
         <ErrorBoundary name="Selection bar" compact><SelectionBar /></ErrorBoundary>
       {/if}

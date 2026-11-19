@@ -121,7 +121,7 @@
           <ShapeGlyph kind={shapeKind} size={20} />
         </Popover.Trigger>
         <Popover.Portal>
-          <Popover.Content class="ol-menu" side="right" align="start" sideOffset={8}>
+          <Popover.Content class="ol-menu" side="bottom" align="start" sideOffset={8}>
             <ShapePicker
               value={shapeKind}
               onpick={(kind) => {
@@ -179,7 +179,7 @@
         <Spline size={18} />
       </Popover.Trigger>
       <Popover.Portal>
-        <Popover.Content class="ol-menu simplify-menu" side="right" align="start" sideOffset={8}>
+        <Popover.Content class="ol-menu simplify-menu" side="bottom" align="start" sideOffset={8}>
           <strong>Simplify path</strong>
           <label for="simplify-tolerance">Tolerance (mm): {tolerance.toFixed(2)}</label>
           <input id="simplify-tolerance" type="range" min="0.01" max="1" step="0.01" bind:value={tolerance} />
@@ -239,26 +239,28 @@
     gap: 10px;
   }
   .rail {
-    width: var(--ol-toolrail-w);
+    height: var(--ol-toolbar-h);
     flex-shrink: 0;
     display: flex;
-    flex-direction: column;
     align-items: center;
     gap: 4px;
-    padding: 10px 0;
-    border-right: 1px solid var(--ol-border);
+    padding: 0 10px;
+    overflow-x: auto;
+    border-bottom: 1px solid var(--ol-border);
     background: var(--ol-surface);
   }
 
   .rail :global(.tool) {
     width: 40px;
     height: 40px;
+    flex-shrink: 0;
   }
 
   .rule {
-    width: 24px;
-    height: 1px;
+    width: 1px;
+    height: 24px;
+    flex-shrink: 0;
     background: var(--ol-border);
-    margin: 6px 0;
+    margin: 0 6px;
   }
 </style>

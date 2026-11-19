@@ -38,7 +38,7 @@
   <Popover.Portal>
     <Popover.Content
       class="ol-menu outline-menu"
-      side="right"
+      side="bottom"
       align="start"
       sideOffset={8}
       interactOutsideBehavior="ignore"
