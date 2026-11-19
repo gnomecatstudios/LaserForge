@@ -12,6 +12,7 @@ import { connectedSession } from './machines/registry';
 import { route } from './state/route.svelte';
 import { currentBed } from './state/work-area';
 import { ui } from './state/ui.svelte';
+import { redoPicks, undoPicks } from './workspace/separation.svelte';
 import { booleanSelection, booleanSelectionIssue } from './unite';
 import * as actions from './actions';
 import { checkForUpdates } from './updates/updates.svelte';
@@ -135,13 +136,19 @@ export const SHORTCUTS: Shortcut[] = [
     run: () => actions.traceSelectedImage(),
   },
 
-  { keys: ['Mod+Z'], label: 'Undo', group: 'Edit', when: hasProject, run: () => editor.undo() },
+  {
+    keys: ['Mod+Z'],
+    label: 'Undo',
+    group: 'Edit',
+    when: hasProject,
+    run: () => undoPicks() || editor.undo(),
+  },
   {
     keys: ['Mod+Shift+Z', 'Mod+Y'],
     label: 'Redo',
     group: 'Edit',
     when: hasProject,
-    run: () => editor.redo(),
+    run: () => redoPicks() || editor.redo(),
   },
   { keys: ['Mod+C'], label: 'Copy', group: 'Edit', when: hasSelection, run: () => actions.copySelection() },
   { keys: ['Mod+X'], label: 'Cut', group: 'Edit', when: hasSelection, run: () => actions.cutSelection() },

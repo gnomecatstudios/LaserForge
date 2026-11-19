@@ -19,7 +19,7 @@
   import { ditherInWorker } from '../lib/cam-client';
   import { DITHER_ALGORITHMS } from '../lib/dither-options';
   import { withMode } from '../lib/layers';
-  import { Separation } from './separation.svelte';
+  import { Separation, separationFocus } from './separation.svelte';
   import SeparationCanvas from './SeparationCanvas.svelte';
   import SeparatePanel from './SeparatePanel.svelte';
 
@@ -79,8 +79,16 @@
     const id = current?.id ?? null;
     if (id !== pickedFor) {
       pickedFor = id;
-      separation.clear();
+      separation.reset();
     }
+  });
+  // While Separate is open, undo and redo step through the picks before the project.
+  $effect(() => {
+    if (!separating) return;
+    separationFocus.current = separation;
+    return () => {
+      if (separationFocus.current === separation) separationFocus.current = null;
+    };
   });
 
   function showTab(next: 'engrave' | 'separate') {

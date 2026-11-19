@@ -18,7 +18,17 @@ export type Rgb = readonly [number, number, number];
  */
 export interface ColorKey {
   stops: Rgb[];
+  /** `subtract` keys take their match away from what the `add` keys select. Default `add`. */
+  mode?: KeyMode;
+  /** 0..100, overriding the selection's tolerance for this key. */
+  tolerance?: number;
+  /** 0..100, overriding the selection's softness for this key. */
+  softness?: number;
+  /** Where the key was picked, for `connected` selections. */
+  seeds?: KeyPoint[];
 }
+
+export type KeyMode = 'add' | 'subtract';
 
 /** A point on the image, as a share of its width and height (0..1, row 0 at the top). */
 export interface KeyPoint {
@@ -28,18 +38,25 @@ export interface KeyPoint {
 
 export interface ColorSelection {
   keys: ColorKey[];
-  /** 0..100: how far a color may be from a key and still match fully. */
+  /** 0..100: how far a color may be from a key and still match fully (keys may override it). */
   tolerance: number;
   /** 0..100: width of the partly matching band past the tolerance, for soft edges. */
   softness: number;
   /**
-   * When set, only matching areas connected to one of these points count. A color elsewhere in the
-   * image (the same blue in a shirt as in the sky) is left alone.
+   * Only matching areas connected to a key's seeds count, separately for add and subtract keys. A
+   * color elsewhere in the image (the same blue in a shirt as in the sky) is left alone.
    */
-  seeds?: KeyPoint[] | null;
-  /** Select everything except the match. */
+  connected?: boolean;
+  /** Select everything except the match. Applied last, after subtracting. */
   invert?: boolean;
 }
+
+/**
+ * Per-key masks from earlier runs over the same image, keyed by the key's colors, tolerance and
+ * softness. Pass the same map while a selection is edited so only new or changed keys are measured;
+ * start a new one when the image changes.
+ */
+export type KeyMaskCache = Map<string, Uint8ClampedArray>;
 
 /** A cropped part of an image: `data` covers `width × height` pixels at (x, y) in the source. */
 export interface RasterCrop {
@@ -121,45 +138,118 @@ function distanceSq(l: number, a: number, b: number, stops: Float32Array): numbe
   return best;
 }
 
+const clampPercent = (v: number) => Math.max(0, Math.min(100, v));
+
 /**
- * How strongly each pixel is selected, 0..255. Fully transparent pixels are never selected: there
- * is nothing left there to move. `lab` may pass a cached `oklabImage(source)`.
+ * How strongly one key matches each pixel, 0..255: full within its tolerance, fading to nothing
+ * across the softness band past it. Fully transparent pixels never match.
+ */
+export function keyWeights(
+  source: RasterSource,
+  key: ColorKey,
+  tolerancePercent: number,
+  softnessPercent: number,
+  lab: Float32Array = oklabImage(source),
+): Uint8ClampedArray {
+  const count = source.width * source.height;
+  const weights = new Uint8ClampedArray(count);
+  const stops = keyLab(key);
+  if (stops.length === 0) return weights;
+  const data = source.data;
+  const tolerance = (clampPercent(tolerancePercent) / 100) * TOLERANCE_SCALE;
+  const band = (clampPercent(softnessPercent) / 100) * SOFTNESS_SCALE;
+  const outer = tolerance + band;
+  const toleranceSq = tolerance * tolerance;
+  const outerSq = outer * outer;
+  for (let i = 0; i < count; i++) {
+    if (data[i * 4 + 3] === 0) continue;
+    const d = distanceSq(lab[i * 3], lab[i * 3 + 1], lab[i * 3 + 2], stops);
+    if (d <= toleranceSq) weights[i] = 255;
+    else if (d < outerSq && band > 0) weights[i] = Math.round((255 * (outer - Math.sqrt(d))) / band);
+  }
+  return weights;
+}
+
+/** One key's soft mask, ready to combine. */
+export interface KeyMask {
+  mode: KeyMode;
+  weights: Uint8ClampedArray;
+  seeds?: KeyPoint[];
+}
+
+/**
+ * Combines key masks: `union(add) − union(subtract)`, each union the strongest match per pixel.
+ * With `connected`, each union first keeps only the areas joined to its own keys' seeds. Partial
+ * subtraction scales the add weight down (a half-matching subtract pixel halves it). `invert` comes
+ * last; with no add keys nothing is selected before it.
+ */
+export function combineWeights(
+  source: RasterSource,
+  masks: KeyMask[],
+  options: { connected?: boolean; invert?: boolean } = {},
+): Uint8ClampedArray {
+  const { width, height, data } = source;
+  const count = width * height;
+  const union = (mode: KeyMode): Uint8ClampedArray | null => {
+    const parts = masks.filter((m) => m.mode === mode);
+    if (parts.length === 0) return null;
+    const out = new Uint8ClampedArray(count);
+    for (const part of parts) {
+      const w = part.weights;
+      for (let i = 0; i < count; i++) if (w[i] > out[i]) out[i] = w[i];
+    }
+    if (options.connected)
+      keepConnected(
+        out,
+        width,
+        height,
+        parts.flatMap((p) => p.seeds ?? []),
+      );
+    return out;
+  };
+  const weights = union('add') ?? new Uint8ClampedArray(count);
+  const subtract = union('subtract');
+  if (subtract) {
+    for (let i = 0; i < count; i++) {
+      if (weights[i] !== 0 && subtract[i] !== 0)
+        weights[i] = Math.round((weights[i] * (255 - subtract[i])) / 255);
+    }
+  }
+  if (options.invert) {
+    for (let i = 0; i < count; i++) weights[i] = data[i * 4 + 3] === 0 ? 0 : 255 - weights[i];
+  }
+  return weights;
+}
+
+/**
+ * How strongly each pixel is selected, 0..255 (see `combineWeights`). Fully transparent pixels are
+ * never selected: there is nothing left there to move. `lab` may pass a cached `oklabImage(source)`
+ * and `cache` the masks of keys measured before.
  */
 export function selectionWeights(
   source: RasterSource,
   selection: ColorSelection,
-  lab: Float32Array = oklabImage(source),
+  lab?: Float32Array,
+  cache?: KeyMaskCache,
 ): Uint8ClampedArray {
-  const { width, height, data } = source;
-  const count = width * height;
-  const weights = new Uint8ClampedArray(count);
-  const keys = selection.keys.map(keyLab).filter((k) => k.length > 0);
-  if (keys.length > 0) {
-    const tolerance = (Math.max(0, Math.min(100, selection.tolerance)) / 100) * TOLERANCE_SCALE;
-    const band = (Math.max(0, Math.min(100, selection.softness)) / 100) * SOFTNESS_SCALE;
-    const outer = tolerance + band;
-    const toleranceSq = tolerance * tolerance;
-    const outerSq = outer * outer;
-    for (let i = 0; i < count; i++) {
-      if (data[i * 4 + 3] === 0) continue;
-      const l = lab[i * 3],
-        a = lab[i * 3 + 1],
-        b = lab[i * 3 + 2];
-      let best = Infinity;
-      for (const key of keys) {
-        const d = distanceSq(l, a, b, key);
-        if (d < best) best = d;
-        if (best <= toleranceSq) break;
-      }
-      if (best <= toleranceSq) weights[i] = 255;
-      else if (best < outerSq && band > 0) weights[i] = Math.round((255 * (outer - Math.sqrt(best))) / band);
+  let labImage = lab;
+  const used = new Set<string>();
+  const masks: KeyMask[] = selection.keys.map((key) => {
+    const tolerance = key.tolerance ?? selection.tolerance;
+    const softness = key.softness ?? selection.softness;
+    const id = `${tolerance}|${softness}|${key.stops.map((c) => c.join(',')).join(';')}`;
+    used.add(id);
+    let weights = cache?.get(id);
+    if (!weights) {
+      labImage ??= oklabImage(source);
+      weights = keyWeights(source, key, tolerance, softness, labImage);
+      cache?.set(id, weights);
     }
-    if (selection.seeds) keepConnected(weights, width, height, selection.seeds);
-  }
-  if (selection.invert) {
-    for (let i = 0; i < count; i++) weights[i] = data[i * 4 + 3] === 0 ? 0 : 255 - weights[i];
-  }
-  return weights;
+    return { mode: key.mode ?? 'add', weights, seeds: key.seeds };
+  });
+  // Masks of keys that were removed or retuned are not needed again.
+  if (cache) for (const id of [...cache.keys()]) if (!used.has(id)) cache.delete(id);
+  return combineWeights(source, masks, { connected: selection.connected, invert: selection.invert });
 }
 
 /** Clears every selected pixel not 4-connected to a seed. A seed on an unselected pixel adds nothing. */
@@ -404,10 +494,11 @@ export function spectrumKey(colors: Rgb[], maxStops = 16, minStep = 0.02): Color
 }
 
 /**
- * A starting selection for the background: the main colors around the image's edge, keyed and
- * limited to the areas connected to the edge (so the same color inside the subject stays).
+ * Keys for the background: the main colors around the image's edge, each seeded where it was found
+ * so a `connected` selection keeps to the areas joined to the edge (the same color inside the
+ * subject stays).
  */
-export function edgeSelection(source: RasterSource, maxColors = 6): Pick<ColorSelection, 'keys' | 'seeds'> {
+export function edgeSelection(source: RasterSource, maxColors = 6): ColorKey[] {
   const { width, height } = source;
   const samples: Array<{ point: KeyPoint; rgb: Rgb }> = [];
   const steps = 64;
@@ -424,7 +515,7 @@ export function edgeSelection(source: RasterSource, maxColors = 6): Pick<ColorSe
     add(0, y);
     add(width - 1, y);
   }
-  if (samples.length === 0) return { keys: [], seeds: [] };
+  if (samples.length === 0) return [];
   // Greedy clusters in OKLab; the ones covering at least 8 % of the edge are the background.
   const lab = new Float32Array(3);
   const clusters: Array<{ l: number; a: number; b: number; members: typeof samples }> = [];
@@ -439,10 +530,10 @@ export function edgeSelection(source: RasterSource, maxColors = 6): Pick<ColorSe
     .sort((a, b) => b.members.length - a.members.length)
     .slice(0, maxColors);
   const chosen = main.length > 0 ? main : [clusters.sort((a, b) => b.members.length - a.members.length)[0]];
-  return {
-    keys: chosen.map((c) => ({ stops: [averageRgb(c.members.map((m) => m.rgb))] })),
-    seeds: chosen.flatMap((c) => c.members.map((m) => m.point)),
-  };
+  return chosen.map((c) => ({
+    stops: [averageRgb(c.members.map((m) => m.rgb))],
+    seeds: c.members.map((m) => m.point),
+  }));
 }
 
 function averageRgb(colors: Rgb[]): Rgb {

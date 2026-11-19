@@ -15,6 +15,7 @@
   import { formatCombo } from '../lib/keys';
   import { UPDATE_KEYS } from '../shortcuts';
   import { editor } from '../state/editor.svelte';
+  import { canRedoPicks, canUndoPicks, redoPicks, undoPicks } from './separation.svelte';
   import { activeAdapter, connectedAdapter, DEFAULT_ADAPTER } from '../machines/registry';
   import { session } from '../state/session.svelte';
   import { route } from '../state/route.svelte';
@@ -181,8 +182,8 @@
       class="icon-btn"
       aria-label="Undo"
       title="Undo ({formatCombo('Mod+Z')})"
-      disabled={!editor.canUndo}
-      onclick={() => editor.undo()}
+      disabled={!editor.canUndo && !canUndoPicks()}
+      onclick={() => undoPicks() || editor.undo()}
     >
       <Undo2 size={18} />
     </button>
@@ -191,8 +192,8 @@
       class="icon-btn"
       aria-label="Redo"
       title="Redo ({formatCombo('Mod+Shift+Z')})"
-      disabled={!editor.canRedo}
-      onclick={() => editor.redo()}
+      disabled={!editor.canRedo && !canRedoPicks()}
+      onclick={() => redoPicks() || editor.redo()}
     >
       <Redo2 size={18} />
     </button>

@@ -428,3 +428,10 @@ background layers.
   main thread. Applying runs at full resolution on the preview worker, which also encodes the PNGs.
 - **Select background** clusters the colors around the image edge and limits the match to areas
   connected to the edge, so the same color inside the subject stays.
+- **Add and subtract picks.** The selection is `union(add) − union(subtract)`. Each union is the
+  strongest match per pixel, flood-filled from its own picks' points when connected. Partial
+  subtract matches scale the add weight down. Invert comes last, and only subtract picks select
+  nothing. Each mode has its own tolerance and softness. Per-pick masks are cached on the preview,
+  so adding, removing or switching one pick doesn't re-measure the others. Pick changes have their
+  own undo history, used before the project's while the Separate tab is open. Applying a separation
+  clears it.

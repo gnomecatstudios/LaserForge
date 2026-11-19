@@ -90,7 +90,7 @@
         'The time is an estimate based on your machine’s acceleration settings.',
         'Export G-code (the G-code icon at the end of the toolbar, or Menu → Export G-code) saves a file for SD cards or other senders.',
         'Bitmap mode (next to Design and Preview) shows each photo beside its engraving and holds the dithering, tone and line density settings.',
-        'In Bitmap mode, Separate removes backgrounds and splits a photo into layers. Click colors on the image, or drag across a gradient to pick its whole range. Then erase them to transparency, keep only them, or move them to a new layer. Repeat to peel foreground, midground and background apart.',
+        'In Bitmap mode, Separate removes backgrounds and splits a photo into layers. Click colors on the image, or drag across a gradient to pick its whole range. Subtract picks (the Subtract switch, or hold Alt) take colors back out of the selection. Then erase them to transparency, keep only them, or move them to a new layer. Repeat to peel foreground, midground and background apart.',
       ],
     },
     {
